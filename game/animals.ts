@@ -5,7 +5,8 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { directionVector, exitCell, exitDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
 import { sliceAlongZ } from '../src/game/slice';
-import { exitPath, pointAlong, pointAt, type Pt } from '../src/game/path';
+import { exitPath } from '../src/game/path';
+import { smoothPath, trackAt, type Track } from '../src/game/smooth';
 
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
   one: ['penguin', 'chick', 'parrot'],
@@ -162,7 +163,9 @@ type Anim = { kind: 'idle' } | { kind: 'run'; s: number; onDone: () => void } | 
 export class PieceView {
   readonly group = new THREE.Group();
   readonly piece: Piece;
-  private readonly pts: Pt[];
+  /** Exit path with rounded corners; every body part is placed by arc length along it. */
+  private readonly track: Track;
+  private readonly headStart: number;
   private readonly segments: THREE.Object3D[] = [];
   private readonly plates: THREE.Mesh[] = [];
   private readonly stretched: Stretched | null;
@@ -185,7 +188,8 @@ export class PieceView {
   constructor(private readonly level: Level, piece: Piece, gltf: GLTF, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
     this.bodyLen = piece.cells.length;
-    this.pts = exitPath(level, piece);
+    this.track = smoothPath(exitPath(level, piece));
+    this.headStart = this.track.vertexU[this.bodyLen - 1];
     const color = pieceColor(piece.id);
 
     const species = speciesFor(piece);
@@ -236,7 +240,7 @@ export class PieceView {
     this.buildChevrons(color);
     this.group.add(this.chevrons);
     this.group.add(this.buildGate(color));
-    this.place(this.bodyLen - 1);
+    this.place(this.headStart);
   }
 
   private play(name: string, loop: boolean): void {
@@ -258,18 +262,18 @@ export class PieceView {
   place(sHead: number): void {
     this.lastS = sHead;
     const head = this.segments[0];
-    const p = pointAt(this.pts, sHead);
+    const p = trackAt(this.track, sHead);
     head.position.copy(this.world(p.x, p.y));
     head.rotation.y = p.angle;
     for (let i = 1; i < this.segments.length; i++) {
-      const q = pointAlong(this.pts, sHead - i * CATERPILLAR_SPACING);
+      const q = trackAt(this.track, sHead - i * CATERPILLAR_SPACING);
       const seg = this.segments[i];
       seg.position.copy(this.world(q.x, q.y));
       seg.position.y += Math.sin(this.clock * 4 + i * 1.3) * 0.05;
       seg.rotation.y = q.angle;
     }
     this.plates.forEach((plate, i) => {
-      const q = pointAlong(this.pts, sHead - i);
+      const q = trackAt(this.track, sHead - i);
       plate.position.copy(this.world(q.x, q.y)).setY(0.05);
       plate.rotation.y = q.angle;
     });
@@ -283,8 +287,8 @@ export class PieceView {
     const st = this.stretched;
     if (!st) return;
     const toLocal = (d: number, lateral: number): { x: number; z: number; rel: number } => {
-      const q = pointAlong(this.pts, sHead - d);
-      const head = pointAlong(this.pts, sHead);
+      const q = trackAt(this.track, sHead - d);
+      const head = trackAt(this.track, sHead);
       const ux = q.x - head.x;
       const uy = q.y - head.y;
       const rel = q.angle - theta;
@@ -386,7 +390,7 @@ export class PieceView {
     this.chevrons.visible = false;
     this.pulseT = 0;
     for (const seg of this.segments) seg.scale.setScalar(1);
-    this.anim = { kind: 'run', s: this.bodyLen - 1, onDone };
+    this.anim = { kind: 'run', s: this.headStart, onDone };
     this.play('run', true);
   }
 
@@ -430,7 +434,7 @@ export class PieceView {
     if (this.anim.kind === 'run') {
       this.anim.s += ((window as unknown as { __runSpeed?: number }).__runSpeed ?? RUN_SPEED) * dt;
       this.place(this.anim.s);
-      if (this.anim.s >= this.pts.length - 1) {
+      if (this.anim.s >= this.track.length) {
         const done = this.anim.onDone;
         this.anim = { kind: 'done' };
         this.group.visible = false;
