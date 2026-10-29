@@ -1,7 +1,23 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { Level } from '../src/core/types';
-import { directionVector } from '../src/core/rules';
+import { directionVector, exitCell, exitDirection, onBoard } from '../src/core/rules';
+import { createRng } from '../src/core/rng';
+import type { Theme } from '../src/curve/curve';
+import { buildScenery, PALETTES } from './scenery';
+
+/** Free what a board group created for itself; scenery meshes share cached geometry and materials and are skipped. */
+function disposeOwned(root: THREE.Object3D): void {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || m.userData.shared) return;
+    m.geometry.dispose();
+    for (const mt of Array.isArray(m.material) ? m.material : [m.material]) {
+      (mt as THREE.MeshStandardMaterial).map?.dispose();
+      mt.dispose();
+    }
+  });
+}
 
 /** World position of a (possibly fractional) grid point. Cell centers sit on integer grid coordinates. */
 export class Stage {
@@ -11,6 +27,7 @@ export class Stage {
   private board = new THREE.Group();
   private level: Level | null = null;
   private readonly ray = new THREE.Raycaster();
+  private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.1);
 
   constructor(private readonly container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -19,7 +36,7 @@ export class Stage {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
     this.scene.background = new THREE.Color(0xcfe8f3);
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.1));
+    this.scene.add(this.hemi);
     const sun = new THREE.DirectionalLight(0xffffff, 1.6);
     sun.position.set(4, 10, 6);
     sun.castShadow = true;
@@ -38,37 +55,65 @@ export class Stage {
     return new THREE.Vector3(x - (level.width - 1) / 2, 0, y - (level.height - 1) / 2);
   }
 
-  setBoard(level: Level): void {
+  /**
+   * Board island for this level (only the cells of its outline) inside the chapter's surroundings. `seed` keeps the
+   * scenery the same every time the same level is opened.
+   */
+  setBoard(level: Level, theme: Theme = 'village', seed = 1): void {
     this.level = level;
     this.scene.remove(this.board);
+    disposeOwned(this.board);
     this.board = new THREE.Group();
     this.scene.add(this.board);
     const { width: w, height: h } = level;
+    const pal = PALETTES[theme];
+    this.scene.background = new THREE.Color(pal.sky);
+    this.hemi.color.setHex(pal.hemiSky);
+    this.hemi.groundColor.setHex(pal.hemiGround);
 
-    const base = new THREE.Mesh(new RoundedBoxGeometry(w + 0.7, 0.4, h + 0.7, 3, 0.12), new THREE.MeshStandardMaterial({ color: 0xe9dcc3, roughness: 0.9 }));
-    base.position.y = -0.2;
-    base.receiveShadow = true;
-    this.board.add(base);
+    const cells: Array<{ x: number; y: number }> = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (onBoard(level, x, y)) cells.push({ x, y });
+    const slab = (size: number, height: number, top: number, color: number): THREE.InstancedMesh => {
+      const m = new THREE.InstancedMesh(new RoundedBoxGeometry(size, height, size, 2, 0.12), new THREE.MeshStandardMaterial({ color, roughness: 0.9 }), cells.length);
+      const t = new THREE.Matrix4();
+      cells.forEach((c, i) => { const p = this.worldOf(level, c.x, c.y); m.setMatrixAt(i, t.makeTranslation(p.x, top - height / 2, p.z)); });
+      m.receiveShadow = true;
+      return m;
+    };
+    if (pal.shore !== undefined) this.board.add(slab(2.6, 0.3, -0.36, pal.shore));
+    this.board.add(slab(1.3, 0.42, 0, pal.rim));
 
     const canvas = document.createElement('canvas');
     canvas.width = w * 64;
     canvas.height = h * 64;
     const ctx = canvas.getContext('2d')!;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        ctx.fillStyle = (x + y) % 2 === 0 ? '#f8f1e1' : '#f1e8d2';
-        ctx.fillRect(x * 64, y * 64, 64, 64);
-        ctx.strokeStyle = 'rgba(160,140,100,.25)';
-        ctx.strokeRect(x * 64 + 0.5, y * 64 + 0.5, 63, 63);
-      }
+    for (const { x, y } of cells) {
+      ctx.fillStyle = (x + y) % 2 === 0 ? pal.tileA : pal.tileB;
+      ctx.fillRect(x * 64, y * 64, 64, 64);
+      ctx.strokeStyle = 'rgba(160,140,100,.25)';
+      ctx.strokeRect(x * 64 + 0.5, y * 64 + 0.5, 63, 63);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, roughness: 1 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: tex, roughness: 1, transparent: true, alphaTest: 0.5 }));
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0.001;
+    floor.position.y = 0.002;
     floor.receiveShadow = true;
     this.board.add(floor);
+
+    // props stay off the island and out of every lane an animal runs out along
+    const lanes = level.pieces.map((p) => ({ c: exitCell(level, p), v: directionVector(exitDirection(level, p)) }));
+    const near = (x: number, y: number): boolean => cells.some((c) => Math.max(Math.abs(c.x - x), Math.abs(c.y - y)) < 1.6);
+    const inLane = (x: number, y: number): boolean => lanes.some(({ c, v }) => {
+      const along = (x - c.x) * v.x + (y - c.y) * v.y;
+      const side = Math.abs((x - c.x) * v.y - (y - c.y) * v.x);
+      return along > -0.5 && along < 9 && side < 1.1;
+    });
+    this.board.add(buildScenery(theme, {
+      minX: -6, maxX: w + 5, minY: -8, maxY: h + 6,
+      blocked: (x, y) => near(x, y) || inLane(x, y),
+      world: (x, y) => this.worldOf(level, x, y),
+    }, createRng(seed * 7 + 3)));
 
     for (const o of level.obstacles ?? []) {
       const bush = new THREE.Mesh(new RoundedBoxGeometry(0.85, 0.75, 0.85, 3, 0.25), new THREE.MeshStandardMaterial({ color: 0x6fa05a, roughness: 0.9 }));
