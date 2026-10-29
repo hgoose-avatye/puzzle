@@ -143,6 +143,7 @@ function onTap(id: number): void {
   if (ev.type === 'exited' && view) {
     // The logic treats it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
     traffic.add(id, view.track, view.bodyLen, view.headStart);
+    fx.launch(view.headWorld());
     sound.play('move');
     pendingExits.add(id);
     view.runOut(() => { if (state && isCleared(state) && !anyRunning()) showEnd(true); }, () => {
@@ -150,6 +151,7 @@ function onTap(id: number): void {
       // the last animal's exit is covered by the clear sound
       if (!(state && isCleared(state) && pendingExits.size === 0)) sound.play('rescued');
       fx.burst(view.gateWorld(), view.color);
+      fx.sparkle(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
   } else if (ev.type === 'blocked' && view) {
@@ -240,6 +242,7 @@ $('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(leve
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 
 let dustT = 0;
+let printTick = 0;
 const clock = new THREE.Clock();
 (function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -254,7 +257,11 @@ const clock = new THREE.Clock();
   for (const v of views.values()) {
     if (v.running && !traffic.get(v.piece.id)) v.setRun(v.track.length, false); // stepped past the end this frame
     v.update(dt);
-    if (dust && v.running && !v.isWaiting) fx.dust(v.headWorld());
+    if (dust && v.running && !v.isWaiting) {
+      fx.dust(v.headWorld());
+      fx.streak(v.headWorld(), v.heading);
+      if (++printTick % 2 === 0) fx.print(v.tailWorld(), v.color);
+    }
   }
   fx.update(dt);
   stage.render();

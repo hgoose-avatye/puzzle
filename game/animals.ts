@@ -33,6 +33,8 @@ const ALERT_HOLD = 0.2;
 const ALERT_OUT = 0.15;
 const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
 const FLINCH_TIME = 0.12;
+const LAUNCH_TIME = 0.2;
+const GATE_TIME = 0.4;
 /** Corner radius (cells) of the rounded exit path. */
 const CORNER_RADIUS = 0.3;
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
@@ -139,6 +141,11 @@ export class PieceView {
   private anim: Anim = { kind: 'idle' };
   private shakeT = 0;
   private flinchT = 0;
+  /** take-off squash and stretch */
+  private launchT = 0;
+  /** gate bounce when the head passes it */
+  private gateT = 0;
+  private gate!: THREE.Object3D;
   private alertT = 0;
   private alert: THREE.Sprite | null = null;
   private dots: THREE.Sprite | null = null;
@@ -185,6 +192,7 @@ export class PieceView {
     this.buildChevrons(color);
     this.group.add(this.chevrons);
     const gate = this.buildGate(color);
+    this.gate = gate;
     this.markers.push(gate);
     this.group.add(gate);
     this.place(this.headStart);
@@ -305,6 +313,7 @@ export class PieceView {
     this.pulseT = 0;
     for (const seg of this.segments) seg.scale.setScalar(1);
     this.anim = { kind: 'run', s: this.headStart, onDone, onExit };
+    this.launchT = LAUNCH_TIME;
   }
 
   /** Running position, driven by the traffic system (see src/game/traffic.ts). */
@@ -361,6 +370,22 @@ export class PieceView {
     (a.material as THREE.SpriteMaterial).opacity = Math.max(0, Math.min(1, k));
   }
 
+  /** Squash down, then stretch forward, then settle: the "here I go" before running. */
+  private animateLaunch(dt: number): void {
+    if (this.launchT <= 0) return;
+    this.launchT = Math.max(0, this.launchT - dt);
+    const t = 1 - this.launchT / LAUNCH_TIME;
+    const y = this.launchT === 0 ? 1 : t < 0.4 ? 1 - 0.2 * Math.sin((t / 0.4) * Math.PI) : 1 + 0.12 * Math.sin(((t - 0.4) / 0.6) * Math.PI);
+    const xz = 1 / Math.sqrt(y);
+    for (const seg of this.segments) seg.scale.set(xz, y, xz);
+  }
+
+  /** Heading of the head block (rotation about y), for effects. */
+  get heading(): number { return this.segments[0].rotation.y; }
+
+  /** World position of the tail block (for footprints). */
+  tailWorld(): THREE.Vector3 { return this.segments[this.segments.length - 1].position; }
+
   /**
    * Short flinch; true while it is playing. Standing animals jiggle sideways; a running one only hops and nods, so it
    * never shifts toward the animal it is waiting behind.
@@ -414,10 +439,18 @@ export class PieceView {
       this.flinch(dt, false);
       this.updateAlert();
       this.updateDots();
+      this.animateLaunch(dt);
       if (this.anim.onExit && this.anim.s >= this.track.length - (this.bodyLen + 2)) {
         const exit = this.anim.onExit;
         this.anim.onExit = undefined;
+        this.gateT = GATE_TIME;
         exit();
+      }
+      if (this.gateT > 0) {
+        this.gateT = Math.max(0, this.gateT - dt);
+        const t = 1 - this.gateT / GATE_TIME;
+        const k = 1 + Math.sin(t * Math.PI * 2) * 0.22 * (1 - t);
+        this.gate.scale.set(k, 2 - k, k);
       }
       if (this.anim.s >= this.track.length) {
         const done = this.anim.onDone;

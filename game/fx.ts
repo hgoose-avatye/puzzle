@@ -7,6 +7,8 @@ import * as THREE from 'three';
 interface P { m: THREE.Mesh; v: THREE.Vector3; spin: THREE.Vector3; life: number; max: number; g: number; shrink: boolean }
 
 const geo = new THREE.BoxGeometry(1, 1, 1);
+/** flat round print for footsteps */
+const disc = new THREE.CylinderGeometry(0.5, 0.5, 0.02, 12);
 const mats = new Map<number, THREE.MeshBasicMaterial>();
 const mat = (c: number): THREE.MeshBasicMaterial => {
   let m = mats.get(c);
@@ -19,18 +21,60 @@ export class Fx {
   private readonly parts: P[] = [];
   constructor(private readonly scene: THREE.Scene) {}
 
-  private spawn(pos: THREE.Vector3, color: number, size: number, v: THREE.Vector3, life: number, g: number, shrink = true): void {
+  private spawn(pos: THREE.Vector3, color: number, size: number, v: THREE.Vector3, life: number, g: number, shrink = true): THREE.Mesh {
     const m = new THREE.Mesh(geo, mat(color));
     m.position.copy(pos);
     m.scale.setScalar(size);
     m.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
     this.scene.add(m);
     this.parts.push({ m, v, spin: new THREE.Vector3(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 8 - 4), life, max: life, g, shrink });
+    return m;
+  }
+
+  /** A particle that keeps its orientation (prints, streaks). */
+  private still(m: THREE.Mesh, life: number, v = new THREE.Vector3()): void {
+    this.scene.add(m);
+    this.parts.push({ m, v, spin: new THREE.Vector3(), life, max: life, g: 0, shrink: true });
+  }
+
+  /** Take-off: a ring of dust puffs around the feet. */
+  launch(pos: THREE.Vector3): void {
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      this.spawn(new THREE.Vector3(pos.x, 0.12, pos.z), 0xf4efe6, 0.16 + Math.random() * 0.08, new THREE.Vector3(Math.cos(a) * 1.8, 0.6, Math.sin(a) * 1.8), 0.4, 1.5);
+    }
+  }
+
+  /** A soft round print on the floor in the animal's colour, shrinking away. */
+  print(pos: THREE.Vector3, color: number): void {
+    const m = new THREE.Mesh(disc, mat(new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.45).getHex()));
+    m.position.set(pos.x, 0.012, pos.z);
+    m.scale.set(0.32, 1, 0.32);
+    this.still(m, 0.9);
+  }
+
+  /** Short white wind line behind a running animal; `angle` is its heading (rotation.y). */
+  streak(pos: THREE.Vector3, angle: number): void {
+    const back = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle)).multiplyScalar(-0.55);
+    const side = new THREE.Vector3(Math.cos(angle), 0, -Math.sin(angle)).multiplyScalar((Math.random() - 0.5) * 0.7);
+    const m = new THREE.Mesh(geo, mat(0xffffff));
+    m.position.copy(pos).add(back).add(side).setY(0.35 + Math.random() * 0.45);
+    m.scale.set(0.04, 0.04, 0.55);
+    m.rotation.y = angle;
+    this.still(m, 0.22);
+  }
+
+  /** Sparkles where an animal passes its gate. */
+  sparkle(pos: THREE.Vector3, color: number): void {
+    for (let i = 0; i < 8; i++) {
+      const a = Math.random() * Math.PI * 2;
+      this.spawn(new THREE.Vector3(pos.x, 0.9, pos.z), i % 2 ? 0xfff1a8 : color, 0.1, new THREE.Vector3(Math.cos(a) * 1.2, 1.4 + Math.random(), Math.sin(a) * 1.2), 0.5, 3);
+    }
   }
 
   /** A little dust puff at an animal's feet while it runs. */
   dust(pos: THREE.Vector3): void {
-    this.spawn(new THREE.Vector3(pos.x, 0.1, pos.z), 0xf4efe6, 0.14 + Math.random() * 0.08, new THREE.Vector3((Math.random() - 0.5) * 0.6, 0.5, (Math.random() - 0.5) * 0.6), 0.45, -0.5);
+    for (let i = 0; i < 2; i++) this.spawn(new THREE.Vector3(pos.x, 0.1, pos.z), 0xf4efe6, 0.17 + Math.random() * 0.1, new THREE.Vector3((Math.random() - 0.5) * 0.9, 0.6, (Math.random() - 0.5) * 0.9), 0.5, -0.5);
   }
 
   /** Rescue burst at the gate, in the animal's own color. */
