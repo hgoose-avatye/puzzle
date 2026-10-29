@@ -170,25 +170,25 @@
    "chapter": 1,
    "role": "ordinary",
    "hearts": null,
-   "pieces": 16,
+   "pieces": 10,
    "rounds": 5,
-   "initialFree": 0.5,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
      "failRate": 0,
-     "blockedPerRun": 0.625,
-     "effort": 1.8559375
+     "blockedPerRun": 0.715,
+     "effort": 2.07
     },
     "average": {
      "failRate": 0,
-     "blockedPerRun": 1.32,
-     "effort": 1.8925
+     "blockedPerRun": 1.5,
+     "effort": 2.0795
     },
     "hasty": {
      "failRate": 0,
-     "blockedPerRun": 2.78,
-     "effort": 1.9184375
+     "blockedPerRun": 3.225,
+     "effort": 2.1725
     }
    }
   },
@@ -196,26 +196,26 @@
    "n": 7,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 17,
-   "rounds": 7,
-   "initialFree": 0.35,
+   "hearts": 3,
+   "pieces": 10,
+   "rounds": 4,
+   "initialFree": 0.5,
    "arrows": 1,
    "sims": {
     "careful": {
      "failRate": 0.005,
-     "blockedPerRun": 0.94,
-     "effort": 2.3336283185840707
+     "blockedPerRun": 0.34,
+     "effort": 1.6616616616616617
     },
     "average": {
-     "failRate": 0.095,
-     "blockedPerRun": 1.98,
-     "effort": 2.407169117647059
+     "failRate": 0.06,
+     "blockedPerRun": 0.83,
+     "effort": 1.6758409785932722
     },
     "hasty": {
-     "failRate": 0.45,
-     "blockedPerRun": 3.735,
-     "effort": 2.541446872645064
+     "failRate": 0.285,
+     "blockedPerRun": 1.545,
+     "effort": 1.7527504342790967
     }
    }
   },
@@ -223,26 +223,26 @@
    "n": 8,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 18,
-   "rounds": 8,
-   "initialFree": 0.39,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 11,
+   "rounds": 5,
+   "initialFree": 0.45,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0,
-     "blockedPerRun": 1.24,
-     "effort": 2.749722222222222
+     "failRate": 0.03,
+     "blockedPerRun": 0.565,
+     "effort": 1.967801287948482
     },
     "average": {
-     "failRate": 0.195,
-     "blockedPerRun": 2.815,
-     "effort": 2.7655688622754493
+     "failRate": 0.095,
+     "blockedPerRun": 1.08,
+     "effort": 2.0171021377672207
     },
     "hasty": {
-     "failRate": 0.67,
-     "blockedPerRun": 4.35,
-     "effort": 2.9850570192685804
+     "failRate": 0.385,
+     "blockedPerRun": 1.865,
+     "effort": 2.005515719801434
     }
    }
   },
@@ -250,26 +250,26 @@
    "n": 9,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 19,
-   "rounds": 6,
-   "initialFree": 0.37,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 11,
+   "rounds": 5,
+   "initialFree": 0.36,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.01,
-     "blockedPerRun": 1.15,
-     "effort": 2.257052465067229
+     "failRate": 0.005,
+     "blockedPerRun": 0.41,
+     "effort": 1.9744990892531875
     },
     "average": {
-     "failRate": 0.12,
-     "blockedPerRun": 2.39,
-     "effort": 2.3110868973031873
+     "failRate": 0.085,
+     "blockedPerRun": 0.92,
+     "effort": 2.0520882214922573
     },
     "hasty": {
-     "failRate": 0.655,
-     "blockedPerRun": 4.24,
-     "effort": 2.4555555555555557
+     "failRate": 0.4,
+     "blockedPerRun": 1.82,
+     "effort": 2.116504854368932
     }
    }
   },
@@ -277,26 +277,26 @@
    "n": 10,
    "chapter": 1,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 11,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
    "initialFree": 0.31,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.13,
-     "blockedPerRun": 2.57,
-     "effort": 3.382555780933063
+     "failRate": 0.075,
+     "blockedPerRun": 0.865,
+     "effort": 2.4342190537913155
     },
     "average": {
-     "failRate": 0.61,
-     "blockedPerRun": 4.245,
-     "effort": 3.5366255144032923
+     "failRate": 0.325,
+     "blockedPerRun": 1.675,
+     "effort": 2.525558500567967
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 4.965,
-     "effort": 3.737878787878788
+     "failRate": 0.735,
+     "blockedPerRun": 2.605,
+     "effort": 2.6653431650595576
     }
    }
   },
@@ -304,26 +304,26 @@
    "n": 11,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 21,
-   "rounds": 7,
-   "initialFree": 0.43,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.38,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 1.07,
-     "effort": 2.4260953298026
+     "failRate": 0.04,
+     "blockedPerRun": 0.63,
+     "effort": 1.9611046285492026
     },
     "average": {
-     "failRate": 0.255,
-     "blockedPerRun": 2.255,
-     "effort": 2.445792462570986
+     "failRate": 0.145,
+     "blockedPerRun": 1.175,
+     "effort": 1.9491315136476426
     },
     "hasty": {
-     "failRate": 0.775,
-     "blockedPerRun": 3.565,
-     "effort": 2.601065719360568
+     "failRate": 0.47,
+     "blockedPerRun": 2.07,
+     "effort": 2.0269595606590114
     }
    }
   },
@@ -331,26 +331,26 @@
    "n": 12,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.45,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.46,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 1.175,
-     "effort": 2.604797391709362
+     "failRate": 0.02,
+     "blockedPerRun": 0.5,
+     "effort": 2.0707345511076563
     },
     "average": {
-     "failRate": 0.325,
-     "blockedPerRun": 2.49,
-     "effort": 2.661665804449043
+     "failRate": 0.085,
+     "blockedPerRun": 0.93,
+     "effort": 2.1299117882919005
     },
     "hasty": {
-     "failRate": 0.805,
-     "blockedPerRun": 3.645,
-     "effort": 2.7017345399698343
+     "failRate": 0.42,
+     "blockedPerRun": 1.96,
+     "effort": 2.2616593028964163
     }
    }
   },
@@ -358,26 +358,26 @@
    "n": 13,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
-   "initialFree": 0.39,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.5,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.075,
-     "blockedPerRun": 1.51,
-     "effort": 2.4122358175750835
+     "failRate": 0.04,
+     "blockedPerRun": 0.6,
+     "effort": 1.822278298485941
     },
     "average": {
-     "failRate": 0.335,
-     "blockedPerRun": 2.62,
-     "effort": 2.4699219733199094
+     "failRate": 0.225,
+     "blockedPerRun": 1.395,
+     "effort": 1.8416149068322982
     },
     "hasty": {
-     "failRate": 0.9,
-     "blockedPerRun": 3.84,
-     "effort": 2.6792062835882597
+     "failRate": 0.52,
+     "blockedPerRun": 2.145,
+     "effort": 1.9049135577797998
     }
    }
   },
@@ -385,26 +385,26 @@
    "n": 14,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.5,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.04,
-     "blockedPerRun": 1.33,
-     "effort": 2.1845475540625654
+     "blockedPerRun": 0.74,
+     "effort": 1.8736383442265796
     },
     "average": {
-     "failRate": 0.355,
-     "blockedPerRun": 2.61,
-     "effort": 2.244053064958829
+     "failRate": 0.2,
+     "blockedPerRun": 1.455,
+     "effort": 1.8981409759876064
     },
     "hasty": {
-     "failRate": 0.865,
-     "blockedPerRun": 3.77,
-     "effort": 2.261769115442279
+     "failRate": 0.57,
+     "blockedPerRun": 2.24,
+     "effort": 2.0163934426229506
     }
    }
   },
@@ -439,26 +439,26 @@
    "n": 16,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.41,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 6,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.04,
-     "blockedPerRun": 1.145,
-     "effort": 2.5696114708603144
+     "blockedPerRun": 0.765,
+     "effort": 2.216194968553459
     },
     "average": {
-     "failRate": 0.395,
-     "blockedPerRun": 2.74,
-     "effort": 2.68226872246696
+     "failRate": 0.255,
+     "blockedPerRun": 1.585,
+     "effort": 2.284967320261438
     },
     "hasty": {
-     "failRate": 0.825,
-     "blockedPerRun": 3.71,
-     "effort": 2.8077084206116463
+     "failRate": 0.61,
+     "blockedPerRun": 2.37,
+     "effort": 2.334696261682243
     }
    }
   },
@@ -466,26 +466,26 @@
    "n": 17,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.36,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.025,
-     "blockedPerRun": 1.44,
-     "effort": 2.4473985789594317
+     "blockedPerRun": 0.625,
+     "effort": 2.2760093167701863
     },
     "average": {
-     "failRate": 0.395,
-     "blockedPerRun": 2.75,
-     "effort": 2.574479444741057
+     "failRate": 0.19,
+     "blockedPerRun": 1.215,
+     "effort": 2.314917127071823
     },
     "hasty": {
-     "failRate": 0.855,
-     "blockedPerRun": 3.755,
-     "effort": 2.603341103341103
+     "failRate": 0.615,
+     "blockedPerRun": 2.28,
+     "effort": 2.4351441241685143
     }
    }
   },
@@ -493,26 +493,26 @@
    "n": 18,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 9,
-   "initialFree": 0.41,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 7,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.095,
-     "blockedPerRun": 1.655,
-     "effort": 2.7334900117508814
+     "failRate": 0.07,
+     "blockedPerRun": 0.8,
+     "effort": 2.5430622009569377
     },
     "average": {
-     "failRate": 0.435,
-     "blockedPerRun": 2.835,
-     "effort": 2.7702221003564573
+     "failRate": 0.295,
+     "blockedPerRun": 1.665,
+     "effort": 2.8103055175558596
     },
     "hasty": {
-     "failRate": 0.92,
-     "blockedPerRun": 3.86,
-     "effort": 2.7705323978539003
+     "failRate": 0.65,
+     "blockedPerRun": 2.4,
+     "effort": 2.8659217877094973
     }
    }
   },
@@ -520,26 +520,26 @@
    "n": 19,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 9,
-   "initialFree": 0.3,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.185,
-     "blockedPerRun": 1.795,
-     "effort": 2.90915559772296
+     "failRate": 0.07,
+     "blockedPerRun": 0.88,
+     "effort": 2.271460014673514
     },
     "average": {
-     "failRate": 0.54,
-     "blockedPerRun": 3.11,
-     "effort": 2.966834468463133
+     "failRate": 0.3,
+     "blockedPerRun": 1.63,
+     "effort": 2.2893982808022924
     },
     "hasty": {
-     "failRate": 0.93,
-     "blockedPerRun": 3.9,
-     "effort": 3.171356783919598
+     "failRate": 0.735,
+     "blockedPerRun": 2.525,
+     "effort": 2.51473136915078
     }
    }
   },
@@ -547,26 +547,26 @@
    "n": 20,
    "chapter": 1,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 10,
-   "initialFree": 0.27,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 7,
+   "initialFree": 0.25,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.155,
-     "blockedPerRun": 2.455,
-     "effort": 3.3432744978697504
+     "failRate": 0.12,
+     "blockedPerRun": 1.07,
+     "effort": 2.5713337757133377
     },
     "average": {
-     "failRate": 0.63,
-     "blockedPerRun": 4.37,
-     "effort": 3.6585169263836645
+     "failRate": 0.4,
+     "blockedPerRun": 1.965,
+     "effort": 2.67587327376117
     },
     "hasty": {
-     "failRate": 0.98,
-     "blockedPerRun": 4.97,
-     "effort": 3.6518177163338454
+     "failRate": 0.775,
+     "blockedPerRun": 2.665,
+     "effort": 2.9481967213114753
     }
    }
   },
@@ -574,26 +574,26 @@
    "n": 21,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
-   "initialFree": 0.43,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.13,
-     "blockedPerRun": 1.8,
-     "effort": 2.87186565447435
+     "failRate": 0.045,
+     "blockedPerRun": 0.785,
+     "effort": 2.38259919912632
     },
     "average": {
-     "failRate": 0.58,
-     "blockedPerRun": 3.1,
-     "effort": 2.9729970326409494
+     "failRate": 0.275,
+     "blockedPerRun": 1.615,
+     "effort": 2.4616919393455707
     },
     "hasty": {
-     "failRate": 0.96,
-     "blockedPerRun": 3.935,
-     "effort": 3.1114519427402865
+     "failRate": 0.73,
+     "blockedPerRun": 2.545,
+     "effort": 2.5669205658324263
     }
    }
   },
@@ -601,26 +601,26 @@
    "n": 22,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 10,
-   "initialFree": 0.42,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.06,
-     "blockedPerRun": 1.37,
-     "effort": 2.9203821656050954
+     "failRate": 0.075,
+     "blockedPerRun": 0.88,
+     "effort": 2.4780847145488027
     },
     "average": {
-     "failRate": 0.475,
-     "blockedPerRun": 2.915,
-     "effort": 3.077537351880474
+     "failRate": 0.345,
+     "blockedPerRun": 1.805,
+     "effort": 2.5494836488812394
     },
     "hasty": {
-     "failRate": 0.93,
-     "blockedPerRun": 3.86,
-     "effort": 2.9151172190784154
+     "failRate": 0.755,
+     "blockedPerRun": 2.64,
+     "effort": 2.7066666666666666
     }
    }
   },
@@ -628,26 +628,26 @@
    "n": 23,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.42,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 4,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.19,
-     "blockedPerRun": 2.04,
-     "effort": 2.8449820788530467
+     "failRate": 0.07,
+     "blockedPerRun": 0.97,
+     "effort": 2.0606284658040663
     },
     "average": {
-     "failRate": 0.695,
-     "blockedPerRun": 3.47,
-     "effort": 3.0843920145190564
+     "failRate": 0.365,
+     "blockedPerRun": 1.825,
+     "effort": 2.11130359462971
     },
     "hasty": {
-     "failRate": 0.96,
-     "blockedPerRun": 3.955,
-     "effort": 3.074144486692015
+     "failRate": 0.71,
+     "blockedPerRun": 2.52,
+     "effort": 2.227301189730745
     }
    }
   },
@@ -655,26 +655,26 @@
    "n": 24,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 10,
-   "initialFree": 0.33,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.19,
-     "blockedPerRun": 1.985,
-     "effort": 2.838572070049394
+     "failRate": 0.06,
+     "blockedPerRun": 0.75,
+     "effort": 2.2815818381545223
     },
     "average": {
-     "failRate": 0.58,
-     "blockedPerRun": 3.19,
-     "effort": 2.955606803113289
+     "failRate": 0.285,
+     "blockedPerRun": 1.58,
+     "effort": 2.358890701468189
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 3.965,
-     "effort": 3.09688013136289
+     "failRate": 0.68,
+     "blockedPerRun": 2.485,
+     "effort": 2.5447010065127293
     }
    }
   },
@@ -709,26 +709,26 @@
    "n": 26,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 8,
-   "initialFree": 0.4,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 6,
+   "initialFree": 0.27,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.145,
-     "blockedPerRun": 1.875,
-     "effort": 2.4346289752650176
+     "failRate": 0.075,
+     "blockedPerRun": 0.92,
+     "effort": 2.338552540013918
     },
     "average": {
-     "failRate": 0.495,
-     "blockedPerRun": 2.99,
-     "effort": 2.4540889526542324
+     "failRate": 0.325,
+     "blockedPerRun": 1.66,
+     "effort": 2.406647517439475
     },
     "hasty": {
-     "failRate": 0.91,
-     "blockedPerRun": 3.865,
-     "effort": 2.5130299494360173
+     "failRate": 0.785,
+     "blockedPerRun": 2.665,
+     "effort": 2.80542043085476
     }
    }
   },
@@ -736,26 +736,26 @@
    "n": 27,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 7,
-   "initialFree": 0.32,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 5,
+   "initialFree": 0.4,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.21,
-     "blockedPerRun": 2.17,
-     "effort": 2.707833296967052
+     "failRate": 0.045,
+     "blockedPerRun": 0.795,
+     "effort": 2.0396610169491525
     },
     "average": {
-     "failRate": 0.665,
-     "blockedPerRun": 3.395,
-     "effort": 2.882301401869159
+     "failRate": 0.34,
+     "blockedPerRun": 1.78,
+     "effort": 2.1545741324921135
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 3.97,
-     "effort": 2.9923857868020303
+     "failRate": 0.765,
+     "blockedPerRun": 2.635,
+     "effort": 2.356060606060606
     }
    }
   },
@@ -763,26 +763,26 @@
    "n": 28,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 9,
-   "initialFree": 0.42,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 5,
+   "initialFree": 0.38,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.205,
-     "blockedPerRun": 2.725,
-     "effort": 2.6042988741044013
+     "failRate": 0.105,
+     "blockedPerRun": 1.11,
+     "effort": 1.990419557317476
     },
     "average": {
-     "failRate": 0.7,
-     "blockedPerRun": 4.415,
-     "effort": 2.692760296751087
+     "failRate": 0.435,
+     "blockedPerRun": 1.925,
+     "effort": 2.1180073499387504
     },
     "hasty": {
-     "failRate": 0.97,
-     "blockedPerRun": 4.955,
-     "effort": 2.5963923337091317
+     "failRate": 0.81,
+     "blockedPerRun": 2.705,
+     "effort": 2.2713920817369093
     }
    }
   },
@@ -790,26 +790,26 @@
    "n": 29,
    "chapter": 1,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 9,
-   "initialFree": 0.35,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 5,
+   "initialFree": 0.44,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.165,
-     "blockedPerRun": 2.555,
-     "effort": 3.0072639225181597
+     "failRate": 0.13,
+     "blockedPerRun": 1.035,
+     "effort": 2.0552813425468903
     },
     "average": {
-     "failRate": 0.67,
-     "blockedPerRun": 4.35,
-     "effort": 3.1743022643496577
+     "failRate": 0.375,
+     "blockedPerRun": 1.835,
+     "effort": 2.1425848265345024
     },
     "hasty": {
-     "failRate": 0.97,
-     "blockedPerRun": 4.94,
-     "effort": 3.2541087231352717
+     "failRate": 0.76,
+     "blockedPerRun": 2.665,
+     "effort": 2.2395240558717022
     }
    }
   },
@@ -817,26 +817,26 @@
    "n": 30,
    "chapter": 1,
    "role": "finale",
-   "hearts": 5,
-   "pieces": 28,
-   "rounds": 11,
+   "hearts": 3,
+   "pieces": 17,
+   "rounds": 8,
    "initialFree": 0.29,
-   "arrows": 6,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.37,
-     "blockedPerRun": 3.52,
-     "effort": 3.651664611590629
+     "failRate": 0.225,
+     "blockedPerRun": 1.455,
+     "effort": 2.688165108029668
     },
     "average": {
-     "failRate": 0.875,
-     "blockedPerRun": 4.76,
-     "effort": 4.010814058275758
+     "failRate": 0.585,
+     "blockedPerRun": 2.325,
+     "effort": 2.7903357903357904
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 5,
-     "effort": 3.9047136340598074
+     "failRate": 0.935,
+     "blockedPerRun": 2.895,
+     "effort": 3.0721048798252
     }
    }
   },
@@ -846,24 +846,24 @@
    "role": "intro",
    "hearts": null,
    "pieces": 8,
-   "rounds": 3,
-   "initialFree": 0.5,
+   "rounds": 4,
+   "initialFree": 0.38,
    "arrows": 0,
    "sims": {
     "careful": {
      "failRate": 0,
-     "blockedPerRun": 0.13,
-     "effort": 1.554375
+     "blockedPerRun": 0.205,
+     "effort": 1.88125
     },
     "average": {
      "failRate": 0,
-     "blockedPerRun": 0.325,
-     "effort": 1.53875
+     "blockedPerRun": 0.525,
+     "effort": 1.8625
     },
     "hasty": {
      "failRate": 0,
-     "blockedPerRun": 0.73,
-     "effort": 1.598125
+     "blockedPerRun": 1.045,
+     "effort": 1.85125
     }
    }
   },
@@ -873,24 +873,24 @@
    "role": "intro",
    "hearts": null,
    "pieces": 9,
-   "rounds": 4,
-   "initialFree": 0.56,
+   "rounds": 5,
+   "initialFree": 0.33,
    "arrows": 0,
    "sims": {
     "careful": {
      "failRate": 0,
-     "blockedPerRun": 0.14,
-     "effort": 1.7194444444444446
+     "blockedPerRun": 0.395,
+     "effort": 2.1633333333333336
     },
     "average": {
      "failRate": 0,
-     "blockedPerRun": 0.355,
-     "effort": 1.691111111111111
+     "blockedPerRun": 0.795,
+     "effort": 2.23
     },
     "hasty": {
      "failRate": 0,
-     "blockedPerRun": 0.9,
-     "effort": 1.7355555555555555
+     "blockedPerRun": 1.765,
+     "effort": 2.218888888888889
     }
    }
   },
@@ -900,24 +900,24 @@
    "role": "intro",
    "hearts": null,
    "pieces": 10,
-   "rounds": 4,
+   "rounds": 2,
    "initialFree": 0.5,
    "arrows": 0,
    "sims": {
     "careful": {
      "failRate": 0,
-     "blockedPerRun": 0.15,
-     "effort": 1.704
+     "blockedPerRun": 0.12,
+     "effort": 1.3925
     },
     "average": {
      "failRate": 0,
-     "blockedPerRun": 0.37,
-     "effort": 1.746
+     "blockedPerRun": 0.205,
+     "effort": 1.3945
     },
     "hasty": {
      "failRate": 0,
-     "blockedPerRun": 0.855,
-     "effort": 1.757
+     "blockedPerRun": 0.455,
+     "effort": 1.396
     }
    }
   },
@@ -927,24 +927,24 @@
    "role": "intro",
    "hearts": 3,
    "pieces": 11,
-   "rounds": 3,
-   "initialFree": 0.55,
+   "rounds": 5,
+   "initialFree": 0.36,
    "arrows": 0,
    "sims": {
     "careful": {
-     "failRate": 0,
-     "blockedPerRun": 0.21,
-     "effort": 1.4918181818181817
+     "failRate": 0.015,
+     "blockedPerRun": 0.315,
+     "effort": 1.9606227106227105
     },
     "average": {
-     "failRate": 0.005,
-     "blockedPerRun": 0.34,
-     "effort": 1.5043319653442773
+     "failRate": 0.05,
+     "blockedPerRun": 0.805,
+     "effort": 1.944003733084461
     },
     "hasty": {
-     "failRate": 0.07,
-     "blockedPerRun": 0.875,
-     "effort": 1.518987341772152
+     "failRate": 0.305,
+     "blockedPerRun": 1.665,
+     "effort": 2.0630583289542828
     }
    }
   },
@@ -980,25 +980,25 @@
    "chapter": 2,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 16,
-   "rounds": 6,
-   "initialFree": 0.44,
+   "pieces": 10,
+   "rounds": 4,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 0.71,
-     "effort": 2.0846544071020925
+     "failRate": 0.015,
+     "blockedPerRun": 0.385,
+     "effort": 1.744712990936556
     },
     "average": {
-     "failRate": 0.225,
-     "blockedPerRun": 1.535,
-     "effort": 2.1254214430209037
+     "failRate": 0.055,
+     "blockedPerRun": 0.745,
+     "effort": 1.742988271290158
     },
     "hasty": {
-     "failRate": 0.68,
-     "blockedPerRun": 2.465,
-     "effort": 2.163620539599652
+     "failRate": 0.24,
+     "blockedPerRun": 1.57,
+     "effort": 1.8953356086461888
     }
    }
   },
@@ -1007,25 +1007,25 @@
    "chapter": 2,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 17,
-   "rounds": 5,
-   "initialFree": 0.41,
+   "pieces": 10,
+   "rounds": 4,
+   "initialFree": 0.5,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 0.75,
-     "effort": 1.9499851146174456
+     "failRate": 0.025,
+     "blockedPerRun": 0.525,
+     "effort": 1.787556904400607
     },
     "average": {
-     "failRate": 0.28,
-     "blockedPerRun": 1.62,
-     "effort": 2.032300163132137
+     "failRate": 0.11,
+     "blockedPerRun": 1.105,
+     "effort": 1.7935755660874144
     },
     "hasty": {
-     "failRate": 0.605,
-     "blockedPerRun": 2.33,
-     "effort": 2.11088295687885
+     "failRate": 0.43,
+     "blockedPerRun": 1.91,
+     "effort": 1.9069031032298924
     }
    }
   },
@@ -1034,25 +1034,25 @@
    "chapter": 2,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 18,
+   "pieces": 11,
    "rounds": 5,
-   "initialFree": 0.5,
-   "arrows": 2,
+   "initialFree": 0.36,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 0.76,
-     "effort": 2.0615645297938436
+     "failRate": 0.01,
+     "blockedPerRun": 0.355,
+     "effort": 2.164539653600729
     },
     "average": {
-     "failRate": 0.315,
-     "blockedPerRun": 1.695,
-     "effort": 2.1086755171349183
+     "failRate": 0.11,
+     "blockedPerRun": 1.005,
+     "effort": 2.287783679381941
     },
     "hasty": {
-     "failRate": 0.735,
-     "blockedPerRun": 2.595,
-     "effort": 2.1583368332633346
+     "failRate": 0.415,
+     "blockedPerRun": 1.905,
+     "effort": 2.4155141310883943
     }
    }
   },
@@ -1061,25 +1061,25 @@
    "chapter": 2,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 19,
-   "rounds": 8,
-   "initialFree": 0.42,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 5,
+   "initialFree": 0.45,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.03,
-     "blockedPerRun": 0.785,
-     "effort": 2.4682158119658117
+     "failRate": 0.035,
+     "blockedPerRun": 0.525,
+     "effort": 1.9144434222631095
     },
     "average": {
-     "failRate": 0.32,
-     "blockedPerRun": 1.67,
-     "effort": 2.4554033485540336
+     "failRate": 0.12,
+     "blockedPerRun": 1.105,
+     "effort": 1.957874581139301
     },
     "hasty": {
-     "failRate": 0.775,
-     "blockedPerRun": 2.71,
-     "effort": 2.5489759572573463
+     "failRate": 0.42,
+     "blockedPerRun": 1.99,
+     "effort": 2.0614525139664805
     }
    }
   },
@@ -1087,26 +1087,26 @@
    "n": 40,
    "chapter": 2,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 10,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
    "initialFree": 0.31,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.145,
-     "blockedPerRun": 2.565,
-     "effort": 3.0723327305605785
+     "failRate": 0.045,
+     "blockedPerRun": 0.81,
+     "effort": 2.4128908742820676
     },
     "average": {
-     "failRate": 0.66,
-     "blockedPerRun": 4.33,
-     "effort": 3.1886697015680325
+     "failRate": 0.3,
+     "blockedPerRun": 1.67,
+     "effort": 2.551186943620178
     },
     "hasty": {
-     "failRate": 0.955,
-     "blockedPerRun": 4.92,
-     "effort": 3.1667322060558396
+     "failRate": 0.73,
+     "blockedPerRun": 2.575,
+     "effort": 2.819052987598647
     }
    }
   },
@@ -1114,26 +1114,26 @@
    "n": 41,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 21,
-   "rounds": 7,
-   "initialFree": 0.38,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.46,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.03,
-     "blockedPerRun": 1.09,
-     "effort": 2.1712361712361714
+     "failRate": 0.015,
+     "blockedPerRun": 0.56,
+     "effort": 1.9621475473155658
     },
     "average": {
-     "failRate": 0.275,
-     "blockedPerRun": 2.35,
-     "effort": 2.3256795988387435
+     "failRate": 0.135,
+     "blockedPerRun": 1.18,
+     "effort": 2.019381443298969
     },
     "hasty": {
-     "failRate": 0.695,
-     "blockedPerRun": 3.505,
-     "effort": 2.38051857042747
+     "failRate": 0.505,
+     "blockedPerRun": 2.125,
+     "effort": 2.0837589376915218
     }
    }
   },
@@ -1141,26 +1141,26 @@
    "n": 42,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.41,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.46,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 1.35,
-     "effort": 2.3706180811808117
+     "failRate": 0.025,
+     "blockedPerRun": 0.59,
+     "effort": 1.9163439194422929
     },
     "average": {
-     "failRate": 0.295,
-     "blockedPerRun": 2.495,
-     "effort": 2.4227249618708693
+     "failRate": 0.19,
+     "blockedPerRun": 1.27,
+     "effort": 1.899415692821369
     },
     "hasty": {
-     "failRate": 0.82,
-     "blockedPerRun": 3.715,
-     "effort": 2.562783661119516
+     "failRate": 0.505,
+     "blockedPerRun": 2.085,
+     "effort": 1.989648033126294
     }
    }
   },
@@ -1168,26 +1168,26 @@
    "n": 43,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 8,
-   "initialFree": 0.52,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 1.45,
-     "effort": 2.1941747572815533
+     "failRate": 0.025,
+     "blockedPerRun": 0.605,
+     "effort": 2.2348703170028816
     },
     "average": {
-     "failRate": 0.29,
-     "blockedPerRun": 2.46,
-     "effort": 2.136396439740197
+     "failRate": 0.2,
+     "blockedPerRun": 1.34,
+     "effort": 2.2342834830144476
     },
     "hasty": {
-     "failRate": 0.855,
-     "blockedPerRun": 3.755,
-     "effort": 2.223961661341853
+     "failRate": 0.585,
+     "blockedPerRun": 2.34,
+     "effort": 2.4090682610861984
     }
    }
   },
@@ -1195,26 +1195,26 @@
    "n": 44,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.42,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.5,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.11,
-     "blockedPerRun": 1.65,
-     "effort": 2.5822375511963784
+     "failRate": 0.035,
+     "blockedPerRun": 0.635,
+     "effort": 1.988460151460512
     },
     "average": {
-     "failRate": 0.4,
-     "blockedPerRun": 2.765,
-     "effort": 2.539119804400978
+     "failRate": 0.16,
+     "blockedPerRun": 1.285,
+     "effort": 1.9766104294478528
     },
     "hasty": {
-     "failRate": 0.92,
-     "blockedPerRun": 3.85,
-     "effort": 2.6788016685627607
+     "failRate": 0.53,
+     "blockedPerRun": 2.16,
+     "effort": 2.0641562064156207
     }
    }
   },
@@ -1249,26 +1249,26 @@
    "n": 46,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.06,
-     "blockedPerRun": 1.34,
-     "effort": 2.6162061759925703
+     "failRate": 0.05,
+     "blockedPerRun": 0.86,
+     "effort": 2.4372037914691944
     },
     "average": {
-     "failRate": 0.375,
-     "blockedPerRun": 2.67,
-     "effort": 2.662516914749662
+     "failRate": 0.32,
+     "blockedPerRun": 1.65,
+     "effort": 2.523452157598499
     },
     "hasty": {
-     "failRate": 0.875,
-     "blockedPerRun": 3.785,
-     "effort": 2.8881520778072503
+     "failRate": 0.705,
+     "blockedPerRun": 2.525,
+     "effort": 2.796005706134094
     }
    }
   },
@@ -1276,26 +1276,26 @@
    "n": 47,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
+   "hearts": 3,
+   "pieces": 13,
    "rounds": 7,
-   "initialFree": 0.32,
-   "arrows": 3,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.095,
-     "blockedPerRun": 1.7,
-     "effort": 2.361842105263158
+     "failRate": 0.045,
+     "blockedPerRun": 0.67,
+     "effort": 2.4827315541601256
     },
     "average": {
-     "failRate": 0.495,
-     "blockedPerRun": 2.905,
-     "effort": 2.4299354114012917
+     "failRate": 0.23,
+     "blockedPerRun": 1.42,
+     "effort": 2.542882020026121
     },
     "hasty": {
-     "failRate": 0.9,
-     "blockedPerRun": 3.845,
-     "effort": 2.543823038397329
+     "failRate": 0.615,
+     "blockedPerRun": 2.35,
+     "effort": 2.695808383233533
     }
    }
   },
@@ -1303,26 +1303,26 @@
    "n": 48,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.32,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.07,
-     "blockedPerRun": 1.475,
-     "effort": 2.6480565371024736
+     "failRate": 0.05,
+     "blockedPerRun": 0.815,
+     "effort": 2.1578112609040443
     },
     "average": {
-     "failRate": 0.385,
-     "blockedPerRun": 2.72,
-     "effort": 2.6780515117581185
+     "failRate": 0.305,
+     "blockedPerRun": 1.645,
+     "effort": 2.195672191528545
     },
     "hasty": {
-     "failRate": 0.87,
-     "blockedPerRun": 3.765,
-     "effort": 2.892329020332717
+     "failRate": 0.72,
+     "blockedPerRun": 2.595,
+     "effort": 2.435862068965517
     }
    }
   },
@@ -1330,26 +1330,26 @@
    "n": 49,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
-   "initialFree": 0.39,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.04,
-     "blockedPerRun": 1.205,
-     "effort": 2.5179634119462198
+     "blockedPerRun": 0.625,
+     "effort": 2.1812886785584276
     },
     "average": {
-     "failRate": 0.335,
-     "blockedPerRun": 2.585,
-     "effort": 2.603222557905337
+     "failRate": 0.265,
+     "blockedPerRun": 1.52,
+     "effort": 2.2583025830258303
     },
     "hasty": {
-     "failRate": 0.825,
-     "blockedPerRun": 3.67,
-     "effort": 2.7200920245398774
+     "failRate": 0.655,
+     "blockedPerRun": 2.46,
+     "effort": 2.3626189143816454
     }
    }
   },
@@ -1357,26 +1357,26 @@
    "n": 50,
    "chapter": 2,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 11,
-   "initialFree": 0.35,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 7,
+   "initialFree": 0.31,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.16,
-     "blockedPerRun": 2.62,
-     "effort": 3.0970540758676353
+     "failRate": 0.185,
+     "blockedPerRun": 1.29,
+     "effort": 2.643647334897754
     },
     "average": {
-     "failRate": 0.625,
-     "blockedPerRun": 4.255,
-     "effort": 3.131951219512195
+     "failRate": 0.48,
+     "blockedPerRun": 2.15,
+     "effort": 2.6285148514851486
     },
     "hasty": {
-     "failRate": 0.965,
-     "blockedPerRun": 4.92,
-     "effort": 3.2121703853955377
+     "failRate": 0.875,
+     "blockedPerRun": 2.825,
+     "effort": 2.943467336683417
     }
    }
   },
@@ -1384,26 +1384,26 @@
    "n": 51,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
-   "initialFree": 0.39,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.12,
-     "blockedPerRun": 1.615,
-     "effort": 2.5113224637681157
+     "failRate": 0.045,
+     "blockedPerRun": 0.815,
+     "effort": 2.298296484233418
     },
     "average": {
-     "failRate": 0.615,
-     "blockedPerRun": 3.31,
-     "effort": 2.6872812135355892
+     "failRate": 0.325,
+     "blockedPerRun": 1.77,
+     "effort": 2.3648760330578513
     },
     "hasty": {
-     "failRate": 0.925,
-     "blockedPerRun": 3.89,
-     "effort": 2.715981348028826
+     "failRate": 0.735,
+     "blockedPerRun": 2.55,
+     "effort": 2.561699650756694
     }
    }
   },
@@ -1411,26 +1411,26 @@
    "n": 52,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 7,
-   "initialFree": 0.33,
-   "arrows": 3,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.155,
-     "blockedPerRun": 1.74,
-     "effort": 2.5823040646754998
+     "failRate": 0.11,
+     "blockedPerRun": 0.945,
+     "effort": 2.695131086142322
     },
     "average": {
-     "failRate": 0.54,
-     "blockedPerRun": 3.135,
-     "effort": 2.745318352059925
+     "failRate": 0.335,
+     "blockedPerRun": 1.815,
+     "effort": 2.8977816441931274
     },
     "hasty": {
-     "failRate": 0.96,
-     "blockedPerRun": 3.945,
-     "effort": 3.0986707566462166
+     "failRate": 0.73,
+     "blockedPerRun": 2.59,
+     "effort": 3.064892926670993
     }
    }
   },
@@ -1438,26 +1438,26 @@
    "n": 53,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 8,
-   "initialFree": 0.42,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.085,
-     "blockedPerRun": 1.63,
-     "effort": 2.572721396250808
+     "failRate": 0.03,
+     "blockedPerRun": 0.63,
+     "effort": 2.4064422728917845
     },
     "average": {
-     "failRate": 0.505,
-     "blockedPerRun": 3,
-     "effort": 2.6973180076628354
+     "failRate": 0.23,
+     "blockedPerRun": 1.495,
+     "effort": 2.495133819951338
     },
     "hasty": {
-     "failRate": 0.915,
-     "blockedPerRun": 3.875,
-     "effort": 2.7121342512908777
+     "failRate": 0.585,
+     "blockedPerRun": 2.24,
+     "effort": 2.593972602739726
     }
    }
   },
@@ -1465,26 +1465,26 @@
    "n": 54,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 7,
-   "initialFree": 0.33,
-   "arrows": 4,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.105,
-     "blockedPerRun": 1.655,
-     "effort": 2.476698606271777
+     "failRate": 0.09,
+     "blockedPerRun": 0.93,
+     "effort": 2.59687616214206
     },
     "average": {
-     "failRate": 0.515,
-     "blockedPerRun": 3.08,
-     "effort": 2.609893048128342
+     "failRate": 0.405,
+     "blockedPerRun": 1.94,
+     "effort": 2.7691964285714286
     },
     "hasty": {
-     "failRate": 0.91,
-     "blockedPerRun": 3.865,
-     "effort": 2.7861945316001795
+     "failRate": 0.755,
+     "blockedPerRun": 2.645,
+     "effort": 2.826642335766423
     }
    }
   },
@@ -1519,26 +1519,26 @@
    "n": 56,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
+   "hearts": 3,
+   "pieces": 15,
    "rounds": 7,
-   "initialFree": 0.4,
-   "arrows": 4,
+   "initialFree": 0.33,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.09,
-     "blockedPerRun": 1.525,
-     "effort": 2.3187960687960687
+     "failRate": 0.085,
+     "blockedPerRun": 1.02,
+     "effort": 2.6092350103376982
     },
     "average": {
-     "failRate": 0.43,
-     "blockedPerRun": 2.835,
-     "effort": 2.3414918414918415
+     "failRate": 0.36,
+     "blockedPerRun": 1.8,
+     "effort": 2.6881168574812477
     },
     "hasty": {
-     "failRate": 0.855,
-     "blockedPerRun": 3.79,
-     "effort": 2.386490939044481
+     "failRate": 0.795,
+     "blockedPerRun": 2.675,
+     "effort": 2.8100358422939067
     }
    }
   },
@@ -1546,26 +1546,26 @@
    "n": 57,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
+   "hearts": 3,
+   "pieces": 15,
    "rounds": 7,
-   "initialFree": 0.4,
-   "arrows": 4,
+   "initialFree": 0.27,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.125,
-     "blockedPerRun": 1.845,
-     "effort": 2.46758678377248
+     "failRate": 0.115,
+     "blockedPerRun": 0.99,
+     "effort": 2.484996510816469
     },
     "average": {
-     "failRate": 0.555,
-     "blockedPerRun": 3.17,
-     "effort": 2.6062628336755647
+     "failRate": 0.37,
+     "blockedPerRun": 1.855,
+     "effort": 2.572564612326044
     },
     "hasty": {
-     "failRate": 0.91,
-     "blockedPerRun": 3.855,
-     "effort": 2.6751838946960897
+     "failRate": 0.8,
+     "blockedPerRun": 2.69,
+     "effort": 2.775522755227552
     }
    }
   },
@@ -1573,26 +1573,26 @@
    "n": 58,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 8,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
    "initialFree": 0.38,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.145,
-     "blockedPerRun": 2.445,
-     "effort": 2.7950572634116937
+     "failRate": 0.1,
+     "blockedPerRun": 1.055,
+     "effort": 2.3134765625
     },
     "average": {
-     "failRate": 0.615,
-     "blockedPerRun": 4.235,
-     "effort": 2.952605459057072
+     "failRate": 0.415,
+     "blockedPerRun": 2.01,
+     "effort": 2.389453125
     },
     "hasty": {
-     "failRate": 0.94,
-     "blockedPerRun": 4.92,
-     "effort": 2.9285970577682097
+     "failRate": 0.785,
+     "blockedPerRun": 2.675,
+     "effort": 2.5284883720930234
     }
    }
   },
@@ -1600,26 +1600,26 @@
    "n": 59,
    "chapter": 2,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 7,
-   "initialFree": 0.31,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
+   "initialFree": 0.44,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.115,
-     "blockedPerRun": 2.375,
-     "effort": 2.629937208831274
+     "failRate": 0.09,
+     "blockedPerRun": 0.945,
+     "effort": 2.2186598268675857
     },
     "average": {
-     "failRate": 0.52,
-     "blockedPerRun": 3.905,
-     "effort": 2.8142480211081793
+     "failRate": 0.315,
+     "blockedPerRun": 1.69,
+     "effort": 2.2159504734158775
     },
     "hasty": {
-     "failRate": 0.935,
-     "blockedPerRun": 4.885,
-     "effort": 3.141851106639839
+     "failRate": 0.69,
+     "blockedPerRun": 2.53,
+     "effort": 2.2768304914744233
     }
    }
   },
@@ -1627,26 +1627,26 @@
    "n": 60,
    "chapter": 2,
    "role": "finale",
-   "hearts": 5,
-   "pieces": 28,
-   "rounds": 10,
-   "initialFree": 0.32,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 17,
+   "rounds": 8,
+   "initialFree": 0.24,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.26,
-     "blockedPerRun": 3.19,
-     "effort": 2.9885123492245835
+     "failRate": 0.25,
+     "blockedPerRun": 1.56,
+     "effort": 2.94937563280459
     },
     "average": {
-     "failRate": 0.795,
-     "blockedPerRun": 4.675,
-     "effort": 3.225281930238657
+     "failRate": 0.685,
+     "blockedPerRun": 2.475,
+     "effort": 3.3035363457760316
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 5,
-     "effort": 3.1298200514138816
+     "failRate": 0.96,
+     "blockedPerRun": 2.95,
+     "effort": 3.806451612903226
     }
    }
   },
@@ -1790,25 +1790,25 @@
    "chapter": 3,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 16,
-   "rounds": 7,
-   "initialFree": 0.44,
+   "pieces": 10,
+   "rounds": 3,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.025,
-     "blockedPerRun": 0.585,
-     "effort": 2.4192733017377566
+     "failRate": 0.01,
+     "blockedPerRun": 0.345,
+     "effort": 1.6698396793587174
     },
     "average": {
-     "failRate": 0.22,
-     "blockedPerRun": 1.44,
-     "effort": 2.5150665732305537
+     "failRate": 0.06,
+     "blockedPerRun": 0.705,
+     "effort": 1.6788659793814433
     },
     "hasty": {
-     "failRate": 0.635,
-     "blockedPerRun": 2.405,
-     "effort": 2.594912859161564
+     "failRate": 0.17,
+     "blockedPerRun": 1.24,
+     "effort": 1.6952954048140043
     }
    }
   },
@@ -1817,25 +1817,25 @@
    "chapter": 3,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 17,
-   "rounds": 7,
-   "initialFree": 0.41,
+   "pieces": 10,
+   "rounds": 5,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.02,
-     "blockedPerRun": 0.59,
-     "effort": 2.208407341622262
+     "failRate": 0.025,
+     "blockedPerRun": 0.485,
+     "effort": 1.9326294620412268
     },
     "average": {
-     "failRate": 0.21,
-     "blockedPerRun": 1.46,
-     "effort": 2.2609130289903367
+     "failRate": 0.07,
+     "blockedPerRun": 0.945,
+     "effort": 1.9591097308488612
     },
     "hasty": {
-     "failRate": 0.6,
-     "blockedPerRun": 2.405,
-     "effort": 2.3293768545994067
+     "failRate": 0.35,
+     "blockedPerRun": 1.73,
+     "effort": 1.98621103117506
     }
    }
   },
@@ -1844,25 +1844,25 @@
    "chapter": 3,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 18,
-   "rounds": 7,
-   "initialFree": 0.39,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 5,
+   "initialFree": 0.36,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.08,
-     "blockedPerRun": 0.845,
-     "effort": 2.2373853211009176
+     "failRate": 0.015,
+     "blockedPerRun": 0.41,
+     "effort": 2.01833180568286
     },
     "average": {
-     "failRate": 0.265,
-     "blockedPerRun": 1.65,
-     "effort": 2.290758366595026
+     "failRate": 0.08,
+     "blockedPerRun": 0.865,
+     "effort": 2.054079696394687
     },
     "hasty": {
-     "failRate": 0.74,
-     "blockedPerRun": 2.54,
-     "effort": 2.3666666666666667
+     "failRate": 0.415,
+     "blockedPerRun": 1.855,
+     "effort": 2.216038300418911
     }
    }
   },
@@ -1871,25 +1871,25 @@
    "chapter": 3,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 19,
-   "rounds": 7,
-   "initialFree": 0.42,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 5,
+   "initialFree": 0.36,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 0.68,
-     "effort": 2.321076472155609
+     "failRate": 0.01,
+     "blockedPerRun": 0.28,
+     "effort": 2.0351758793969847
     },
     "average": {
-     "failRate": 0.225,
-     "blockedPerRun": 1.525,
-     "effort": 2.376521739130435
+     "failRate": 0.065,
+     "blockedPerRun": 0.825,
+     "effort": 2.10576015108593
     },
     "hasty": {
-     "failRate": 0.75,
-     "blockedPerRun": 2.605,
-     "effort": 2.5193602693602695
+     "failRate": 0.325,
+     "blockedPerRun": 1.625,
+     "effort": 2.147796988287786
     }
    }
   },
@@ -1897,26 +1897,26 @@
    "n": 70,
    "chapter": 3,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 12,
-   "initialFree": 0.27,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 7,
+   "initialFree": 0.13,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.085,
-     "blockedPerRun": 2.175,
-     "effort": 3.4960031974420462
+     "failRate": 0.18,
+     "blockedPerRun": 1.25,
+     "effort": 3.129142466689443
     },
     "average": {
-     "failRate": 0.53,
-     "blockedPerRun": 4.015,
-     "effort": 3.6712637913741224
+     "failRate": 0.605,
+     "blockedPerRun": 2.345,
+     "effort": 3.6568816169393648
     },
     "hasty": {
-     "failRate": 0.925,
-     "blockedPerRun": 4.86,
-     "effort": 3.6665164488508335
+     "failRate": 0.91,
+     "blockedPerRun": 2.845,
+     "effort": 4.173630454967502
     }
    }
   },
@@ -1924,26 +1924,26 @@
    "n": 71,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 21,
-   "rounds": 6,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
    "initialFree": 0.38,
-   "arrows": 2,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 1.11,
-     "effort": 2.55709426627794
+     "failRate": 0.02,
+     "blockedPerRun": 0.615,
+     "effort": 2.102246320681642
     },
     "average": {
-     "failRate": 0.24,
-     "blockedPerRun": 2.3,
-     "effort": 2.587716955941255
+     "failRate": 0.18,
+     "blockedPerRun": 1.265,
+     "effort": 2.1395730706075535
     },
     "hasty": {
-     "failRate": 0.805,
-     "blockedPerRun": 3.635,
-     "effort": 2.8554545454545455
+     "failRate": 0.575,
+     "blockedPerRun": 2.24,
+     "effort": 2.3083769633507853
     }
    }
   },
@@ -1951,26 +1951,26 @@
    "n": 72,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.38,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.075,
-     "blockedPerRun": 1.345,
-     "effort": 2.5066140635878393
+     "failRate": 0.025,
+     "blockedPerRun": 0.54,
+     "effort": 2.156383391540551
     },
     "average": {
-     "failRate": 0.335,
-     "blockedPerRun": 2.58,
-     "effort": 2.521571648690293
+     "failRate": 0.19,
+     "blockedPerRun": 1.235,
+     "effort": 2.163774862462971
     },
     "hasty": {
-     "failRate": 0.82,
-     "blockedPerRun": 3.7,
-     "effort": 2.6914765906362543
+     "failRate": 0.55,
+     "blockedPerRun": 2.21,
+     "effort": 2.2745308310991956
     }
    }
   },
@@ -1978,26 +1978,26 @@
    "n": 73,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
-   "initialFree": 0.43,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 4,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.025,
-     "blockedPerRun": 1.105,
-     "effort": 2.445367132867133
+     "failRate": 0.01,
+     "blockedPerRun": 0.395,
+     "effort": 1.9913854989231874
     },
     "average": {
-     "failRate": 0.36,
-     "blockedPerRun": 2.625,
-     "effort": 2.527218493661447
+     "failRate": 0.08,
+     "blockedPerRun": 1.015,
+     "effort": 2.020217147135904
     },
     "hasty": {
-     "failRate": 0.845,
-     "blockedPerRun": 3.745,
-     "effort": 2.6309828279137744
+     "failRate": 0.4,
+     "blockedPerRun": 1.875,
+     "effort": 2.1006896551724137
     }
    }
   },
@@ -2005,26 +2005,26 @@
    "n": 74,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 5,
-   "initialFree": 0.46,
-   "arrows": 3,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 1.14,
-     "effort": 2.174143038510368
+     "failRate": 0.02,
+     "blockedPerRun": 0.495,
+     "effort": 2.183614804168164
     },
     "average": {
-     "failRate": 0.315,
-     "blockedPerRun": 2.555,
-     "effort": 2.1952414275717285
+     "failRate": 0.17,
+     "blockedPerRun": 1.275,
+     "effort": 2.264475743348983
     },
     "hasty": {
-     "failRate": 0.86,
-     "blockedPerRun": 3.8,
-     "effort": 2.298305084745763
+     "failRate": 0.555,
+     "blockedPerRun": 2.28,
+     "effort": 2.4100051572975763
     }
    }
   },
@@ -2059,26 +2059,26 @@
    "n": 76,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.36,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 7,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 1.255,
-     "effort": 2.8211889891279203
+     "failRate": 0.05,
+     "blockedPerRun": 0.68,
+     "effort": 2.409758032526775
     },
     "average": {
-     "failRate": 0.4,
-     "blockedPerRun": 2.755,
-     "effort": 2.9042062415196743
+     "failRate": 0.185,
+     "blockedPerRun": 1.37,
+     "effort": 2.5273652948663554
     },
     "hasty": {
-     "failRate": 0.855,
-     "blockedPerRun": 3.745,
-     "effort": 3.0166458593424887
+     "failRate": 0.665,
+     "blockedPerRun": 2.435,
+     "effort": 2.830901856763926
     }
    }
   },
@@ -2086,26 +2086,26 @@
    "n": 77,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.32,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 4,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.03,
-     "blockedPerRun": 1.09,
-     "effort": 2.836804760814832
+     "failRate": 0.015,
+     "blockedPerRun": 0.51,
+     "effort": 1.9972952086553324
     },
     "average": {
-     "failRate": 0.395,
-     "blockedPerRun": 2.675,
-     "effort": 3.0277777777777777
+     "failRate": 0.15,
+     "blockedPerRun": 1.17,
+     "effort": 2.078881469115192
     },
     "hasty": {
-     "failRate": 0.85,
-     "blockedPerRun": 3.72,
-     "effort": 3.125760649087221
+     "failRate": 0.485,
+     "blockedPerRun": 2.15,
+     "effort": 2.1874665238350293
     }
    }
   },
@@ -2113,26 +2113,26 @@
    "n": 78,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.32,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 6,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 1.175,
-     "effort": 2.5891169010836985
+     "failRate": 0.015,
+     "blockedPerRun": 0.705,
+     "effort": 2.38860906625339
     },
     "average": {
-     "failRate": 0.395,
-     "blockedPerRun": 2.715,
-     "effort": 2.7408333333333332
+     "failRate": 0.24,
+     "blockedPerRun": 1.45,
+     "effort": 2.466462078035949
     },
     "hasty": {
-     "failRate": 0.89,
-     "blockedPerRun": 3.82,
-     "effort": 2.961870177031321
+     "failRate": 0.605,
+     "blockedPerRun": 2.365,
+     "effort": 2.54583835946924
     }
    }
   },
@@ -2140,26 +2140,26 @@
    "n": 79,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 8,
-   "initialFree": 0.26,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.09,
-     "blockedPerRun": 1.465,
-     "effort": 2.67954802259887
+     "failRate": 0.035,
+     "blockedPerRun": 0.71,
+     "effort": 2.601233671988389
     },
     "average": {
-     "failRate": 0.39,
-     "blockedPerRun": 2.67,
-     "effort": 2.853239656518345
+     "failRate": 0.295,
+     "blockedPerRun": 1.68,
+     "effort": 2.705832628909552
     },
     "hasty": {
-     "failRate": 0.855,
-     "blockedPerRun": 3.78,
-     "effort": 3.0639561443581544
+     "failRate": 0.765,
+     "blockedPerRun": 2.605,
+     "effort": 2.9601328903654487
     }
    }
   },
@@ -2167,26 +2167,26 @@
    "n": 80,
    "chapter": 3,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 10,
-   "initialFree": 0.23,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 7,
+   "initialFree": 0.19,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.08,
-     "blockedPerRun": 2.33,
-     "effort": 3.171637369148726
+     "failRate": 0.11,
+     "blockedPerRun": 1.075,
+     "effort": 2.840766435414602
     },
     "average": {
-     "failRate": 0.625,
-     "blockedPerRun": 4.24,
-     "effort": 3.457227937195452
+     "failRate": 0.515,
+     "blockedPerRun": 2.21,
+     "effort": 3.1312447078746826
     },
     "hasty": {
-     "failRate": 0.94,
-     "blockedPerRun": 4.895,
-     "effort": 3.6878001921229586
+     "failRate": 0.9,
+     "blockedPerRun": 2.86,
+     "effort": 3.6439024390243904
     }
    }
   },
@@ -2194,26 +2194,26 @@
    "n": 81,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 10,
-   "initialFree": 0.43,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.165,
-     "blockedPerRun": 1.895,
-     "effort": 2.7467606274153216
+     "failRate": 0.035,
+     "blockedPerRun": 0.685,
+     "effort": 2.2814088598402322
     },
     "average": {
-     "failRate": 0.54,
-     "blockedPerRun": 3.16,
-     "effort": 2.800794701986755
+     "failRate": 0.29,
+     "blockedPerRun": 1.54,
+     "effort": 2.4236371202663336
     },
     "hasty": {
-     "failRate": 0.925,
-     "blockedPerRun": 3.875,
-     "effort": 2.716370808678501
+     "failRate": 0.66,
+     "blockedPerRun": 2.43,
+     "effort": 2.57347055460263
     }
    }
   },
@@ -2221,26 +2221,26 @@
    "n": 82,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.29,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.09,
-     "blockedPerRun": 1.615,
-     "effort": 2.9322289156626504
+     "failRate": 0.065,
+     "blockedPerRun": 0.73,
+     "effort": 2.4259530791788855
     },
     "average": {
-     "failRate": 0.585,
-     "blockedPerRun": 3.11,
-     "effort": 3.164429530201342
+     "failRate": 0.3,
+     "blockedPerRun": 1.675,
+     "effort": 2.453246222948142
     },
     "hasty": {
-     "failRate": 0.955,
-     "blockedPerRun": 3.91,
-     "effort": 3.2950892857142855
+     "failRate": 0.75,
+     "blockedPerRun": 2.625,
+     "effort": 2.686651583710407
     }
    }
   },
@@ -2248,26 +2248,26 @@
    "n": 83,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 8,
-   "initialFree": 0.29,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.115,
-     "blockedPerRun": 1.715,
-     "effort": 2.7586663722676086
+     "failRate": 0.07,
+     "blockedPerRun": 0.94,
+     "effort": 2.130755064456722
     },
     "average": {
-     "failRate": 0.505,
-     "blockedPerRun": 3.04,
-     "effort": 2.9688473520249223
+     "failRate": 0.27,
+     "blockedPerRun": 1.705,
+     "effort": 2.1936918722199756
     },
     "hasty": {
-     "failRate": 0.91,
-     "blockedPerRun": 3.875,
-     "effort": 3.2381951731374605
+     "failRate": 0.68,
+     "blockedPerRun": 2.495,
+     "effort": 2.309623430962343
     }
    }
   },
@@ -2275,26 +2275,26 @@
    "n": 84,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.38,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.15,
-     "blockedPerRun": 1.71,
-     "effort": 2.354781842221243
+     "failRate": 0.08,
+     "blockedPerRun": 0.805,
+     "effort": 2.410720887245841
     },
     "average": {
-     "failRate": 0.495,
-     "blockedPerRun": 2.935,
-     "effort": 2.4217597471022128
+     "failRate": 0.275,
+     "blockedPerRun": 1.525,
+     "effort": 2.558726220016543
     },
     "hasty": {
-     "failRate": 0.93,
-     "blockedPerRun": 3.885,
-     "effort": 2.5119735755573904
+     "failRate": 0.72,
+     "blockedPerRun": 2.585,
+     "effort": 2.73090692124105
     }
    }
   },
@@ -2329,26 +2329,26 @@
    "n": 86,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 10,
-   "initialFree": 0.32,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 5,
+   "initialFree": 0.33,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.15,
-     "blockedPerRun": 1.945,
-     "effort": 2.743437764606266
+     "failRate": 0.105,
+     "blockedPerRun": 1.005,
+     "effort": 2.264110756123536
     },
     "average": {
-     "failRate": 0.6,
-     "blockedPerRun": 3.275,
-     "effort": 2.838568697077301
+     "failRate": 0.34,
+     "blockedPerRun": 1.835,
+     "effort": 2.319702602230483
     },
     "hasty": {
-     "failRate": 0.935,
-     "blockedPerRun": 3.9,
-     "effort": 2.987549800796813
+     "failRate": 0.72,
+     "blockedPerRun": 2.6,
+     "effort": 2.5322483423749245
     }
    }
   },
@@ -2356,26 +2356,26 @@
    "n": 87,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 7,
-   "initialFree": 0.44,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 6,
+   "initialFree": 0.27,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.15,
-     "blockedPerRun": 1.895,
-     "effort": 2.4552708945821085
+     "failRate": 0.11,
+     "blockedPerRun": 1.005,
+     "effort": 2.3989473684210525
     },
     "average": {
-     "failRate": 0.57,
-     "blockedPerRun": 3.11,
-     "effort": 2.4872643912379013
+     "failRate": 0.34,
+     "blockedPerRun": 1.78,
+     "effort": 2.483963815789474
     },
     "hasty": {
-     "failRate": 0.955,
-     "blockedPerRun": 3.905,
-     "effort": 2.5390534821085033
+     "failRate": 0.71,
+     "blockedPerRun": 2.555,
+     "effort": 2.7293413173652694
     }
    }
   },
@@ -2383,26 +2383,26 @@
    "n": 88,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 7,
-   "initialFree": 0.38,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 5,
+   "initialFree": 0.25,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.145,
-     "blockedPerRun": 2.525,
-     "effort": 2.5805805805805804
+     "failRate": 0.12,
+     "blockedPerRun": 1.05,
+     "effort": 2.3258389261744967
     },
     "average": {
-     "failRate": 0.69,
-     "blockedPerRun": 4.43,
-     "effort": 2.7923135657928224
+     "failRate": 0.425,
+     "blockedPerRun": 1.9,
+     "effort": 2.4870848708487086
     },
     "hasty": {
-     "failRate": 0.96,
-     "blockedPerRun": 4.925,
-     "effort": 2.8598856209150325
+     "failRate": 0.755,
+     "blockedPerRun": 2.65,
+     "effort": 2.6495507060333763
     }
    }
   },
@@ -2410,26 +2410,26 @@
    "n": 89,
    "chapter": 3,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
+   "hearts": 3,
+   "pieces": 16,
    "rounds": 7,
-   "initialFree": 0.35,
-   "arrows": 5,
+   "initialFree": 0.25,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.135,
-     "blockedPerRun": 2.505,
-     "effort": 2.6103739445114598
+     "failRate": 0.085,
+     "blockedPerRun": 0.89,
+     "effort": 2.75359477124183
     },
     "average": {
-     "failRate": 0.64,
-     "blockedPerRun": 4.275,
-     "effort": 2.795902489626556
+     "failRate": 0.395,
+     "blockedPerRun": 1.91,
+     "effort": 3.0138067061143983
     },
     "hasty": {
-     "failRate": 0.965,
-     "blockedPerRun": 4.945,
-     "effort": 2.99663582842725
+     "failRate": 0.835,
+     "blockedPerRun": 2.78,
+     "effort": 3.1981468282252314
     }
    }
   },
@@ -2437,26 +2437,26 @@
    "n": 90,
    "chapter": 3,
    "role": "finale",
-   "hearts": 5,
-   "pieces": 28,
-   "rounds": 10,
-   "initialFree": 0.29,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 17,
+   "rounds": 7,
+   "initialFree": 0.35,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.25,
-     "blockedPerRun": 3.07,
-     "effort": 3.267236356574092
+     "failRate": 0.23,
+     "blockedPerRun": 1.5,
+     "effort": 2.4158188382015098
     },
     "average": {
-     "failRate": 0.755,
-     "blockedPerRun": 4.585,
-     "effort": 3.470173535791757
+     "failRate": 0.57,
+     "blockedPerRun": 2.26,
+     "effort": 2.5062374245472836
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 5,
-     "effort": 3.6377551020408165
+     "failRate": 0.915,
+     "blockedPerRun": 2.875,
+     "effort": 2.596241088788075
     }
    }
   },
@@ -2600,25 +2600,25 @@
    "chapter": 4,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 16,
-   "rounds": 6,
-   "initialFree": 0.38,
+   "pieces": 10,
+   "rounds": 5,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 0.595,
-     "effort": 2.1615873015873017
+     "failRate": 0,
+     "blockedPerRun": 0.42,
+     "effort": 1.941
     },
     "average": {
-     "failRate": 0.14,
-     "blockedPerRun": 1.205,
-     "effort": 2.222518321119254
+     "failRate": 0.085,
+     "blockedPerRun": 0.955,
+     "effort": 1.9279419388284085
     },
     "hasty": {
-     "failRate": 0.58,
-     "blockedPerRun": 2.335,
-     "effort": 2.3644605621033543
+     "failRate": 0.315,
+     "blockedPerRun": 1.69,
+     "effort": 2.0098665118978527
     }
    }
   },
@@ -2627,25 +2627,25 @@
    "chapter": 4,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 17,
-   "rounds": 8,
-   "initialFree": 0.41,
+   "pieces": 10,
+   "rounds": 5,
+   "initialFree": 0.5,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 0.725,
-     "effort": 2.6589473684210527
+     "failRate": 0.005,
+     "blockedPerRun": 0.405,
+     "effort": 1.892892892892893
     },
     "average": {
-     "failRate": 0.225,
-     "blockedPerRun": 1.49,
-     "effort": 2.6231930613556056
+     "failRate": 0.065,
+     "blockedPerRun": 0.85,
+     "effort": 1.9520163348647268
     },
     "hasty": {
-     "failRate": 0.665,
-     "blockedPerRun": 2.47,
-     "effort": 2.750467289719626
+     "failRate": 0.285,
+     "blockedPerRun": 1.745,
+     "effort": 1.9850488786659
     }
    }
   },
@@ -2654,25 +2654,25 @@
    "chapter": 4,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 18,
+   "pieces": 11,
    "rounds": 5,
-   "initialFree": 0.44,
-   "arrows": 2,
+   "initialFree": 0.36,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 0.69,
-     "effort": 2.11239762778876
+     "failRate": 0.01,
+     "blockedPerRun": 0.235,
+     "effort": 1.9219534459151073
     },
     "average": {
-     "failRate": 0.215,
-     "blockedPerRun": 1.51,
-     "effort": 2.167920553716521
+     "failRate": 0.1,
+     "blockedPerRun": 0.835,
+     "effort": 1.9688249400479616
     },
     "hasty": {
-     "failRate": 0.625,
-     "blockedPerRun": 2.405,
-     "effort": 2.2171496625645095
+     "failRate": 0.335,
+     "blockedPerRun": 1.725,
+     "effort": 2.036955322669608
     }
    }
   },
@@ -2681,25 +2681,25 @@
    "chapter": 4,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 19,
-   "rounds": 7,
-   "initialFree": 0.37,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 4,
+   "initialFree": 0.36,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.06,
-     "blockedPerRun": 0.78,
-     "effort": 2.338096521973578
+     "failRate": 0.01,
+     "blockedPerRun": 0.445,
+     "effort": 1.8050113895216402
     },
     "average": {
-     "failRate": 0.255,
-     "blockedPerRun": 1.585,
-     "effort": 2.3872781065088757
+     "failRate": 0.145,
+     "blockedPerRun": 1.075,
+     "effort": 1.9175011921793037
     },
     "hasty": {
-     "failRate": 0.695,
-     "blockedPerRun": 2.475,
-     "effort": 2.464655172413793
+     "failRate": 0.34,
+     "blockedPerRun": 1.785,
+     "effort": 1.9333691563675444
     }
    }
   },
@@ -2707,26 +2707,26 @@
    "n": 100,
    "chapter": 4,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 11,
-   "initialFree": 0.23,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
+   "initialFree": 0.19,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 1.815,
-     "effort": 2.95485503016151
+     "failRate": 0.075,
+     "blockedPerRun": 0.985,
+     "effort": 2.668068586218052
     },
     "average": {
-     "failRate": 0.375,
-     "blockedPerRun": 3.48,
-     "effort": 3.0547378104875804
+     "failRate": 0.345,
+     "blockedPerRun": 1.775,
+     "effort": 2.73960284750843
     },
     "hasty": {
-     "failRate": 0.885,
-     "blockedPerRun": 4.795,
-     "effort": 3.365335598980459
+     "failRate": 0.795,
+     "blockedPerRun": 2.66,
+     "effort": 3.1083805923125394
     }
    }
   },
@@ -2734,26 +2734,26 @@
    "n": 101,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 21,
-   "rounds": 6,
-   "initialFree": 0.48,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.38,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 1.295,
-     "effort": 2.3890628764153217
+     "failRate": 0.01,
+     "blockedPerRun": 0.33,
+     "effort": 2.047876447876448
     },
     "average": {
-     "failRate": 0.295,
-     "blockedPerRun": 2.47,
-     "effort": 2.412510110541925
+     "failRate": 0.11,
+     "blockedPerRun": 1.05,
+     "effort": 2.1086691086691087
     },
     "hasty": {
-     "failRate": 0.82,
-     "blockedPerRun": 3.685,
-     "effort": 2.4929632525410477
+     "failRate": 0.355,
+     "blockedPerRun": 1.785,
+     "effort": 2.2016052880075545
     }
    }
   },
@@ -2761,26 +2761,26 @@
    "n": 102,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.38,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.015,
-     "blockedPerRun": 1.05,
-     "effort": 2.5136986301369864
+     "failRate": 0.01,
+     "blockedPerRun": 0.385,
+     "effort": 1.929953560371517
     },
     "average": {
-     "failRate": 0.225,
-     "blockedPerRun": 2.29,
-     "effort": 2.525832091405862
+     "failRate": 0.09,
+     "blockedPerRun": 0.955,
+     "effort": 1.9919484702093397
     },
     "hasty": {
-     "failRate": 0.73,
-     "blockedPerRun": 3.56,
-     "effort": 2.6370106761565837
+     "failRate": 0.405,
+     "blockedPerRun": 1.96,
+     "effort": 2.0832137733142035
     }
    }
   },
@@ -2788,26 +2788,26 @@
    "n": 103,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 6,
-   "initialFree": 0.39,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.03,
-     "blockedPerRun": 1.175,
-     "effort": 2.092967032967033
+     "failRate": 0.015,
+     "blockedPerRun": 0.615,
+     "effort": 2.0533667621776504
     },
     "average": {
-     "failRate": 0.28,
-     "blockedPerRun": 2.48,
-     "effort": 2.111606038109379
+     "failRate": 0.205,
+     "blockedPerRun": 1.385,
+     "effort": 2.15234375
     },
     "hasty": {
-     "failRate": 0.775,
-     "blockedPerRun": 3.61,
-     "effort": 2.219216094346167
+     "failRate": 0.56,
+     "blockedPerRun": 2.26,
+     "effort": 2.1936739659367395
     }
    }
   },
@@ -2815,26 +2815,26 @@
    "n": 104,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 6,
-   "initialFree": 0.38,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 3,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.06,
-     "blockedPerRun": 1.375,
-     "effort": 2.2780612244897958
+     "failRate": 0.02,
+     "blockedPerRun": 0.545,
+     "effort": 1.822406340057637
     },
     "average": {
-     "failRate": 0.39,
-     "blockedPerRun": 2.7,
-     "effort": 2.3405886717783826
+     "failRate": 0.13,
+     "blockedPerRun": 1.135,
+     "effort": 1.853252647503782
     },
     "hasty": {
-     "failRate": 0.85,
-     "blockedPerRun": 3.765,
-     "effort": 2.4835501147666412
+     "failRate": 0.41,
+     "blockedPerRun": 1.845,
+     "effort": 1.854157201272149
     }
    }
   },
@@ -2869,26 +2869,26 @@
    "n": 106,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.27,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.045,
-     "blockedPerRun": 1.33,
-     "effort": 2.8367065317387303
+     "blockedPerRun": 0.67,
+     "effort": 2.143867924528302
     },
     "average": {
-     "failRate": 0.43,
-     "blockedPerRun": 2.79,
-     "effort": 3.0047433035714284
+     "failRate": 0.235,
+     "blockedPerRun": 1.49,
+     "effort": 2.2975206611570247
     },
     "hasty": {
-     "failRate": 0.85,
-     "blockedPerRun": 3.77,
-     "effort": 3.104631217838765
+     "failRate": 0.62,
+     "blockedPerRun": 2.36,
+     "effort": 2.4471352628470173
     }
    }
   },
@@ -2896,26 +2896,26 @@
    "n": 107,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.32,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 1.305,
-     "effort": 2.4844290657439445
+     "failRate": 0.005,
+     "blockedPerRun": 0.6,
+     "effort": 1.9992286926340146
     },
     "average": {
-     "failRate": 0.395,
-     "blockedPerRun": 2.7,
-     "effort": 2.5910596026490067
+     "failRate": 0.17,
+     "blockedPerRun": 1.37,
+     "effort": 2.0618600682593855
     },
     "hasty": {
-     "failRate": 0.845,
-     "blockedPerRun": 3.74,
-     "effort": 2.8030954428202923
+     "failRate": 0.515,
+     "blockedPerRun": 2.15,
+     "effort": 2.145108695652174
     }
    }
   },
@@ -2923,26 +2923,26 @@
    "n": 108,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.095,
-     "blockedPerRun": 1.405,
-     "effort": 2.6162021728861595
+     "failRate": 0.055,
+     "blockedPerRun": 0.85,
+     "effort": 2.2790423861852434
     },
     "average": {
-     "failRate": 0.41,
-     "blockedPerRun": 2.825,
-     "effort": 2.7627488410144534
+     "failRate": 0.205,
+     "blockedPerRun": 1.325,
+     "effort": 2.302286198137172
     },
     "hasty": {
-     "failRate": 0.905,
-     "blockedPerRun": 3.875,
-     "effort": 2.8604342046965
+     "failRate": 0.56,
+     "blockedPerRun": 2.275,
+     "effort": 2.4207920792079207
     }
    }
   },
@@ -2950,26 +2950,26 @@
    "n": 109,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 8,
-   "initialFree": 0.3,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.075,
-     "blockedPerRun": 1.36,
-     "effort": 2.609451627284886
+     "blockedPerRun": 0.85,
+     "effort": 2.481888035126235
     },
     "average": {
-     "failRate": 0.34,
-     "blockedPerRun": 2.63,
-     "effort": 2.6645032451323014
+     "failRate": 0.23,
+     "blockedPerRun": 1.475,
+     "effort": 2.488071959327337
     },
     "hasty": {
-     "failRate": 0.93,
-     "blockedPerRun": 3.89,
-     "effort": 3.0083647009619408
+     "failRate": 0.735,
+     "blockedPerRun": 2.585,
+     "effort": 2.742027334851936
     }
    }
   },
@@ -2977,26 +2977,26 @@
    "n": 110,
    "chapter": 4,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 11,
-   "initialFree": 0.27,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
+   "initialFree": 0.38,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.165,
-     "blockedPerRun": 2.62,
-     "effort": 3.3011106540518305
+     "failRate": 0.1,
+     "blockedPerRun": 1.04,
+     "effort": 2.1567852437417656
     },
     "average": {
-     "failRate": 0.59,
-     "blockedPerRun": 4.155,
-     "effort": 3.3997416020671833
+     "failRate": 0.37,
+     "blockedPerRun": 1.79,
+     "effort": 2.259128386336867
     },
     "hasty": {
-     "failRate": 0.985,
-     "blockedPerRun": 4.97,
-     "effort": 3.7966648735879507
+     "failRate": 0.83,
+     "blockedPerRun": 2.735,
+     "effort": 2.439580764488286
     }
    }
   },
@@ -3004,26 +3004,26 @@
    "n": 111,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
-   "initialFree": 0.3,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.115,
-     "blockedPerRun": 1.66,
-     "effort": 2.7131483166515014
+     "failRate": 0.09,
+     "blockedPerRun": 1.005,
+     "effort": 2.352434456928839
     },
     "average": {
-     "failRate": 0.455,
-     "blockedPerRun": 2.85,
-     "effort": 2.785752688172043
+     "failRate": 0.28,
+     "blockedPerRun": 1.675,
+     "effort": 2.3893951946975975
     },
     "hasty": {
-     "failRate": 0.905,
-     "blockedPerRun": 3.86,
-     "effort": 2.9775626924769028
+     "failRate": 0.67,
+     "blockedPerRun": 2.42,
+     "effort": 2.492711370262391
     }
    }
   },
@@ -3031,26 +3031,26 @@
    "n": 112,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.38,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 4,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.07,
-     "blockedPerRun": 1.375,
-     "effort": 2.4659944217978973
+     "failRate": 0.085,
+     "blockedPerRun": 0.89,
+     "effort": 1.8734784212467723
     },
     "average": {
-     "failRate": 0.435,
-     "blockedPerRun": 2.805,
-     "effort": 2.525183497848646
+     "failRate": 0.335,
+     "blockedPerRun": 1.78,
+     "effort": 1.934070434070434
     },
     "hasty": {
-     "failRate": 0.89,
-     "blockedPerRun": 3.825,
-     "effort": 2.6932
+     "failRate": 0.72,
+     "blockedPerRun": 2.545,
+     "effort": 1.9812981298129813
     }
    }
   },
@@ -3058,26 +3058,26 @@
    "n": 113,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 7,
-   "initialFree": 0.25,
-   "arrows": 4,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.13,
-     "blockedPerRun": 1.755,
-     "effort": 2.6368444248567653
+     "failRate": 0.025,
+     "blockedPerRun": 0.59,
+     "effort": 2.4886322627210395
     },
     "average": {
-     "failRate": 0.535,
-     "blockedPerRun": 3.12,
-     "effort": 2.801769422173072
+     "failRate": 0.235,
+     "blockedPerRun": 1.535,
+     "effort": 2.6658546488022736
     },
     "hasty": {
-     "failRate": 0.91,
-     "blockedPerRun": 3.855,
-     "effort": 3.1145940390544706
+     "failRate": 0.655,
+     "blockedPerRun": 2.445,
+     "effort": 2.861612515042118
     }
    }
   },
@@ -3085,26 +3085,26 @@
    "n": 114,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 8,
-   "initialFree": 0.33,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.12,
-     "blockedPerRun": 1.735,
-     "effort": 2.7911392405063293
+     "failRate": 0.06,
+     "blockedPerRun": 0.82,
+     "effort": 2.1980234260614933
     },
     "average": {
-     "failRate": 0.58,
-     "blockedPerRun": 3.15,
-     "effort": 2.9789165446559296
+     "failRate": 0.27,
+     "blockedPerRun": 1.485,
+     "effort": 2.258744038155803
     },
     "hasty": {
-     "failRate": 0.915,
-     "blockedPerRun": 3.865,
-     "effort": 3.125742574257426
+     "failRate": 0.69,
+     "blockedPerRun": 2.51,
+     "effort": 2.4275321768326803
     }
    }
   },
@@ -3139,26 +3139,26 @@
    "n": 116,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 6,
+   "initialFree": 0.33,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.215,
-     "blockedPerRun": 2.09,
-     "effort": 2.7046789989118607
+     "failRate": 0.065,
+     "blockedPerRun": 0.93,
+     "effort": 2.2453544390915345
     },
     "average": {
-     "failRate": 0.67,
-     "blockedPerRun": 3.445,
-     "effort": 2.8692396313364057
+     "failRate": 0.355,
+     "blockedPerRun": 1.785,
+     "effort": 2.303030303030303
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 3.97,
-     "effort": 2.9736199316072303
+     "failRate": 0.77,
+     "blockedPerRun": 2.67,
+     "effort": 2.5276259866423803
     }
    }
   },
@@ -3166,26 +3166,26 @@
    "n": 117,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 8,
-   "initialFree": 0.4,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 7,
+   "initialFree": 0.33,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.17,
-     "blockedPerRun": 1.875,
-     "effort": 2.5715493553160007
+     "failRate": 0.1,
+     "blockedPerRun": 1.04,
+     "effort": 2.4604715672676836
     },
     "average": {
-     "failRate": 0.545,
-     "blockedPerRun": 3.115,
-     "effort": 2.5891569261377767
+     "failRate": 0.325,
+     "blockedPerRun": 1.71,
+     "effort": 2.492337917485265
     },
     "hasty": {
-     "failRate": 0.965,
-     "blockedPerRun": 3.96,
-     "effort": 2.7783572359843545
+     "failRate": 0.75,
+     "blockedPerRun": 2.615,
+     "effort": 2.70501138952164
     }
    }
   },
@@ -3193,26 +3193,26 @@
    "n": 118,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 8,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
    "initialFree": 0.31,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
      "failRate": 0.09,
-     "blockedPerRun": 2.07,
-     "effort": 2.8793205609322534
+     "blockedPerRun": 0.905,
+     "effort": 2.312925170068027
     },
     "average": {
-     "failRate": 0.585,
-     "blockedPerRun": 4.2,
-     "effort": 3.0628310062590276
+     "failRate": 0.485,
+     "blockedPerRun": 2.055,
+     "effort": 2.4538622129436325
     },
     "hasty": {
-     "failRate": 0.95,
-     "blockedPerRun": 4.925,
-     "effort": 3.14275120504264
+     "failRate": 0.775,
+     "blockedPerRun": 2.665,
+     "effort": 2.5874855156431056
     }
    }
   },
@@ -3220,26 +3220,26 @@
    "n": 119,
    "chapter": 4,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 8,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 5,
    "initialFree": 0.31,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.145,
-     "blockedPerRun": 2.605,
-     "effort": 2.7057051024507834
+     "failRate": 0.065,
+     "blockedPerRun": 0.895,
+     "effort": 2.1403052939265996
     },
     "average": {
-     "failRate": 0.645,
-     "blockedPerRun": 4.3,
-     "effort": 2.862267609321812
+     "failRate": 0.39,
+     "blockedPerRun": 1.9,
+     "effort": 2.2883740173769134
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 4.96,
-     "effort": 3.109671848013817
+     "failRate": 0.715,
+     "blockedPerRun": 2.49,
+     "effort": 2.4056877539175856
     }
    }
   },
@@ -3247,26 +3247,26 @@
    "n": 120,
    "chapter": 4,
    "role": "finale",
-   "hearts": 5,
-   "pieces": 28,
-   "rounds": 12,
-   "initialFree": 0.32,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 17,
+   "rounds": 6,
+   "initialFree": 0.18,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.27,
-     "blockedPerRun": 3.27,
-     "effort": 3.1653711620676255
+     "failRate": 0.175,
+     "blockedPerRun": 1.365,
+     "effort": 2.717997465145754
     },
     "average": {
-     "failRate": 0.85,
-     "blockedPerRun": 4.69,
-     "effort": 3.273069679849341
+     "failRate": 0.555,
+     "blockedPerRun": 2.285,
+     "effort": 2.910228744065602
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 5,
-     "effort": 3.1505422993492407
+     "failRate": 0.93,
+     "blockedPerRun": 2.9,
+     "effort": 3.589028776978417
     }
    }
   },
@@ -3410,25 +3410,25 @@
    "chapter": 5,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 16,
-   "rounds": 6,
-   "initialFree": 0.44,
+   "pieces": 10,
+   "rounds": 3,
+   "initialFree": 0.5,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.015,
-     "blockedPerRun": 0.36,
-     "effort": 1.3645505971087366
+     "failRate": 0.005,
+     "blockedPerRun": 0.29,
+     "effort": 1.271407110665999
     },
     "average": {
-     "failRate": 0.265,
-     "blockedPerRun": 0.83,
-     "effort": 1.5115781973637334
+     "failRate": 0.06,
+     "blockedPerRun": 0.53,
+     "effort": 1.3145951521402786
     },
     "hasty": {
-     "failRate": 0.87,
-     "blockedPerRun": 1.34,
-     "effort": 1.824895771292436
+     "failRate": 0.355,
+     "blockedPerRun": 1.065,
+     "effort": 1.4447204968944098
     }
    }
   },
@@ -3437,25 +3437,25 @@
    "chapter": 5,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 17,
-   "rounds": 6,
-   "initialFree": 0.41,
+   "pieces": 10,
+   "rounds": 4,
+   "initialFree": 0.5,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 0.77,
-     "effort": 1.8867527786121958
+     "failRate": 0.01,
+     "blockedPerRun": 0.33,
+     "effort": 1.3504016064257027
     },
     "average": {
-     "failRate": 0.3,
-     "blockedPerRun": 1.45,
-     "effort": 1.9444070080862534
+     "failRate": 0.055,
+     "blockedPerRun": 0.7,
+     "effort": 1.413422131147541
     },
     "hasty": {
-     "failRate": 0.785,
-     "blockedPerRun": 1.96,
-     "effort": 2.015923566878981
+     "failRate": 0.37,
+     "blockedPerRun": 1.14,
+     "effort": 1.5586969883220652
     }
    }
   },
@@ -3464,25 +3464,25 @@
    "chapter": 5,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 18,
-   "rounds": 5,
-   "initialFree": 0.5,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 3,
+   "initialFree": 0.45,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.015,
-     "blockedPerRun": 0.11,
-     "effort": 0.6532999164578112
+     "failRate": 0,
+     "blockedPerRun": 0.375,
+     "effort": 1.3254545454545454
     },
     "average": {
-     "failRate": 0.37,
-     "blockedPerRun": 0.525,
-     "effort": 0.9969715324046032
+     "failRate": 0.065,
+     "blockedPerRun": 0.59,
+     "effort": 1.374765478424015
     },
     "hasty": {
-     "failRate": 0.865,
-     "blockedPerRun": 1.77,
-     "effort": 1.617129448572546
+     "failRate": 0.43,
+     "blockedPerRun": 1.14,
+     "effort": 1.5296187683284457
     }
    }
   },
@@ -3491,25 +3491,25 @@
    "chapter": 5,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 19,
-   "rounds": 5,
-   "initialFree": 0.47,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 4,
+   "initialFree": 0.55,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.065,
-     "blockedPerRun": 0.785,
-     "effort": 1.7980096826250673
+     "failRate": 0.005,
+     "blockedPerRun": 0.325,
+     "effort": 1.208105646630237
     },
     "average": {
-     "failRate": 0.315,
-     "blockedPerRun": 1.49,
-     "effort": 1.793789568887549
+     "failRate": 0.14,
+     "blockedPerRun": 0.69,
+     "effort": 1.2575976845151953
     },
     "hasty": {
-     "failRate": 0.795,
-     "blockedPerRun": 1.925,
-     "effort": 1.8559447459299456
+     "failRate": 0.46,
+     "blockedPerRun": 1.155,
+     "effort": 1.4557783018867925
     }
    }
   },
@@ -3517,26 +3517,26 @@
    "n": 130,
    "chapter": 5,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 12,
-   "initialFree": 0.27,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 9,
+   "initialFree": 0.31,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.105,
-     "blockedPerRun": 2,
-     "effort": 1.9285714285714286
+     "failRate": 0.01,
+     "blockedPerRun": 0.27,
+     "effort": 0.47317226231565734
     },
     "average": {
-     "failRate": 0.715,
-     "blockedPerRun": 2.855,
-     "effort": 2.084326306141155
+     "failRate": 0.36,
+     "blockedPerRun": 1.035,
+     "effort": 1.1943585780525503
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 2.02,
-     "effort": 2.3614754098360655
+     "failRate": 0.935,
+     "blockedPerRun": 2.425,
+     "effort": 2.4174350377200335
     }
    }
   },
@@ -3544,26 +3544,26 @@
    "n": 131,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 21,
-   "rounds": 7,
-   "initialFree": 0.48,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 4,
+   "initialFree": 0.46,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.02,
-     "blockedPerRun": 0.475,
-     "effort": 1.4134522661523625
+     "failRate": 0,
+     "blockedPerRun": 0.045,
+     "effort": 0.3626923076923077
     },
     "average": {
-     "failRate": 0.37,
-     "blockedPerRun": 0.875,
-     "effort": 1.4548211036992116
+     "failRate": 0.12,
+     "blockedPerRun": 0.185,
+     "effort": 0.8062654575432812
     },
     "hasty": {
-     "failRate": 0.935,
-     "blockedPerRun": 0.975,
-     "effort": 1.5173770491803278
+     "failRate": 0.6,
+     "blockedPerRun": 0.935,
+     "effort": 1.421840354767184
     }
    }
   },
@@ -3571,26 +3571,26 @@
    "n": 132,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.55,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.38,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.02,
-     "blockedPerRun": 0.415,
-     "effort": 1.2676639815880322
+     "failRate": 0,
+     "blockedPerRun": 0.17,
+     "effort": 1.2988461538461538
     },
     "average": {
-     "failRate": 0.475,
-     "blockedPerRun": 0.55,
-     "effort": 1.2567611599869664
+     "failRate": 0.15,
+     "blockedPerRun": 0.515,
+     "effort": 1.442595673876872
     },
     "hasty": {
-     "failRate": 0.95,
-     "blockedPerRun": 0.72,
-     "effort": 1.4482338611449452
+     "failRate": 0.635,
+     "blockedPerRun": 1.005,
+     "effort": 1.7579656862745099
     }
    }
   },
@@ -3598,26 +3598,26 @@
    "n": 133,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 5,
-   "initialFree": 0.48,
-   "arrows": 3,
+   "initialFree": 0.5,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 1.025,
-     "effort": 1.5268983838831083
+     "failRate": 0.01,
+     "blockedPerRun": 0.215,
+     "effort": 1.1069633883704235
     },
     "average": {
-     "failRate": 0.375,
-     "blockedPerRun": 1.555,
-     "effort": 1.540338231217078
+     "failRate": 0.145,
+     "blockedPerRun": 0.505,
+     "effort": 1.2037180480247869
     },
     "hasty": {
-     "failRate": 0.955,
-     "blockedPerRun": 1.475,
-     "effort": 1.7016676961087092
+     "failRate": 0.605,
+     "blockedPerRun": 0.81,
+     "effort": 1.3837011884550086
     }
    }
   },
@@ -3625,26 +3625,26 @@
    "n": 134,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 6,
-   "initialFree": 0.54,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 4,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
      "failRate": 0.01,
-     "blockedPerRun": 0.665,
-     "effort": 1.5014675052410902
+     "blockedPerRun": 0.475,
+     "effort": 1.3205449982072428
     },
     "average": {
-     "failRate": 0.495,
-     "blockedPerRun": 1.09,
-     "effort": 1.4564755838641188
+     "failRate": 0.19,
+     "blockedPerRun": 1.02,
+     "effort": 1.4252873563218391
     },
     "hasty": {
-     "failRate": 0.97,
-     "blockedPerRun": 0.625,
-     "effort": 1.449051300070274
+     "failRate": 0.7,
+     "blockedPerRun": 1.52,
+     "effort": 1.6620947630922693
     }
    }
   },
@@ -3679,26 +3679,26 @@
    "n": 136,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 9,
-   "initialFree": 0.36,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 7,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.075,
-     "blockedPerRun": 1.485,
-     "effort": 1.728013029315961
+     "failRate": 0.005,
+     "blockedPerRun": 0.1,
+     "effort": 0.44063222821896686
     },
     "average": {
-     "failRate": 0.63,
-     "blockedPerRun": 2.05,
-     "effort": 1.8103717588253672
+     "failRate": 0.165,
+     "blockedPerRun": 0.665,
+     "effort": 1.0901432181971356
     },
     "hasty": {
-     "failRate": 0.985,
-     "blockedPerRun": 2.165,
-     "effort": 2.036966220522626
+     "failRate": 0.675,
+     "blockedPerRun": 1.76,
+     "effort": 1.9073107049608355
     }
    }
   },
@@ -3706,26 +3706,26 @@
    "n": 137,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 9,
-   "initialFree": 0.36,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.025,
-     "blockedPerRun": 0.63,
-     "effort": 1.0194954128440368
+     "failRate": 0.01,
+     "blockedPerRun": 0.195,
+     "effort": 0.9386100386100386
     },
     "average": {
-     "failRate": 0.56,
-     "blockedPerRun": 1.59,
-     "effort": 1.4901551312649164
+     "failRate": 0.26,
+     "blockedPerRun": 0.59,
+     "effort": 1.093013287612516
     },
     "hasty": {
-     "failRate": 0.985,
-     "blockedPerRun": 3.06,
-     "effort": 2.457989315201554
+     "failRate": 0.8,
+     "blockedPerRun": 1.405,
+     "effort": 1.6218323586744638
     }
    }
   },
@@ -3733,26 +3733,26 @@
    "n": 138,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 8,
-   "initialFree": 0.32,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 4,
+   "initialFree": 0.38,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.06,
-     "blockedPerRun": 0.975,
-     "effort": 1.6723334885887284
+     "failRate": 0,
+     "blockedPerRun": 0.115,
+     "effort": 1.001153846153846
     },
     "average": {
-     "failRate": 0.595,
-     "blockedPerRun": 1.215,
-     "effort": 1.5578024941017863
+     "failRate": 0.21,
+     "blockedPerRun": 0.43,
+     "effort": 1.1221505376344085
     },
     "hasty": {
-     "failRate": 0.99,
-     "blockedPerRun": 1.48,
-     "effort": 1.989067055393586
+     "failRate": 0.815,
+     "blockedPerRun": 1.005,
+     "effort": 1.6898280802292263
     }
    }
   },
@@ -3760,26 +3760,26 @@
    "n": 139,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 9,
-   "initialFree": 0.3,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 4,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.03,
-     "blockedPerRun": 0.865,
-     "effort": 1.2428256070640176
+     "failRate": 0.02,
+     "blockedPerRun": 0.435,
+     "effort": 1.3995664739884393
     },
     "average": {
-     "failRate": 0.54,
-     "blockedPerRun": 2.04,
-     "effort": 1.6163559831629586
+     "failRate": 0.195,
+     "blockedPerRun": 0.96,
+     "effort": 1.499007542675665
     },
     "hasty": {
-     "failRate": 0.965,
-     "blockedPerRun": 2.67,
-     "effort": 2.471578947368421
+     "failRate": 0.65,
+     "blockedPerRun": 1.585,
+     "effort": 1.6959578207381372
     }
    }
   },
@@ -3787,26 +3787,26 @@
    "n": 140,
    "chapter": 5,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 10,
-   "initialFree": 0.35,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 7,
+   "initialFree": 0.31,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 0.91,
-     "effort": 1.3041074249605056
+     "failRate": 0.02,
+     "blockedPerRun": 0.12,
+     "effort": 0.46081208687440983
     },
     "average": {
-     "failRate": 0.715,
-     "blockedPerRun": 1.43,
-     "effort": 1.462822936357908
+     "failRate": 0.3,
+     "blockedPerRun": 0.51,
+     "effort": 0.9217483256961579
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 1.535,
-     "effort": 1.9932279909706547
+     "failRate": 0.935,
+     "blockedPerRun": 1.42,
+     "effort": 1.84
     }
    }
   },
@@ -3814,26 +3814,26 @@
    "n": 141,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 7,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
    "initialFree": 0.43,
-   "arrows": 3,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 0.605,
-     "effort": 1.0238785985271144
+     "failRate": 0.015,
+     "blockedPerRun": 0.145,
+     "effort": 0.7695340501792115
     },
     "average": {
-     "failRate": 0.59,
-     "blockedPerRun": 0.765,
-     "effort": 1.184143222506394
+     "failRate": 0.315,
+     "blockedPerRun": 0.535,
+     "effort": 1.0524861878453038
     },
     "hasty": {
-     "failRate": 0.995,
-     "blockedPerRun": 1.18,
-     "effort": 1.826393789696542
+     "failRate": 0.88,
+     "blockedPerRun": 1.315,
+     "effort": 1.626207729468599
     }
    }
   },
@@ -3841,26 +3841,26 @@
    "n": 142,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.42,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.055,
-     "blockedPerRun": 0.56,
-     "effort": 1.214654061022776
+     "failRate": 0.01,
+     "blockedPerRun": 0.415,
+     "effort": 1.0297384450017915
     },
     "average": {
-     "failRate": 0.585,
-     "blockedPerRun": 0.99,
-     "effort": 1.2949595519601742
+     "failRate": 0.275,
+     "blockedPerRun": 0.985,
+     "effort": 1.2532520325203251
     },
     "hasty": {
-     "failRate": 0.99,
-     "blockedPerRun": 1.125,
-     "effort": 1.6855600539811066
+     "failRate": 0.81,
+     "blockedPerRun": 1.47,
+     "effort": 1.6747700394218135
     }
    }
   },
@@ -3868,26 +3868,26 @@
    "n": 143,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 7,
-   "initialFree": 0.33,
-   "arrows": 4,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.03,
-     "blockedPerRun": 0.94,
-     "effort": 1.599026661024122
+     "failRate": 0,
+     "blockedPerRun": 0.31,
+     "effort": 0.9075
     },
     "average": {
-     "failRate": 0.545,
-     "blockedPerRun": 1.595,
-     "effort": 1.7539086929330832
+     "failRate": 0.285,
+     "blockedPerRun": 0.99,
+     "effort": 1.12904514582501
     },
     "hasty": {
-     "failRate": 0.985,
-     "blockedPerRun": 2.125,
-     "effort": 2.2848318462594372
+     "failRate": 0.845,
+     "blockedPerRun": 1.53,
+     "effort": 1.6365435356200528
     }
    }
   },
@@ -3895,26 +3895,26 @@
    "n": 144,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 8,
-   "initialFree": 0.42,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.045,
-     "blockedPerRun": 0.285,
-     "effort": 0.5852631578947368
+     "failRate": 0.015,
+     "blockedPerRun": 0.41,
+     "effort": 1.1509705248023006
     },
     "average": {
-     "failRate": 0.73,
-     "blockedPerRun": 0.98,
-     "effort": 1.1061811505507957
+     "failRate": 0.22,
+     "blockedPerRun": 0.85,
+     "effort": 1.2800953516090583
     },
     "hasty": {
-     "failRate": 0.99,
-     "blockedPerRun": 1.675,
-     "effort": 1.8143435511856565
+     "failRate": 0.805,
+     "blockedPerRun": 1.46,
+     "effort": 1.6940085592011411
     }
    }
   },
@@ -3949,26 +3949,26 @@
    "n": 146,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 9,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 5,
    "initialFree": 0.4,
-   "arrows": 4,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.185,
-     "blockedPerRun": 2.005,
-     "effort": 2.3709470989761092
+     "failRate": 0.02,
+     "blockedPerRun": 0.065,
+     "effort": 0.6165994623655914
     },
     "average": {
-     "failRate": 0.7,
-     "blockedPerRun": 2.615,
-     "effort": 2.351818723911747
+     "failRate": 0.325,
+     "blockedPerRun": 0.45,
+     "effort": 0.9688506981740065
     },
     "hasty": {
-     "failRate": 0.99,
-     "blockedPerRun": 1.675,
-     "effort": 2.1413116970926303
+     "failRate": 0.91,
+     "blockedPerRun": 1.34,
+     "effort": 1.5356359649122806
     }
    }
   },
@@ -3976,26 +3976,26 @@
    "n": 147,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 8,
-   "initialFree": 0.36,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 5,
+   "initialFree": 0.4,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.02,
-     "blockedPerRun": 0.58,
-     "effort": 0.7350151362260343
+     "failRate": 0.015,
+     "blockedPerRun": 0.285,
+     "effort": 0.7020708082832331
     },
     "average": {
-     "failRate": 0.72,
-     "blockedPerRun": 1.715,
-     "effort": 1.3105629348513599
+     "failRate": 0.4,
+     "blockedPerRun": 0.935,
+     "effort": 1.0710301227222017
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 2,
-     "effort": 2.2591155934833203
+     "failRate": 0.915,
+     "blockedPerRun": 1.86,
+     "effort": 1.7972465581977473
     }
    }
   },
@@ -4003,26 +4003,26 @@
    "n": 148,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 8,
-   "initialFree": 0.27,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 7,
+   "initialFree": 0.38,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.11,
-     "blockedPerRun": 1.39,
-     "effort": 1.495959595959596
+     "failRate": 0.01,
+     "blockedPerRun": 0.345,
+     "effort": 1.2778300407651302
     },
     "average": {
-     "failRate": 0.755,
-     "blockedPerRun": 2.04,
-     "effort": 1.6586141131595677
+     "failRate": 0.285,
+     "blockedPerRun": 0.83,
+     "effort": 1.3298220123501634
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 2.815,
-     "effort": 2.563179347826087
+     "failRate": 0.9,
+     "blockedPerRun": 1.445,
+     "effort": 1.7971014492753623
     }
    }
   },
@@ -4030,26 +4030,26 @@
    "n": 149,
    "chapter": 5,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 7,
-   "initialFree": 0.31,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 5,
+   "initialFree": 0.44,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.075,
-     "blockedPerRun": 0.495,
-     "effort": 0.5821042281219272
+     "failRate": 0,
+     "blockedPerRun": 0.075,
+     "effort": 0.4940625
     },
     "average": {
-     "failRate": 0.715,
-     "blockedPerRun": 1.72,
-     "effort": 1.3615903975994
+     "failRate": 0.355,
+     "blockedPerRun": 0.535,
+     "effort": 0.8218493395215994
     },
     "hasty": {
-     "failRate": 0.995,
-     "blockedPerRun": 3.645,
-     "effort": 2.2467811158798283
+     "failRate": 0.92,
+     "blockedPerRun": 1.265,
+     "effort": 1.4885679903730444
     }
    }
   },
@@ -4057,26 +4057,26 @@
    "n": 150,
    "chapter": 5,
    "role": "finale",
-   "hearts": 5,
-   "pieces": 28,
-   "rounds": 10,
+   "hearts": 3,
+   "pieces": 17,
+   "rounds": 7,
    "initialFree": 0.29,
-   "arrows": 6,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.11,
-     "blockedPerRun": 1.155,
-     "effort": 1.1058583611420096
+     "failRate": 0.055,
+     "blockedPerRun": 0.37,
+     "effort": 0.9657451923076923
     },
     "average": {
-     "failRate": 0.835,
-     "blockedPerRun": 1.47,
-     "effort": 1.3544048419636854
+     "failRate": 0.45,
+     "blockedPerRun": 0.815,
+     "effort": 1.2700453857791225
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 2.04,
-     "effort": 2.3459277917716204
+     "failRate": 0.955,
+     "blockedPerRun": 1.44,
+     "effort": 2.110169491525424
     }
    }
   },
@@ -4220,25 +4220,25 @@
    "chapter": 6,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 16,
-   "rounds": 8,
-   "initialFree": 0.38,
+   "pieces": 10,
+   "rounds": 5,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
      "failRate": 0.015,
-     "blockedPerRun": 0.56,
-     "effort": 2.546889801073571
+     "blockedPerRun": 0.485,
+     "effort": 1.933199397287795
     },
     "average": {
-     "failRate": 0.215,
-     "blockedPerRun": 1.325,
-     "effort": 2.592013888888889
+     "failRate": 0.115,
+     "blockedPerRun": 1.015,
+     "effort": 1.9689637033140452
     },
     "hasty": {
-     "failRate": 0.645,
-     "blockedPerRun": 2.415,
-     "effort": 2.7685546875
+     "failRate": 0.4,
+     "blockedPerRun": 1.82,
+     "effort": 2.0303030303030303
     }
    }
   },
@@ -4247,25 +4247,25 @@
    "chapter": 6,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 17,
-   "rounds": 8,
-   "initialFree": 0.41,
+   "pieces": 10,
+   "rounds": 5,
+   "initialFree": 0.4,
    "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 0.77,
-     "effort": 2.480849790544584
+     "failRate": 0.02,
+     "blockedPerRun": 0.42,
+     "effort": 1.870902672718104
     },
     "average": {
-     "failRate": 0.225,
-     "blockedPerRun": 1.445,
-     "effort": 2.45989133908597
+     "failRate": 0.105,
+     "blockedPerRun": 0.98,
+     "effort": 1.8677002583979327
     },
     "hasty": {
-     "failRate": 0.725,
-     "blockedPerRun": 2.58,
-     "effort": 2.5513442044953725
+     "failRate": 0.29,
+     "blockedPerRun": 1.5,
+     "effort": 1.914385556202679
     }
    }
   },
@@ -4274,25 +4274,25 @@
    "chapter": 6,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 18,
-   "rounds": 6,
-   "initialFree": 0.39,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 4,
+   "initialFree": 0.55,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.015,
-     "blockedPerRun": 0.57,
-     "effort": 1.6594972067039107
+     "failRate": 0.005,
+     "blockedPerRun": 0.265,
+     "effort": 1.1029612756264238
     },
     "average": {
-     "failRate": 0.235,
-     "blockedPerRun": 1.24,
-     "effort": 1.6869129618033814
+     "failRate": 0.1,
+     "blockedPerRun": 0.48,
+     "effort": 1.2203309692671396
     },
     "hasty": {
-     "failRate": 0.825,
-     "blockedPerRun": 1.45,
-     "effort": 1.896323086196504
+     "failRate": 0.495,
+     "blockedPerRun": 1.01,
+     "effort": 1.46537558685446
     }
    }
   },
@@ -4301,25 +4301,25 @@
    "chapter": 6,
    "role": "ordinary",
    "hearts": 3,
-   "pieces": 19,
-   "rounds": 7,
-   "initialFree": 0.37,
-   "arrows": 2,
+   "pieces": 11,
+   "rounds": 4,
+   "initialFree": 0.45,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 0.695,
-     "effort": 2.512643066276284
+     "failRate": 0.025,
+     "blockedPerRun": 0.48,
+     "effort": 2.0110446387482743
     },
     "average": {
-     "failRate": 0.275,
-     "blockedPerRun": 1.615,
-     "effort": 2.557917436845348
+     "failRate": 0.15,
+     "blockedPerRun": 1.115,
+     "effort": 2.0707269155206287
     },
     "hasty": {
-     "failRate": 0.765,
-     "blockedPerRun": 2.665,
-     "effort": 2.738944365192582
+     "failRate": 0.505,
+     "blockedPerRun": 2.06,
+     "effort": 2.187807881773399
     }
    }
   },
@@ -4327,26 +4327,26 @@
    "n": 160,
    "chapter": 6,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 10,
-   "initialFree": 0.23,
-   "arrows": 5,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
+   "initialFree": 0.25,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 1.82,
-     "effort": 3.31167552667848
+     "failRate": 0.105,
+     "blockedPerRun": 0.975,
+     "effort": 2.3424975157336867
     },
     "average": {
-     "failRate": 0.455,
-     "blockedPerRun": 3.82,
-     "effort": 3.648763250883392
+     "failRate": 0.305,
+     "blockedPerRun": 1.73,
+     "effort": 2.367960426179604
     },
     "hasty": {
-     "failRate": 0.97,
-     "blockedPerRun": 4.955,
-     "effort": 3.9134492999575734
+     "failRate": 0.75,
+     "blockedPerRun": 2.62,
+     "effort": 2.590909090909091
     }
    }
   },
@@ -4354,26 +4354,26 @@
    "n": 161,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 21,
-   "rounds": 8,
-   "initialFree": 0.48,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 4,
+   "initialFree": 0.38,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.02,
-     "blockedPerRun": 0.53,
-     "effort": 0.8257301472363022
+     "failRate": 0.005,
+     "blockedPerRun": 0.305,
+     "effort": 0.7013888888888888
     },
     "average": {
-     "failRate": 0.35,
-     "blockedPerRun": 1.245,
-     "effort": 1.2893871449925263
+     "failRate": 0.125,
+     "blockedPerRun": 0.665,
+     "effort": 0.9984044674910252
     },
     "hasty": {
-     "failRate": 0.95,
-     "blockedPerRun": 1.27,
-     "effort": 1.6877470355731226
+     "failRate": 0.615,
+     "blockedPerRun": 1.175,
+     "effort": 1.556558682952735
     }
    }
   },
@@ -4381,26 +4381,26 @@
    "n": 162,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.41,
-   "arrows": 2,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.46,
+   "arrows": 1,
    "sims": {
     "careful": {
-     "failRate": 0.025,
-     "blockedPerRun": 1.195,
-     "effort": 2.4176954732510287
+     "failRate": 0.03,
+     "blockedPerRun": 0.48,
+     "effort": 1.8944918541505043
     },
     "average": {
-     "failRate": 0.29,
-     "blockedPerRun": 2.375,
-     "effort": 2.494413407821229
+     "failRate": 0.155,
+     "blockedPerRun": 1.085,
+     "effort": 1.9557851239669422
     },
     "hasty": {
-     "failRate": 0.795,
-     "blockedPerRun": 3.675,
-     "effort": 2.6383055756698046
+     "failRate": 0.415,
+     "blockedPerRun": 1.945,
+     "effort": 1.9767225325884543
     }
    }
   },
@@ -4408,26 +4408,26 @@
    "n": 163,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 6,
-   "initialFree": 0.48,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 5,
+   "initialFree": 0.36,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.07,
-     "blockedPerRun": 1.415,
-     "effort": 2.2421614409606403
+     "failRate": 0.035,
+     "blockedPerRun": 0.675,
+     "effort": 2.2176920276665455
     },
     "average": {
-     "failRate": 0.375,
-     "blockedPerRun": 2.655,
-     "effort": 2.320079522862823
+     "failRate": 0.27,
+     "blockedPerRun": 1.56,
+     "effort": 2.2838948233360723
     },
     "hasty": {
-     "failRate": 0.835,
-     "blockedPerRun": 3.755,
-     "effort": 2.321391663796073
+     "failRate": 0.61,
+     "blockedPerRun": 2.36,
+     "effort": 2.378688524590164
     }
    }
   },
@@ -4435,26 +4435,26 @@
    "n": 164,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 5,
-   "initialFree": 0.54,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 4,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 0.455,
-     "effort": 1.17333049766057
+     "failRate": 0.005,
+     "blockedPerRun": 0.415,
+     "effort": 1.2324749642346209
     },
     "average": {
-     "failRate": 0.475,
-     "blockedPerRun": 0.74,
-     "effort": 1.1492581602373888
+     "failRate": 0.24,
+     "blockedPerRun": 0.91,
+     "effort": 1.3003561535417492
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 0.66,
-     "effort": 1.3730822873082287
+     "failRate": 0.76,
+     "blockedPerRun": 1.13,
+     "effort": 1.5374365482233503
     }
    }
   },
@@ -4489,26 +4489,26 @@
    "n": 166,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.41,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 6,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.07,
-     "blockedPerRun": 1.535,
-     "effort": 2.397364771151179
+     "failRate": 0.025,
+     "blockedPerRun": 0.555,
+     "effort": 2.276116504854369
     },
     "average": {
-     "failRate": 0.415,
-     "blockedPerRun": 2.79,
-     "effort": 2.4758988015978693
+     "failRate": 0.145,
+     "blockedPerRun": 1.225,
+     "effort": 2.352428393524284
     },
     "hasty": {
-     "failRate": 0.875,
-     "blockedPerRun": 3.76,
-     "effort": 2.540367705835332
+     "failRate": 0.51,
+     "blockedPerRun": 2.11,
+     "effort": 2.3565264293419634
     }
    }
   },
@@ -4516,26 +4516,26 @@
    "n": 167,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 9,
-   "initialFree": 0.32,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 5,
+   "initialFree": 0.31,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 0.975,
-     "effort": 1.5551190201063092
+     "failRate": 0.005,
+     "blockedPerRun": 0.325,
+     "effort": 1.2968810165575664
     },
     "average": {
-     "failRate": 0.48,
-     "blockedPerRun": 1.505,
-     "effort": 1.7506791427709025
+     "failRate": 0.205,
+     "blockedPerRun": 0.73,
+     "effort": 1.4385890352741182
     },
     "hasty": {
-     "failRate": 0.985,
-     "blockedPerRun": 2.745,
-     "effort": 2.603669724770642
+     "failRate": 0.72,
+     "blockedPerRun": 1.315,
+     "effort": 1.7815721649484537
     }
    }
   },
@@ -4543,26 +4543,26 @@
    "n": 168,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 22,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 13,
+   "rounds": 6,
+   "initialFree": 0.38,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.14,
-     "blockedPerRun": 1.785,
-     "effort": 2.4836788182034786
+     "failRate": 0.03,
+     "blockedPerRun": 0.585,
+     "effort": 2.140970873786408
     },
     "average": {
-     "failRate": 0.56,
-     "blockedPerRun": 3.15,
-     "effort": 2.617813523979744
+     "failRate": 0.185,
+     "blockedPerRun": 1.3,
+     "effort": 2.1222361284939506
     },
     "hasty": {
-     "failRate": 0.955,
-     "blockedPerRun": 3.93,
-     "effort": 2.657930411206507
+     "failRate": 0.54,
+     "blockedPerRun": 2.16,
+     "effort": 2.3160676532769555
     }
    }
   },
@@ -4570,26 +4570,26 @@
    "n": 169,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 8,
-   "initialFree": 0.26,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.085,
-     "blockedPerRun": 1.54,
-     "effort": 2.7270069709916798
+     "failRate": 0.01,
+     "blockedPerRun": 0.605,
+     "effort": 2.3279627640529896
     },
     "average": {
-     "failRate": 0.555,
-     "blockedPerRun": 3.175,
-     "effort": 2.9801691455234764
+     "failRate": 0.15,
+     "blockedPerRun": 1.27,
+     "effort": 2.337432744043044
     },
     "hasty": {
-     "failRate": 0.955,
-     "blockedPerRun": 3.935,
-     "effort": 3.2640562248995986
+     "failRate": 0.62,
+     "blockedPerRun": 2.395,
+     "effort": 2.42550911039657
     }
    }
   },
@@ -4597,26 +4597,26 @@
    "n": 170,
    "chapter": 6,
    "role": "tough",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 14,
-   "initialFree": 0.23,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
+   "initialFree": 0.31,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.06,
-     "blockedPerRun": 0.725,
-     "effort": 0.7018160515524312
+     "failRate": 0.05,
+     "blockedPerRun": 0.49,
+     "effort": 0.9009180120291231
     },
     "average": {
-     "failRate": 0.625,
-     "blockedPerRun": 2.595,
-     "effort": 1.7467343976777938
+     "failRate": 0.45,
+     "blockedPerRun": 1.155,
+     "effort": 1.1812235475182762
     },
     "hasty": {
-     "failRate": 0.995,
-     "blockedPerRun": 3.795,
-     "effort": 3.028695181375203
+     "failRate": 0.95,
+     "blockedPerRun": 1.92,
+     "effort": 1.9922547332185887
     }
    }
   },
@@ -4624,26 +4624,26 @@
    "n": 171,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 23,
-   "rounds": 8,
-   "initialFree": 0.26,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 7,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.08,
-     "blockedPerRun": 1.57,
-     "effort": 2.732798931195725
+     "failRate": 0.04,
+     "blockedPerRun": 0.77,
+     "effort": 2.3357558139534884
     },
     "average": {
-     "failRate": 0.49,
-     "blockedPerRun": 3.025,
-     "effort": 2.8401876897598677
+     "failRate": 0.335,
+     "blockedPerRun": 1.785,
+     "effort": 2.455403087478559
     },
     "hasty": {
-     "failRate": 0.975,
-     "blockedPerRun": 3.955,
-     "effort": 3.3746835443037977
+     "failRate": 0.655,
+     "blockedPerRun": 2.465,
+     "effort": 2.5270880361173815
     }
    }
   },
@@ -4651,26 +4651,26 @@
    "n": 172,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.25,
-   "arrows": 3,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 1.36,
-     "effort": 2.598980458793543
+     "failRate": 0.04,
+     "blockedPerRun": 0.7,
+     "effort": 2.48328488372093
     },
     "average": {
-     "failRate": 0.42,
-     "blockedPerRun": 2.75,
-     "effort": 2.7310814349306103
+     "failRate": 0.24,
+     "blockedPerRun": 1.58,
+     "effort": 2.504319210201563
     },
     "hasty": {
-     "failRate": 0.875,
-     "blockedPerRun": 3.825,
-     "effort": 2.968890892696123
+     "failRate": 0.71,
+     "blockedPerRun": 2.565,
+     "effort": 2.8859934853420195
     }
    }
   },
@@ -4678,26 +4678,26 @@
    "n": 173,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
-   "rounds": 7,
-   "initialFree": 0.33,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 14,
+   "rounds": 6,
+   "initialFree": 0.43,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.05,
-     "blockedPerRun": 1.12,
-     "effort": 1.6918505942275042
+     "failRate": 0.03,
+     "blockedPerRun": 0.045,
+     "effort": 0.6101147776183644
     },
     "average": {
-     "failRate": 0.675,
-     "blockedPerRun": 1.42,
-     "effort": 1.6574858757062148
+     "failRate": 0.36,
+     "blockedPerRun": 0.295,
+     "effort": 0.9468786351298953
     },
     "hasty": {
-     "failRate": 0.985,
-     "blockedPerRun": 1.65,
-     "effort": 2.005956813104989
+     "failRate": 0.87,
+     "blockedPerRun": 1.035,
+     "effort": 1.5669764898851832
     }
    }
   },
@@ -4705,26 +4705,26 @@
    "n": 174,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 24,
+   "hearts": 3,
+   "pieces": 14,
    "rounds": 7,
-   "initialFree": 0.38,
-   "arrows": 4,
+   "initialFree": 0.29,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.1,
-     "blockedPerRun": 1.7,
-     "effort": 2.4415892895702873
+     "failRate": 0.04,
+     "blockedPerRun": 0.665,
+     "effort": 2.4304347826086956
     },
     "average": {
-     "failRate": 0.43,
-     "blockedPerRun": 2.9,
-     "effort": 2.469266847691928
+     "failRate": 0.355,
+     "blockedPerRun": 1.745,
+     "effort": 2.5878889823380993
     },
     "hasty": {
-     "failRate": 0.905,
-     "blockedPerRun": 3.87,
-     "effort": 2.7150363783346805
+     "failRate": 0.725,
+     "blockedPerRun": 2.545,
+     "effort": 2.766040181464679
     }
    }
   },
@@ -4759,26 +4759,26 @@
    "n": 176,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 7,
-   "initialFree": 0.36,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 6,
+   "initialFree": 0.33,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.035,
-     "blockedPerRun": 0.51,
-     "effort": 0.6676079064138766
+     "failRate": 0.055,
+     "blockedPerRun": 0.38,
+     "effort": 1.0596049046321525
     },
     "average": {
-     "failRate": 0.645,
-     "blockedPerRun": 1.38,
-     "effort": 1.094921104536489
+     "failRate": 0.305,
+     "blockedPerRun": 0.725,
+     "effort": 1.2223524814380617
     },
     "hasty": {
-     "failRate": 0.995,
-     "blockedPerRun": 2.22,
-     "effort": 1.7760736196319018
+     "failRate": 0.87,
+     "blockedPerRun": 1.32,
+     "effort": 1.765625
     }
    }
   },
@@ -4786,26 +4786,26 @@
    "n": 177,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 4,
-   "pieces": 25,
-   "rounds": 8,
-   "initialFree": 0.28,
-   "arrows": 4,
+   "hearts": 3,
+   "pieces": 15,
+   "rounds": 7,
+   "initialFree": 0.33,
+   "arrows": 2,
    "sims": {
     "careful": {
-     "failRate": 0.23,
-     "blockedPerRun": 2.07,
-     "effort": 2.9360414866032842
+     "failRate": 0.065,
+     "blockedPerRun": 0.875,
+     "effort": 2.5761430044688898
     },
     "average": {
-     "failRate": 0.675,
-     "blockedPerRun": 3.345,
-     "effort": 3.158359441754486
+     "failRate": 0.31,
+     "blockedPerRun": 1.735,
+     "effort": 2.736800938599922
     },
     "hasty": {
-     "failRate": 0.945,
-     "blockedPerRun": 3.915,
-     "effort": 3.406205250596659
+     "failRate": 0.79,
+     "blockedPerRun": 2.725,
+     "effort": 2.9252163164400495
     }
    }
   },
@@ -4813,26 +4813,26 @@
    "n": 178,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 9,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 6,
    "initialFree": 0.31,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.21,
-     "blockedPerRun": 2.715,
-     "effort": 3.04775568764091
+     "failRate": 0.095,
+     "blockedPerRun": 0.99,
+     "effort": 2.306207783853329
     },
     "average": {
-     "failRate": 0.715,
-     "blockedPerRun": 4.41,
-     "effort": 3.3280409041980623
+     "failRate": 0.37,
+     "blockedPerRun": 1.87,
+     "effort": 2.3880706921944035
     },
     "hasty": {
-     "failRate": 0.995,
-     "blockedPerRun": 4.99,
-     "effort": 3.413053613053613
+     "failRate": 0.79,
+     "blockedPerRun": 2.65,
+     "effort": 2.5212479827864445
     }
    }
   },
@@ -4840,26 +4840,26 @@
    "n": 179,
    "chapter": 6,
    "role": "ordinary",
-   "hearts": 5,
-   "pieces": 26,
-   "rounds": 8,
+   "hearts": 3,
+   "pieces": 16,
+   "rounds": 4,
    "initialFree": 0.38,
-   "arrows": 5,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.08,
-     "blockedPerRun": 1.145,
-     "effort": 1.3800441678377835
+     "failRate": 0.02,
+     "blockedPerRun": 0.26,
+     "effort": 1.164513079104948
     },
     "average": {
-     "failRate": 0.66,
-     "blockedPerRun": 1.495,
-     "effort": 1.4756473489519113
+     "failRate": 0.27,
+     "blockedPerRun": 0.715,
+     "effort": 1.2317952415284787
     },
     "hasty": {
-     "failRate": 1,
-     "blockedPerRun": 1.915,
-     "effort": 2.0089338892197737
+     "failRate": 0.845,
+     "blockedPerRun": 1.375,
+     "effort": 1.6314142678347936
     }
    }
   },
@@ -4867,26 +4867,26 @@
    "n": 180,
    "chapter": 6,
    "role": "finale",
-   "hearts": 5,
-   "pieces": 28,
-   "rounds": 11,
-   "initialFree": 0.21,
-   "arrows": 6,
+   "hearts": 3,
+   "pieces": 17,
+   "rounds": 6,
+   "initialFree": 0.24,
+   "arrows": 3,
    "sims": {
     "careful": {
-     "failRate": 0.265,
-     "blockedPerRun": 2.905,
-     "effort": 3.704278606965174
+     "failRate": 0.15,
+     "blockedPerRun": 1.24,
+     "effort": 2.578848560700876
     },
     "average": {
-     "failRate": 0.765,
-     "blockedPerRun": 4.55,
-     "effort": 4.101226993865031
+     "failRate": 0.545,
+     "blockedPerRun": 2.245,
+     "effort": 2.8150741350906094
     },
     "hasty": {
-     "failRate": 0.995,
-     "blockedPerRun": 4.995,
-     "effort": 4.531030070377479
+     "failRate": 0.87,
+     "blockedPerRun": 2.845,
+     "effort": 3.1089324618736383
     }
    }
   }

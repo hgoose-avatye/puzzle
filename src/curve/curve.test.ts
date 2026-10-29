@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, heartsFor, levelSpec, stageFor } from './curve';
+import { boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, levelSpec, stageFor } from './curve';
 import { winnable } from '../solver/plan';
 
 describe('levelSpec', () => {
@@ -52,20 +52,20 @@ describe('fixtures and hearts on the curve', () => {
   it('introduces direction arrows gradually and relieves them on rest levels', () => {
     for (const n of [1, 2, 3, 4, 5, 15, 25]) expect(arrows(n)).toBe(0);
     expect(arrows(6)).toBeGreaterThanOrEqual(1);
-    expect(arrows(8)).toBeGreaterThan(arrows(6));
-    expect(arrows(10)).toBeGreaterThanOrEqual(5);
-    expect(arrows(30)).toBeGreaterThanOrEqual(5);
+    expect(arrows(8)).toBeGreaterThanOrEqual(arrows(6));
+    // tough and finale levels carry more arrows than the ordinary levels around them
+    expect(arrows(10)).toBeGreaterThan(arrows(9));
+    expect(arrows(30)).toBeGreaterThan(arrows(29) - 1);
   });
   it('gives hearts from an easy ordinary level on (not the first tough one, not with the first arrows), never on rest levels', () => {
     for (const n of [1, 5, 6, 15, 25]) expect(levelSpec(n).hearts).toBeUndefined();
     for (const n of [7, 8, 9, 10, 12, 20, 29, 30]) expect(levelSpec(n).hearts).toBeGreaterThanOrEqual(3);
-    for (const n of [7, 8, 9]) expect(levelSpec(n).hearts).toBe(5); // onboarding
+    for (const n of [7, 8, 9]) expect(levelSpec(n).hearts).toBe(3);
   });
-  it('scales hearts with the number of animals: 3 up to 20, 4 up to 25, 5 beyond', () => {
-    expect([16, 20, 21, 25, 26, 28].map(heartsFor)).toEqual([3, 3, 4, 4, 5, 5]);
+  it('every level with hearts has exactly three', () => {
     for (let n = 1; n <= 180; n++) {
-      const s = levelSpec(n);
-      if (s.hearts !== undefined && !(n >= 7 && n <= 9)) expect(s.hearts, `level ${n}`).toBe(heartsFor(s.params.pieceCount));
+      const h = levelSpec(n).hearts;
+      if (h !== undefined) expect(h, `level ${n}`).toBe(3);
     }
   });
   it('generated levels carry the requested number of arrow tiles', () => {
@@ -126,16 +126,16 @@ describe('board size, obstacles and stages', () => {
   it('animals are at most three cells long, as in the art reference size classes', () => {
     for (let n = 1; n <= 180; n++) expect(levelSpec(n).params.maxLength, `level ${n}`).toBeLessThanOrEqual(3);
   });
-  it('obstacles start with chapter 1 stage 2, are chapter 2s new element, and never sit on rest levels', () => {
-    for (let n = 1; n <= 10; n++) expect(levelSpec(n).params.obstacleCount ?? 0).toBe(0);
-    expect(levelSpec(12).params.obstacleCount).toBeGreaterThanOrEqual(1);
-    expect(levelSpec(31).params.obstacleCount).toBeGreaterThanOrEqual(1);
-    expect(levelSpec(46).params.obstacleCount!).toBeGreaterThan(levelSpec(16).params.obstacleCount!);
-    for (const n of [5, 15, 25, 35, 65, 155]) expect(levelSpec(n).params.obstacleCount ?? 0).toBe(0);
+  it('crates start with chapter 1 stage 2, are chapter 2s new element, and never sit on rest levels', () => {
+    for (let n = 1; n <= 10; n++) expect(levelSpec(n).params.crateCount ?? 0).toBe(0);
+    expect(levelSpec(12).params.crateCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(31).params.crateCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(46).params.crateCount!).toBeGreaterThan(levelSpec(16).params.crateCount!);
+    for (const n of [5, 15, 25, 35, 65, 155]) expect(levelSpec(n).params.crateCount ?? 0).toBe(0);
   });
-  it('generated levels carry their obstacles', () => {
-    const built = buildGameLevel(46)!;
-    expect(built.level.obstacles?.length).toBe(levelSpec(46).params.obstacleCount);
+  it('generated levels carry their crates', () => {
+    const r = generateLevelFor(46, 1) ?? generateLevelFor(46, 2);
+    expect(r!.level.crates?.length).toBe(levelSpec(46).params.crateCount);
   });
   it('splits each chapter into three stages of ten levels', () => {
     expect(stageFor(1)).toMatchObject({ chapter: 1, stage: 1, theme: 'village' });

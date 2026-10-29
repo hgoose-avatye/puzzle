@@ -57,4 +57,22 @@ describe('shipped levels', () => {
     expect(sleepAlone / sleepers).toBeGreaterThanOrEqual(0.7);
     expect(bombBlocked / bombs).toBeGreaterThanOrEqual(0.8);
   });
+
+  it('every crate stands on some animal\u2019s way out and can be broken; intro levels teach a one-crack crate', () => {
+    let crates = 0;
+    for (const { n, level } of levels) {
+      const onPaths = new Set(level.pieces.flatMap((p) => traceExit(level, p).cells.map((c) => `${c.x},${c.y}`)));
+      for (const k of level.crates ?? []) {
+        crates++;
+        expect(onPaths.has(`${k.x},${k.y}`), `level ${n} crate (${k.x},${k.y})`).toBe(true);
+        expect(k.hits, `level ${n}`).toBe(levelSpec(n).role === 'intro' ? 1 : 2);
+      }
+      expect(level.obstacles ?? [], `level ${n}`).toEqual([]);
+    }
+    expect(crates).toBeGreaterThan(100);
+  });
+
+  it('hearts are three wherever there are hearts', () => {
+    for (const { n, hearts } of levels) if (hearts !== undefined) expect(hearts, `level ${n}`).toBe(3);
+  });
 });
