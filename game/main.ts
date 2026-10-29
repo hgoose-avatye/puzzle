@@ -43,7 +43,7 @@ function refreshHud(): void {
     const items: string[] = [];
     if (piece.key !== undefined) items.push('🔑');
     if (lockedBy(state.level, piece, state.alive) !== undefined) items.push('🔒');
-    if (isAsleep(state.level, piece, state.alive)) items.push('💤');
+    v.setAsleep(isAsleep(state.level, piece, state.alive));
     if (piece.fuse !== undefined) items.push('💣');
     v.setBadges(items, piece.fuse !== undefined ? state.fuses[id] : undefined);
   }
@@ -69,6 +69,7 @@ async function loadLevel(n: number): Promise<void> {
     stage.scene.add(view.group);
   }
   refreshHud();
+  showIntro(built.level, built.hearts !== undefined);
 }
 
 function pick(clientX: number, clientY: number): number | null {
@@ -101,6 +102,40 @@ function onTap(id: number): void {
   }
   refreshHud();
   if (isFailed(state)) showEnd(false);
+}
+
+const SEEN_KEY = 'animal-rescue-seen';
+const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); } catch { return []; } };
+const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch { /* ignore */ } };
+
+const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolean]> = [
+  ['basic', '👆', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르면 가는 길이 보여요.', () => true],
+  ['arrow', '➡️', '바닥의 화살표 칸을 지나면 그 방향으로 꺾여요. 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
+  ['obstacle', '🪵', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
+  ['long', '🐛', '몸이 긴 친구는 몸 전체가 지나갈 길이 비어 있어야 해요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
+  ['hearts', '♥', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
+  ['key', '🔑', '🔒 잠긴 친구는 🔑 열쇠를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
+  ['sleep', '💤', 'Zzz 자는 친구는 옆 친구가 나가면 깨어나요. 깨어나기 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
+  ['bomb', '💣', '💣 폭탄 친구는 숫자만큼 누르고 나면 터져요. 그 전에 먼저 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
+];
+
+function showIntro(level: Level, hearts: boolean): void {
+  const seen = readSeen();
+  const fresh = TIPS.filter(([id, , , test]) => test(level, hearts) && !seen.includes(id) && (id !== 'basic' || levelNumber === 1 || !seen.length));
+  if (fresh.length === 0) return;
+  writeSeen([...seen, ...fresh.map(([id]) => id)]);
+  $('popup').hidden = false;
+  $('popupTitle').textContent = `레벨 ${levelNumber}`;
+  const sub = $('popupSub');
+  sub.innerHTML = '';
+  for (const [, icon, text] of fresh) {
+    const row = document.createElement('div');
+    row.className = 'tip';
+    row.textContent = `${icon}  ${text}`;
+    sub.appendChild(row);
+  }
+  $('popupBtn').textContent = '시작!';
+  $('popupBtn').onclick = () => { $('popup').hidden = true; };
 }
 
 function showEnd(won: boolean): void {

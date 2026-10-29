@@ -34,23 +34,17 @@ const RUN_SPEED = 7.5;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
 
-function makeBodySegment(color: number, last: boolean): THREE.Group {
+function makeBodySegment(color: number, last: boolean, w: number, h: number): THREE.Group {
   const g = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
-  const body = new THREE.Mesh(new RoundedBoxGeometry(0.92, 0.8, 0.92, 3, 0.16), mat);
-  body.position.y = 0.6;
+  // Longer than one cell so neighbours overlap and the body reads as one connected block.
+  const body = new THREE.Mesh(new RoundedBoxGeometry(w, h, 1.16, 3, Math.min(w, h) * 0.22), mat);
+  body.position.y = h / 2;
   body.castShadow = true;
   g.add(body);
-  const legMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.7) });
-  for (const [x, z] of [[0.26, 0.26], [-0.26, 0.26], [0.26, -0.26], [-0.26, -0.26]]) {
-    const leg = new THREE.Mesh(new RoundedBoxGeometry(0.22, 0.26, 0.22, 2, 0.05), legMat);
-    leg.position.set(x, 0.13, z);
-    leg.castShadow = true;
-    g.add(leg);
-  }
   if (last) {
-    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), mat);
-    tail.position.set(0, 0.72, -0.5);
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), mat);
+    tail.position.set(0, h * 0.65, -0.64);
     g.add(tail);
   }
   return g;
@@ -78,6 +72,26 @@ function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
   return tex;
 }
 
+function zzzTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 128;
+  const ctx = c.getContext('2d')!;
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#2d4a8a';
+  ctx.fillStyle = '#fff';
+  [[40, 90, 44], [92, 62, 62], [160, 34, 84]].forEach(([x, y, px]) => {
+    ctx.font = `900 ${px}px system-ui, sans-serif`;
+    ctx.lineWidth = 12;
+    ctx.strokeText('Z', x, y);
+    ctx.fillText('Z', x, y);
+  });
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 type Anim = { kind: 'idle' } | { kind: 'run'; s: number; onDone: () => void } | { kind: 'done' };
 
 export class PieceView {
@@ -90,6 +104,8 @@ export class PieceView {
   private current: THREE.AnimationAction | null = null;
   private readonly chevrons = new THREE.Group();
   private readonly badge: THREE.Sprite;
+  private readonly zzz: THREE.Sprite;
+  private zzzT = Math.random() * 6;
   private anim: Anim = { kind: 'idle' };
   private shakeT = 0;
   private pulseT = 0;
@@ -104,14 +120,19 @@ export class PieceView {
     const species = speciesFor(piece);
     const head = SkeletonUtils.clone(gltf.scene);
     head.scale.setScalar(MODEL_SCALE);
+    const size = new THREE.Box3().setFromObject(head).getSize(new THREE.Vector3());
     head.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
     const headHolder = new THREE.Group();
     headHolder.add(head);
-    const belt = new THREE.Mesh(new RoundedBoxGeometry(1.02, 0.16, 1.02, 2, 0.05), new THREE.MeshStandardMaterial({ color }));
-    belt.position.y = 0.55;
+    const belt = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 0.9, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
+    belt.position.y = 0.05;
     headHolder.add(belt);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 3), new THREE.MeshBasicMaterial({ color }));
+    nose.rotation.x = Math.PI / 2;
+    nose.position.set(0, size.y + 0.15, 0.62);
+    headHolder.add(nose);
     this.segments.push(headHolder);
-    for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeBodySegment(BODY_COLOR[species] ?? 0xdddddd, i === this.bodyLen - 1));
+    for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeBodySegment(BODY_COLOR[species] ?? 0xdddddd, i === this.bodyLen - 1, 0.88, size.y * 0.8));
     for (const s of this.segments) this.group.add(s);
 
     this.mixer = new THREE.AnimationMixer(head);
@@ -124,6 +145,12 @@ export class PieceView {
     this.badge.renderOrder = 10;
     this.badge.visible = false;
     this.group.add(this.badge);
+
+    this.zzz = new THREE.Sprite(new THREE.SpriteMaterial({ map: zzzTexture(), transparent: true, depthTest: false }));
+    this.zzz.scale.set(1.3, 0.65, 1);
+    this.zzz.renderOrder = 11;
+    this.zzz.visible = false;
+    this.group.add(this.zzz);
 
     this.buildChevrons(color);
     this.group.add(this.chevrons);
@@ -152,6 +179,7 @@ export class PieceView {
     });
     const h = this.segments[0].position;
     this.badge.position.set(h.x, 1.75, h.z);
+    this.zzz.position.set(h.x + 0.35, 1.6 + Math.sin(this.zzzT * 3) * 0.08, h.z);
   }
 
   private buildChevrons(color: THREE.Color): void {
@@ -205,6 +233,10 @@ export class PieceView {
     this.badge.visible = true;
   }
 
+  setAsleep(asleep: boolean): void {
+    this.zzz.visible = asleep;
+  }
+
   runOut(onDone: () => void): void {
     this.chevrons.visible = false;
     this.anim = { kind: 'run', s: this.bodyLen - 1, onDone };
@@ -223,6 +255,8 @@ export class PieceView {
 
   update(dt: number): void {
     this.mixer.update(dt);
+    this.zzzT += dt;
+    if (this.zzz.visible) this.zzz.position.y = 1.6 + Math.sin(this.zzzT * 3) * 0.08;
     if (this.anim.kind === 'run') {
       this.anim.s += RUN_SPEED * dt;
       this.place(this.anim.s);
