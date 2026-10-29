@@ -35,6 +35,11 @@ export interface Level {
   width: number;
   height: number;
   pieces: Piece[];
+  /**
+   * Cells of the width x height box that are not part of the board (its outline, see core/shapes.ts). Stepping onto
+   * one counts as leaving the board. Absent means a plain rectangle.
+   */
+  voids?: Cell[];
   /** Cells nothing can pass through. */
   obstacles?: Cell[];
   arrows?: ArrowTile[];

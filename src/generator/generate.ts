@@ -1,12 +1,15 @@
 import type { Rng } from '../core/rng';
-import { directionVector, traceExit } from '../core/rules';
+import { directionVector, onBoard, traceExit } from '../core/rules';
+import { shapeVoids, type BoardShape } from '../core/shapes';
 import type { ArrowTile, Cell, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
-import { tapsToExit } from '../solver/plan';
+import { rescueSchedule } from '../solver/plan';
 
 export interface GenParams {
   width: number;
   height: number;
+  /** Board outline inside the width x height box (default 'rect'). */
+  shape?: BoardShape;
   pieceCount: number;
   minLength: number;
   maxLength: number;
@@ -18,7 +21,7 @@ export interface GenParams {
   lockCount?: number;
   /** Sleeping pieces; each has an adjacent piece that leaves earlier (default 0). */
   sleepCount?: number;
-  /** Bomb pieces; fuse = taps needed to free them + slack (default 0). */
+  /** Bomb pieces; fuse = tap at which a focused player gets it out when rescuing all bombs in turn + slack. */
   bombCount?: number;
   /** Extra taps added to each bomb's fuse (default 3). */
   bombSlack?: number;
@@ -42,13 +45,15 @@ const key = (c: Cell): string => `${c.x},${c.y}`;
  * and the level is solvable by construction.
  */
 function buildOnce(params: GenParams, rng: Rng): Level | null {
+  const voids = shapeVoids(params.shape ?? 'rect', params.width, params.height);
+  const outline: Level = { width: params.width, height: params.height, pieces: [], ...(voids.length ? { voids } : {}) };
   const fixed = new Set<string>();
   const obstacles: Cell[] = [];
   const arrows: ArrowTile[] = [];
   const pickFree = (): Cell | null => {
     for (let t = 0; t < 50; t++) {
       const cell = { x: rng.int(0, params.width - 1), y: rng.int(0, params.height - 1) };
-      if (!fixed.has(key(cell))) { fixed.add(key(cell)); return cell; }
+      if (onBoard(outline, cell.x, cell.y) && !fixed.has(key(cell))) { fixed.add(key(cell)); return cell; }
     }
     return null;
   };
@@ -63,7 +68,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     arrows.push({ ...cell, dir: DIRECTIONS[rng.int(0, 3)] });
   }
   const arrowKeys = new Set(arrows.map((a) => key(a)));
-  const board: Level = { width: params.width, height: params.height, pieces: [], obstacles, arrows };
+  const board: Level = { ...outline, pieces: [], obstacles, arrows };
   const occupied = new Set<string>();
   const rays: Set<string>[] = [];
   for (let i = 0; i < params.pieceCount; i++) {
@@ -76,7 +81,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
       const head: Cell = { x: rng.int(0, params.width - 1), y: rng.int(0, params.height - 1) };
       const cells: Cell[] = [];
       for (let k = 0; k < length; k++) cells.push({ x: head.x - v.x * k, y: head.y - v.y * k });
-      if (cells.some((c) => c.x < 0 || c.y < 0 || c.x >= params.width || c.y >= params.height)) continue;
+      if (cells.some((c) => !onBoard(board, c.x, c.y))) continue;
       if (cells.some((c) => occupied.has(key(c)) || fixed.has(key(c)))) continue;
       const piece: Piece = length === 1 ? { id: i + 1, cells, dir } : { id: i + 1, cells };
       const trace = traceExit(board, piece);
@@ -146,6 +151,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
   const level: Level = {
     width: params.width,
     height: params.height,
+    ...(voids.length ? { voids } : {}),
     pieces,
     ...(obstacles.length > 0 ? { obstacles } : {}),
     ...(arrows.length > 0 ? { arrows } : {}),
@@ -159,12 +165,11 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     }
     if (pool.length < bombCount) return null;
     const chosen = new Set(pool.slice(0, bombCount));
+    // one shared schedule: taps spent on one bomb burn the others' fuses too
+    const schedule = rescueSchedule(level, [...chosen]);
+    if (!schedule) return null;
     const fuses = new Map<number, number>();
-    for (const id of chosen) {
-      const taps = tapsToExit(level, id);
-      if (taps === null) return null;
-      fuses.set(id, taps + (params.bombSlack ?? 3));
-    }
+    for (const id of chosen) fuses.set(id, schedule.get(id)! + (params.bombSlack ?? 3));
     level.pieces = level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p));
   }
   return level;

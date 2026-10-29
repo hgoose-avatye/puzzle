@@ -1,8 +1,6 @@
-import { createRng } from '../src/core/rng';
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
 import { crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
-import { generateLevelFor, levelSpec } from '../src/curve/curve';
-import { generateMatching } from '../src/generator/generate';
+import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
@@ -21,6 +19,8 @@ let views = new Map<number, PieceView>();
 /** Animals on their way out: who may move how far this frame (first come, first served; later ones wait). */
 const traffic = new Traffic();
 let levelNumber = 1;
+/** Hearts the level started with, for the empty-heart outlines in the HUD. */
+let maxHearts = 0;
 let loadToken = 0;
 let pressed: number | null = null;
 /** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
@@ -51,20 +51,14 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   }
   if (params.get('demo') === 'cross') return { level: crossLevel(), hearts: 3 };
   if (DEMO) return { level: demoLevel(), hearts: 3 };
-  for (let seed = 1; seed <= 5; seed++) {
-    const r = generateLevelFor(n, seed);
-    if (r) return { level: r.level, hearts: r.spec.hearts };
-  }
-  const spec = levelSpec(n);
-  const fallback = generateMatching(spec.params, {}, createRng(n), 50);
-  return fallback ? { level: fallback.level, hearts: spec.hearts } : null;
+  return buildGameLevel(n);
 }
 
 function refreshHud(): void {
   if (!state) return;
   const spec = levelSpec(levelNumber);
   $('levelLabel').textContent = `레벨 ${levelNumber}`;
-  $('hearts').textContent = state.hearts === undefined ? '' : '♥'.repeat(Math.max(0, state.hearts)) + '♡'.repeat(Math.max(0, 3 - Math.max(0, state.hearts)));
+  $('hearts').textContent = state.hearts === undefined ? '' : '♥'.repeat(Math.max(0, state.hearts)) + '♡'.repeat(Math.max(0, maxHearts - Math.max(0, state.hearts)));
   void spec;
   for (const [id, v] of views) {
     const piece = state.level.pieces.find((p) => p.id === id)!;
@@ -94,8 +88,11 @@ async function loadLevel(n: number): Promise<void> {
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
-  stage.setBoard(built.level);
+  const st = stageFor(n);
+  stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
+  $('stageLabel').textContent = DEMO ? '' : st.name;
   if (token !== loadToken) return;
+  maxHearts = built.hearts ?? 0;
   state = createGame(built.level, built.hearts === undefined ? {} : { hearts: built.hearts });
   for (const piece of built.level.pieces) {
     const view = new PieceView(built.level, piece, (x, y) => stage.worldOf(built.level, x, y));
@@ -148,6 +145,7 @@ function onTap(id: number): void {
   if (ev.type === 'exited' && view) {
     // The logic treats it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
     traffic.add(id, view.track, view.bodyLen, view.headStart);
+    fx.launch(view.headWorld());
     sound.play('move');
     pendingExits.add(id);
     view.runOut(() => { if (state && isCleared(state) && !anyRunning()) showEnd(true); }, () => {
@@ -155,6 +153,7 @@ function onTap(id: number): void {
       // the last animal's exit is covered by the clear sound
       if (!(state && isCleared(state) && pendingExits.size === 0)) sound.play('rescued');
       fx.burst(view.gateWorld(), view.color);
+      fx.sparkle(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
   } else if (ev.type === 'blocked' && view) {
@@ -245,6 +244,7 @@ $('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(leve
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 
 let dustT = 0;
+let printTick = 0;
 const clock = new THREE.Clock();
 (function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -259,7 +259,11 @@ const clock = new THREE.Clock();
   for (const v of views.values()) {
     if (v.running && !traffic.get(v.piece.id)) v.setRun(v.track.length, false); // stepped past the end this frame
     v.update(dt);
-    if (dust && v.running && !v.isWaiting) fx.dust(v.headWorld());
+    if (dust && v.running && !v.isWaiting) {
+      fx.dust(v.headWorld());
+      fx.streak(v.headWorld(), v.heading);
+      if (++printTick % 2 === 0) fx.print(v.tailWorld(), v.color);
+    }
   }
   fx.update(dt);
   stage.render();
