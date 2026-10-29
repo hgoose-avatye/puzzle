@@ -1,0 +1,31 @@
+{
+  "name": "puzzle",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc --noEmit && vite build viewer",
+    "dev": "vite viewer"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hgoose-avatye/puzzle.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/hgoose-avatye/puzzle/issues"
+  },
+  "homepage": "https://github.com/hgoose-avatye/puzzle#readme",
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
