@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boardSize, buildGameLevel, generateLevelFor, heartsFor, levelSpec, stageFor } from './curve';
+import { boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, heartsFor, levelSpec, stageFor } from './curve';
 import { winnable } from '../solver/plan';
 
 describe('levelSpec', () => {
@@ -146,5 +146,15 @@ describe('board size, obstacles and stages', () => {
     expect(stageFor(180)).toMatchObject({ chapter: 6, stage: 3, theme: 'winter' });
     const names = new Set(Array.from({ length: 180 }, (_, i) => stageFor(i + 1).name));
     expect(names.size).toBe(18);
+  });
+});
+
+describe('chapter identity', () => {
+  it('ordinary and rest levels take their outline from the chapter, so regions look different', () => {
+    for (let n = 1; n <= 180; n++) {
+      const s = levelSpec(n);
+      if (s.role !== 'ordinary' && s.role !== 'rest') continue;
+      expect(CHAPTER_SHAPES[CHAPTER_THEMES[s.chapter - 1]], `level ${n}`).toContain(s.params.shape);
+    }
   });
 });

@@ -11,6 +11,7 @@ import { createRng } from '../src/core/rng';
 import type { Theme } from '../src/curve/curve';
 import { buildScenery, obstacleFor, PALETTES } from './scenery';
 import { composeScene } from './scenes';
+import { buildPlaza } from './plaza';
 
 /** Soft lighter and darker patches over the base colour, so the grass is not one flat colour. Repeats across the plane. */
 function groundTexture(color: number): THREE.CanvasTexture {
@@ -45,7 +46,7 @@ function disposeOwned(root: THREE.Object3D): void {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh || m.userData.shared) return;
-    m.geometry.dispose();
+    if (!m.userData.sharedGeometry) m.geometry.dispose();
     for (const mt of Array.isArray(m.material) ? m.material : [m.material]) {
       (mt as THREE.MeshStandardMaterial).map?.dispose();
       mt.dispose();
@@ -124,33 +125,7 @@ export class Stage {
     ground.receiveShadow = true;
     this.board.add(ground);
 
-    // paved plaza: one stone per cell with a little colour play, on a mortar bed, framed by a curb
-    const t = new THREE.Matrix4();
-    const bed = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.1, 1), new THREE.MeshStandardMaterial({ color: new THREE.Color(pal.tileB).offsetHSL(0, 0, -0.18), roughness: 1 }), cells.length);
-    const stones = new THREE.InstancedMesh(new RoundedBoxGeometry(0.93, 0.12, 0.93, 2, 0.05), new THREE.MeshStandardMaterial({ roughness: 0.95 }), cells.length);
-    cells.forEach((c, i) => {
-      const p = this.worldOf(level, c.x, c.y);
-      bed.setMatrixAt(i, t.makeTranslation(p.x, -0.06, p.z));
-      stones.setMatrixAt(i, t.makeTranslation(p.x + (rng.next() - 0.5) * 0.03, -0.055 + rng.next() * 0.012, p.z + (rng.next() - 0.5) * 0.03));
-      stones.setColorAt(i, new THREE.Color((c.x + c.y) % 2 ? pal.tileA : pal.tileB).offsetHSL(0, (rng.next() - 0.5) * 0.04, (rng.next() - 0.5) * 0.05));
-    });
-    stones.receiveShadow = true;
-    bed.receiveShadow = true;
-    this.board.add(bed, stones);
-    const edges: THREE.Matrix4[] = [];
-    for (const c of cells) {
-      const p = this.worldOf(level, c.x, c.y);
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        if (onBoard(level, c.x + dx, c.y + dy)) continue;
-        const m = new THREE.Matrix4().makeTranslation(p.x + dx * 0.56, -0.02, p.z + dy * 0.56);
-        if (dy !== 0) m.multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2));
-        edges.push(m);
-      }
-    }
-    const curb = new THREE.InstancedMesh(new RoundedBoxGeometry(0.16, 0.16, 1.14, 2, 0.05), new THREE.MeshStandardMaterial({ color: 0xc9bfae, roughness: 0.9 }), edges.length);
-    edges.forEach((m, i) => curb.setMatrixAt(i, m));
-    curb.castShadow = true;
-    this.board.add(curb);
+    this.board.add(buildPlaza(level, cells, theme, (x, y) => this.worldOf(level, x, y), rng));
 
     const gates = level.pieces.map((p) => {
       const c = exitCell(level, p);

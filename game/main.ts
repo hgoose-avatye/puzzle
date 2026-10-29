@@ -6,6 +6,7 @@ import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
 import { Traffic } from '../src/game/traffic';
+import { pickHint } from '../src/game/hint';
 import { Stage } from './stage';
 import { Fx } from './fx';
 import { sound } from './sound';
@@ -84,6 +85,7 @@ async function loadLevel(n: number): Promise<void> {
   pendingExits.clear();
   lastHit.clear();
   traffic.clear();
+  window.clearTimeout(hintTimer);
   const built = buildLevel(n);
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
@@ -242,6 +244,28 @@ canvas.addEventListener('pointercancel', () => {
 });
 $('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
+// skipping levels without clearing them is a testing aid only
+$('next').hidden = !params.has('dev');
+
+let hintTimer: number | undefined;
+/** Light up the most helpful animal and its way out for a moment. Free for now; ads may gate it later. */
+function showHint(): void {
+  if (!state || isCleared(state) || isFailed(state)) return;
+  const id = pickHint(state.level, state.alive, state.fuses);
+  const view = id === null ? undefined : views.get(id);
+  if (!view) { $('msg').textContent = '지금은 움직일 수 있는 친구가 없어요'; return; }
+  sound.play('select');
+  view.showPath(true);
+  window.clearTimeout(hintTimer);
+  // three pulses so the eye finds it, then the path fades
+  let n = 0;
+  const beat = (): void => {
+    if (n++ < 3) { view.pulse(); hintTimer = window.setTimeout(beat, 450); return; }
+    if (pressed !== id) view.showPath(false);
+  };
+  beat();
+}
+$('hint').addEventListener('click', () => { sound.unlock(); showHint(); });
 
 let dustT = 0;
 let printTick = 0;

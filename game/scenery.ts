@@ -362,7 +362,7 @@ export function buildScenery(theme: Theme, stage: number, area: SceneryArea, rng
   const ground = new THREE.Mesh(geo('plane', () => new THREE.PlaneGeometry(1, 1)), mat(p.ground));
   ground.rotation.x = -Math.PI / 2;
   const c = area.world((area.minX + area.maxX) / 2, (area.minY + area.maxY) / 2);
-  ground.position.set(c.x, -0.42, c.z);
+  ground.position.set(c.x, -0.1, c.z);
   ground.scale.set(area.maxX - area.minX + 40, area.maxY - area.minY + 40, 1);
   ground.receiveShadow = true;
   ground.userData.shared = true;
@@ -383,10 +383,14 @@ export function buildScenery(theme: Theme, stage: number, area: SceneryArea, rng
       const py = y + (rng.next() - 0.5) * 0.8;
       if (area.blocked(px, py) || rng.next() < 0.35) continue;
       const prop = pick()(rng);
-      prop.position.copy(area.world(px, py)).setY(-0.42);
+      prop.position.copy(area.world(px, py)).setY(0);
       prop.rotation.y = rng.next() * Math.PI * 2;
       g.add(prop);
     }
   }
   return g;
 }
+
+/** Prop library for the composed stage scenes (game/scenes.ts). */
+export const LIB = { roundTree, pine, flowers, house, fence, rock, mushroom, palm, barrel, chest, jungleTree, ruin, deadTree, pumpkin, grave, lantern, snowman, iceBlock, hay, crate, log, stump, tent, campfire, bush, pillar, stoneWall, snowPile, gift, shell, ghostLight };
+export type { Prop };
