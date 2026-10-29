@@ -7,6 +7,8 @@ import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
 import { Traffic } from '../src/game/traffic';
 import { pickHint } from '../src/game/hint';
+import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
+import { PALETTES } from './scenery';
 import { Stage } from './stage';
 import { Fx } from './fx';
 import { sound } from './sound';
@@ -93,6 +95,8 @@ async function loadLevel(n: number): Promise<void> {
   const st = stageFor(n);
   stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
   $('stageLabel').textContent = DEMO ? '' : st.name;
+  paintStageDots(n);
+  if (!DEMO && startsStage(n)) showBanner(n);
   if (token !== loadToken) return;
   maxHearts = built.hearts ?? 0;
   state = createGame(built.level, built.hearts === undefined ? {} : { hearts: built.hearts });
@@ -209,6 +213,71 @@ function showIntro(level: Level, hearts: boolean): void {
   $('popupBtn').onclick = () => { $('popup').hidden = true; };
 }
 
+const RESCUED_KEY = 'animal-rescue-rescued';
+const readRescued = (): number => { try { return Number(localStorage.getItem(RESCUED_KEY) ?? 0) || 0; } catch { return 0; } };
+const addRescued = (k: number): void => { try { localStorage.setItem(RESCUED_KEY, String(readRescued() + k)); } catch { /* ignore */ } };
+
+/** Ten dots under the stage name: cleared levels green, the current one amber. */
+function paintStageDots(n: number): void {
+  const box = $('stageDots');
+  box.innerHTML = '';
+  if (DEMO) return;
+  const { step, of } = stageStep(n);
+  for (let i = 1; i <= of; i++) {
+    const d = document.createElement('i');
+    if (i < step) d.className = 'done';
+    else if (i === step) d.className = 'now';
+    box.appendChild(d);
+  }
+}
+
+/** Name card when a new stage begins; it fades by itself and never blocks a tap. */
+function showBanner(n: number): void {
+  const st = stageFor(n);
+  $('bannerIcon').textContent = stageIcon(st);
+  $('bannerText').textContent = splitName(st).place;
+  const b = $('banner');
+  b.hidden = true;
+  void b.offsetWidth; // restart the animation
+  b.hidden = false;
+  window.setTimeout(() => { b.hidden = true; }, 1950);
+}
+
+/** Full-screen cards between stages and chapters, one after another; resolves when the last is dismissed. */
+async function playInterludes(list: Interlude[]): Promise<void> {
+  for (const it of list) {
+    await new Promise<void>((done) => {
+      const theme = it.kind === 'chapter-intro' ? it.next.theme : it.kind === 'journey-done' ? 'winter' : it.done.theme;
+      const pal = PALETTES[theme];
+      const box = $('interlude');
+      box.style.background = `linear-gradient(180deg, #${new THREE.Color(pal.sky).getHexString()} 0%, #${new THREE.Color(pal.ground).getHexString()} 100%)`;
+      const set = (icon: string, kicker: string, title: string, sub: string, btn: string): void => {
+        $('ilIcon').textContent = icon;
+        $('ilKicker').textContent = kicker;
+        $('ilTitle').textContent = title;
+        $('ilSub').textContent = sub;
+        $('ilBtn').textContent = btn;
+      };
+      const saved = `지금까지 구한 친구 ${readRescued()}마리`;
+      if (it.kind === 'stage-done') {
+        const d = splitName(it.done);
+        const nx = splitName(it.next);
+        set(stageIcon(it.done), `${d.region}`, `${d.place} 완료!`, `${saved}\n다음은 ${stageIcon(it.next)} ${nx.place}`, '다음 스테이지');
+      } else if (it.kind === 'chapter-done') {
+        set('🏅', '여행 기록', `${splitName(it.done).region} 여행 완료!`, `${saved}\n이 지역의 친구들을 모두 구했어요`, '계속');
+      } else if (it.kind === 'chapter-intro') {
+        const nx = splitName(it.next);
+        set(stageIcon(it.next), `챕터 ${it.next.chapter}`, `${nx.region}에 도착했어요!`, `첫 번째 장소는 ${nx.place}\n새로운 친구들이 기다리고 있어요`, '출발!');
+      } else {
+        set('🎉', '세계 일주 완료', '모든 친구를 구했어요!', `${saved}\n함께해 주셔서 고마워요`, '처음부터 다시');
+      }
+      sound.play('clear');
+      box.hidden = false;
+      $('ilBtn').onclick = () => { box.hidden = true; done(); };
+    });
+  }
+}
+
 function showEnd(won: boolean): void {
   if (!state) return;
   if (won) {
@@ -219,7 +288,15 @@ function showEnd(won: boolean): void {
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
-  $('popupBtn').onclick = () => { if (won) { writeProgress(levelNumber + 1); void loadLevel(levelNumber + 1); } else void loadLevel(levelNumber); };
+  $('popupBtn').onclick = () => {
+    if (!won) { void loadLevel(levelNumber); return; }
+    const n = levelNumber;
+    const next = n >= LAST_LEVEL ? 1 : n + 1; // after the whole journey, start over
+    writeProgress(next);
+    $('popup').hidden = true;
+    void playInterludes(interludesAfter(n)).then(() => loadLevel(next));
+  };
+  if (won) addRescued(state.level.pieces.length);
 }
 
 // Decode the sounds now; unlock on any gesture the browser counts as user activation (touch pointerdown may not count on iOS).
