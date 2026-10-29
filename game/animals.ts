@@ -33,6 +33,9 @@ const ALERT_HOLD = 0.2;
 const ALERT_OUT = 0.15;
 const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
 const FLINCH_TIME = 0.12;
+/** Badge width in cells, and how long a count change pops it. */
+const BADGE_W = 1.9;
+const BADGE_POP = 0.35;
 const LAUNCH_TIME = 0.2;
 const GATE_TIME = 0.4;
 /** cells past the gate over which a block shrinks away */
@@ -44,22 +47,46 @@ const BLOCK_SPACING = 1;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
 
+/** Badge colours for a bomb's remaining taps: calm, getting close, about to go off. */
+export const fuseTone = (n: number): { line: string; text: string } =>
+  n <= 2 ? { line: '#e0453a', text: '#d0322a' } : n <= 4 ? { line: '#f2a33d', text: '#b9670f' } : { line: '#8a7a5c', text: '#3b3a36' };
+
+/**
+ * A cream speech-bubble pill over the head: icons, then the bomb's remaining taps in big digits. The light fill keeps
+ * a black bomb readable on a dark animal (penguin, husky).
+ */
 function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
   const c = document.createElement('canvas');
-  c.width = 256;
+  c.width = 320;
   c.height = 128;
   const ctx = c.getContext('2d')!;
+  const tone = number === undefined ? { line: '#8a7a5c', text: '#3b3a36' } : fuseTone(number);
+  const iconW = 76;
+  const numW = number === undefined ? 0 : number >= 10 ? 96 : 60;
+  const w = Math.min(300, items.length * iconW + numW + 40);
+  const x0 = (320 - w) / 2;
+  ctx.fillStyle = '#fff8e8';
+  ctx.strokeStyle = tone.line;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.roundRect(x0, 14, w, 92, 46);
+  ctx.fill();
+  ctx.stroke();
+  // little tail pointing down at the animal
+  ctx.beginPath();
+  ctx.moveTo(150, 104);
+  ctx.lineTo(160, 122);
+  ctx.lineTo(170, 104);
+  ctx.closePath();
+  ctx.fill();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '72px system-ui, sans-serif';
-  items.forEach((it, i) => ctx.fillText(it, 128 + (i - (items.length - 1) / 2) * 84, 56));
+  ctx.font = '62px system-ui, sans-serif';
+  items.forEach((it, i) => ctx.fillText(it, x0 + 20 + iconW * (i + 0.5), 62));
   if (number !== undefined) {
-    ctx.font = 'bold 54px system-ui, sans-serif';
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = '#fff';
-    ctx.fillStyle = number <= 2 ? '#d22' : '#222';
-    ctx.strokeText(String(number), 128, 108);
-    ctx.fillText(String(number), 128, 108);
+    ctx.font = '900 70px system-ui, sans-serif';
+    ctx.fillStyle = tone.text;
+    ctx.fillText(String(number), x0 + 20 + items.length * iconW + numW / 2, 64);
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -150,6 +177,9 @@ export class PieceView {
   private gate!: THREE.Object3D;
   private alertT = 0;
   private alert: THREE.Sprite | null = null;
+  private badgeKey = '';
+  private badgeNumber: number | undefined;
+  private badgePopT = 0;
   private dots: THREE.Sprite | null = null;
   private waiting = false;
   /** seconds the current wait has lasted */
@@ -177,7 +207,7 @@ export class PieceView {
     }
 
     this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false }));
-    this.badge.scale.set(1.1, 0.55, 1);
+    this.badge.scale.set(BADGE_W, BADGE_W * 0.4, 1);
     this.badge.renderOrder = 10;
     this.badge.visible = false;
     this.group.add(this.badge);
@@ -222,7 +252,7 @@ export class PieceView {
       plate.rotation.y = q.angle;
     });
     const h = this.segments[0].position;
-    this.badge.position.set(h.x, 1.75, h.z);
+    this.badge.position.set(h.x, 2.1, h.z);
     this.zzz.position.set(h.x, 0, h.z);
   }
 
@@ -276,11 +306,29 @@ export class PieceView {
       this.badge.visible = false;
       return;
     }
+    const key = `${items.join('')}:${number ?? ''}`;
+    if (key === this.badgeKey && this.badge.visible) return;
+    // a bomb's count going down pops the badge so the change is noticed
+    if (number !== undefined && this.badgeNumber !== undefined && number < this.badgeNumber) this.badgePopT = BADGE_POP;
+    this.badgeKey = key;
+    this.badgeNumber = number;
     const mat = this.badge.material as THREE.SpriteMaterial;
     mat.map?.dispose();
     mat.map = badgeTexture(items, number);
     mat.needsUpdate = true;
     this.badge.visible = true;
+  }
+
+  /** Pop on a count change, and a steady heartbeat while a bomb is about to go off. */
+  private animateBadge(dt: number): void {
+    if (!this.badge.visible) return;
+    let k = 1;
+    if (this.badgePopT > 0) {
+      this.badgePopT = Math.max(0, this.badgePopT - dt);
+      k += Math.sin((1 - this.badgePopT / BADGE_POP) * Math.PI) * 0.35;
+    }
+    if (this.badgeNumber !== undefined && this.badgeNumber <= 2) k += Math.max(0, Math.sin(this.clock * 7)) * 0.12;
+    this.badge.scale.set(BADGE_W * k, BADGE_W * 0.4 * k, 1);
   }
 
   /** Three Z's rise from the head one after another, growing and fading out. */
@@ -449,6 +497,7 @@ export class PieceView {
     this.clock += dt;
     this.zzzT += dt;
     if (this.zzz.visible) this.animateZzz();
+    this.animateBadge(dt);
     if (this.alertT > 0) this.alertT = Math.max(0, this.alertT - dt);
     if (this.anim.kind === 'run') {
       this.place(this.anim.s);

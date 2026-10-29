@@ -55,6 +55,18 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   return buildGameLevel(n);
 }
 
+/** While a bomb is on the board, a bar under the HUD says how many taps are left for the closest one. */
+function paintBombBar(): void {
+  const bar = $('bombBar');
+  if (!state) { bar.hidden = true; return; }
+  const left = [...state.alive].map((id) => state!.fuses[id]).filter((f): f is number => f !== undefined);
+  if (!left.length || isFailed(state)) { bar.hidden = true; return; }
+  const n = Math.min(...left);
+  bar.hidden = false;
+  bar.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
+  bar.textContent = n <= 1 ? '💣 다음에 누르면 터져요! 폭탄 친구를 먼저!' : `💣 ${n}번 남았어요 · 폭탄 친구를 먼저 구해 주세요`;
+}
+
 function refreshHud(): void {
   if (!state) return;
   const spec = levelSpec(levelNumber);
@@ -71,6 +83,7 @@ function refreshHud(): void {
     if (piece.fuse !== undefined) items.push('💣');
     v.setBadges(items, piece.fuse !== undefined ? state.fuses[id] : undefined);
   }
+  paintBombBar();
 }
 
 async function loadLevel(n: number): Promise<void> {
@@ -186,7 +199,7 @@ const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolea
   ['hearts', '♥', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
   ['key', '🔑', '🔒 잠긴 친구는 🔑 열쇠를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
   ['sleep', '💤', 'Zzz 자는 친구는 옆 친구가 나가면 깨어나요. 깨어나기 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
-  ['bomb', '💣', '💣 폭탄 친구는 숫자만큼 누르고 나면 터져요. 그 전에 먼저 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
+  ['bomb', '💣', '💣 폭탄 친구 머리 위 숫자는 남은 횟수예요. 아무 친구나 누를 때마다 1씩 줄고, 0이 되면 터져요. 폭탄 친구 앞을 먼저 비워서 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
 ];
 
 function showIntro(level: Level, hearts: boolean): void {
