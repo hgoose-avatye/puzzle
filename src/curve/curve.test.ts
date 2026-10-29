@@ -38,4 +38,10 @@ describe('generateLevelFor', () => {
       expect(a!.metrics.rounds).toBeLessThanOrEqual(hi);
     }
   });
+  it('accepts parameter overrides such as obstacles and arrows', () => {
+    const r = generateLevelFor(1, 1, { obstacleCount: 3, arrowCount: 2 });
+    expect(r).not.toBeNull();
+    expect(r!.level.obstacles).toHaveLength(3);
+    expect(r!.level.arrows).toHaveLength(2);
+  });
 });

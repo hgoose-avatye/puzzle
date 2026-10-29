@@ -1,6 +1,6 @@
 import type { GameState } from '../src/core/game';
-import { blockersOf, directionVector, exitCell, headDirection } from '../src/core/rules';
-import type { Piece } from '../src/core/types';
+import { blockersOf, directionVector, exitCell, exitDirection, headDirection } from '../src/core/rules';
+import type { Direction, Piece } from '../src/core/types';
 
 export type Style = 'arrows' | 'blocks';
 
@@ -63,6 +63,9 @@ export function render(canvas: HTMLCanvasElement, state: GameState, cell: number
   ctx.strokeStyle = '#e4ded3';
   for (let x = 0; x <= level.width; x++) line(ctx, m + x * cell, m, m + x * cell, m + level.height * cell);
   for (let y = 0; y <= level.height; y++) line(ctx, m, m + y * cell, m + level.width * cell, m + y * cell);
+
+  for (const o of level.obstacles ?? []) drawObstacle(ctx, o.x, o.y, cell);
+  for (const a of level.arrows ?? []) drawArrowTile(ctx, a.x, a.y, a.dir, cell);
 
   const highlighted = new Set<number>();
   if (flash?.kind === 'blocked') {
@@ -145,8 +148,35 @@ function drawBlocks(ctx: CanvasRenderingContext2D, piece: Piece, color: string, 
   }
 }
 
+function drawObstacle(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number): void {
+  const c = center(cell, x, y);
+  ctx.fillStyle = '#6d8f5a';
+  ctx.beginPath();
+  ctx.roundRect(c.x - cell * 0.42, c.y - cell * 0.42, cell * 0.84, cell * 0.84, cell * 0.2);
+  ctx.fill();
+  ctx.fillStyle = '#8fb374';
+  ctx.beginPath();
+  ctx.arc(c.x - cell * 0.12, c.y - cell * 0.1, cell * 0.2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawArrowTile(ctx: CanvasRenderingContext2D, x: number, y: number, dir: Direction, cell: number): void {
+  const c = center(cell, x, y);
+  ctx.fillStyle = '#ece4cf';
+  ctx.fillRect(c.x - cell * 0.45, c.y - cell * 0.45, cell * 0.9, cell * 0.9);
+  const v = directionVector(dir);
+  const r = cell * 0.3;
+  ctx.fillStyle = '#8a7a52';
+  ctx.beginPath();
+  ctx.moveTo(c.x + v.x * r, c.y + v.y * r);
+  ctx.lineTo(c.x - v.x * r + v.y * r, c.y - v.y * r + v.x * r);
+  ctx.lineTo(c.x - v.x * r - v.y * r, c.y - v.y * r - v.x * r);
+  ctx.closePath();
+  ctx.fill();
+}
+
 function drawGate(ctx: CanvasRenderingContext2D, state: GameState, piece: Piece, color: string, cell: number): void {
-  const v = directionVector(headDirection(piece));
+  const v = directionVector(exitDirection(state.level, piece));
   const g = exitCell(state.level, piece);
   const c = center(cell, g.x, g.y);
   const cx = c.x + v.x * cell * 0.75;

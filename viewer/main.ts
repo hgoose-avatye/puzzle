@@ -1,18 +1,20 @@
 import { createRng } from '../src/core/rng';
-import { createGame, isCleared, tap, type GameState } from '../src/core/game';
+import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
 import { generateMatching } from '../src/generator/generate';
-import { generateLevelFor } from '../src/curve/curve';
+import { generateLevelFor, levelSpec } from '../src/curve/curve';
 import type { Metrics } from '../src/solver/metrics';
 import { computeCell, hitTest, render, type Flash, type Style } from './render';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const num = (id: string): number => Number($<HTMLInputElement>(id).value);
+const heartsOn = (): boolean => $<HTMLInputElement>('hearts').checked;
+const newGame = (level: Parameters<typeof createGame>[0]): GameState => createGame(level, heartsOn() ? { hearts: 3 } : {});
 const canvas = $<HTMLCanvasElement>('board');
 let state: GameState | null = null;
 let metrics: Metrics | null = null;
 let flashTimer: number | undefined;
 
-interface LogEntry { level: number; role: string; taps: number; blockedTaps: number; cleared: boolean; ms: number; at: string; viewportWidth: number; style: string }
+interface LogEntry { level: number; role: string; taps: number; blockedTaps: number; cleared: boolean; failed: boolean; hearts: boolean; obstacles: number; arrows: number; ms: number; at: string; viewportWidth: number; style: string }
 const LOG_KEY = 'puzzle-test-log';
 let attempt: { level: number; role: string; startedAt: number } | null = null;
 const readLog = (): LogEntry[] => { try { return JSON.parse(localStorage.getItem(LOG_KEY) ?? '[]'); } catch { return []; } };
@@ -21,7 +23,7 @@ const refreshLogInfo = (): void => { $('logInfo').textContent = `log: ${readLog(
 
 function closeAttempt(cleared: boolean): void {
   if (!attempt || !state || (!cleared && state.taps === 0)) { attempt = null; return; }
-  writeLog([...readLog(), { level: attempt.level, role: attempt.role, taps: state.taps, blockedTaps: state.blockedTaps, cleared, ms: Date.now() - attempt.startedAt, at: new Date().toISOString(), viewportWidth: window.innerWidth, style: style() }]);
+  writeLog([...readLog(), { level: attempt.level, role: attempt.role, taps: state.taps, blockedTaps: state.blockedTaps, cleared, failed: isFailed(state), hearts: state.hearts !== undefined, obstacles: state.level.obstacles?.length ?? 0, arrows: state.level.arrows?.length ?? 0, ms: Date.now() - attempt.startedAt, at: new Date().toISOString(), viewportWidth: window.innerWidth, style: style() }]);
   attempt = null;
   refreshLogInfo();
 }
@@ -45,18 +47,19 @@ function show(flash?: Flash): void {
         `avg blockers      ${m.avgBlockers.toFixed(2)}`,
         `surge             ${m.surge.toFixed(2)}`,
         ``,
+        `hearts            ${state.hearts === undefined ? '-' : '♥'.repeat(Math.max(0, state.hearts)) || '0'}`,
         `taps              ${state.taps}`,
         `blocked taps      ${state.blockedTaps}`,
       ].join('\n')
     : '';
-  $('status').textContent = isCleared(state) ? 'Cleared!' : '';
+  $('status').textContent = isCleared(state) ? 'Cleared!' : isFailed(state) ? 'Failed - no hearts left (Retry level)' : '';
 }
 
 function generate(): void {
   closeAttempt(false);
   $('roleInfo').textContent = '';
   const result = generateMatching(
-    { width: num('width'), height: num('height'), pieceCount: num('count'), minLength: num('minLen'), maxLength: num('maxLen') },
+    { width: num('width'), height: num('height'), pieceCount: num('count'), minLength: num('minLen'), maxLength: num('maxLen'), obstacleCount: num('obstacles'), arrowCount: num('arrows') },
     {},
     createRng(num('seed')),
   );
@@ -68,13 +71,13 @@ function generate(): void {
     $('status').textContent = 'Generation failed (parameters too tight?)';
     return;
   }
-  state = createGame(result.level);
+  state = newGame(result.level);
   metrics = result.metrics;
   show();
 }
 
 canvas.addEventListener('click', (e) => {
-  if (!state || isCleared(state)) return;
+  if (!state || isCleared(state) || isFailed(state)) return;
   const rect = canvas.getBoundingClientRect();
   const id = hitTest(state, (e.clientX - rect.left) * (canvas.width / rect.width), (e.clientY - rect.top) * (canvas.height / rect.height), cellSize());
   if (id === undefined) return;
@@ -83,6 +86,7 @@ canvas.addEventListener('click', (e) => {
   if (result.event.type === 'ignored') return;
   const blocked = result.event.type === 'blocked';
   if (isCleared(state)) closeAttempt(true);
+  else if (isFailed(state)) closeAttempt(false);
   show(blocked ? { id, kind: 'blocked' } : undefined);
   window.clearTimeout(flashTimer);
   if (blocked) flashTimer = window.setTimeout(() => show(), 500);
@@ -102,7 +106,14 @@ function playLevel(): void {
   closeAttempt(false);
   const n = Math.max(1, Math.floor(num('level')));
   let result = null;
-  for (let seedTry = 1; seedTry <= 5 && !result; seedTry++) result = generateLevelFor(n, seedTry);
+  const fixtures = { obstacleCount: num('obstacles'), arrowCount: num('arrows') };
+  for (let seedTry = 1; seedTry <= 5 && !result; seedTry++) result = generateLevelFor(n, seedTry, fixtures);
+  if (!result) {
+    // Fixtures can make the curve's difficulty target unreachable; fall back to an unfiltered level.
+    const spec = levelSpec(n);
+    const fallback = generateMatching({ ...spec.params, ...fixtures }, {}, createRng(n), 50);
+    if (fallback) result = { spec, ...fallback };
+  }
   if (!result) {
     state = null;
     metrics = null;
@@ -110,7 +121,7 @@ function playLevel(): void {
     $('status').textContent = `Could not generate level ${n}`;
     return;
   }
-  state = createGame(result.level);
+  state = newGame(result.level);
   metrics = result.metrics;
   attempt = { level: n, role: result.spec.role, startedAt: Date.now() };
   $('roleInfo').textContent = `Level ${result.spec.level} (${result.spec.role}) - ${result.spec.params.width}x${result.spec.params.height}`;
@@ -118,6 +129,13 @@ function playLevel(): void {
 }
 
 $('playLevel').addEventListener('click', playLevel);
+$('retry').addEventListener('click', () => {
+  if (!state) return;
+  closeAttempt(isCleared(state));
+  state = newGame(state.level);
+  if (attempt === null && $('roleInfo').textContent) attempt = { level: Math.max(1, Math.floor(num('level'))), role: 'retry', startedAt: Date.now() };
+  show();
+});
 $('nextLevel').addEventListener('click', () => {
   $<HTMLInputElement>('level').value = String(num('level') + 1);
   playLevel();

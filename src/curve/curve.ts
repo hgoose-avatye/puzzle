@@ -47,8 +47,10 @@ export function levelSpec(levelNumber: number): LevelSpec {
 export function generateLevelFor(
   levelNumber: number,
   baseSeed: number,
+  overrides: Partial<GenParams> = {},
 ): { spec: LevelSpec; level: Level; metrics: Metrics } | null {
-  const spec = levelSpec(levelNumber);
+  const base = levelSpec(levelNumber);
+  const spec = { ...base, params: { ...base.params, ...overrides } };
   const rng = createRng(baseSeed * 1000 + levelNumber);
   const result = generateMatching(spec.params, spec.target, rng, 300);
   return result ? { spec, ...result } : null;
