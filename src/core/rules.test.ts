@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blockersOf, canExit, exitCell, exitRay, headDirection, traceExit, validateLevel } from './rules';
+import { blockersOf, canExit, exitCell, exitRay, headDirection, isAsleep, lockedBy, traceExit, validateLevel } from './rules';
 import type { Cell, Level, Piece } from './types';
 
 const c = (x: number, y: number): Cell => ({ x, y });
@@ -119,5 +119,33 @@ describe('direction arrows and obstacles', () => {
     expect(validateLevel(withFixtures([mover], { obstacles: [c(1, 2)] })).length).toBeGreaterThan(0);
     expect(validateLevel(withFixtures([mover], { obstacles: [c(4, 4)], arrows: [{ x: 4, y: 4, dir: 'up' }] })).length).toBeGreaterThan(0);
     expect(validateLevel(withFixtures([mover], { obstacles: [c(9, 9)] })).length).toBeGreaterThan(0);
+  });
+});
+
+describe('locks and sleepers', () => {
+  const keyCarrier: Piece = { ...p(2, [4, 0], [3, 0]), key: 1 };
+  const locked: Piece = { ...p(1, [1, 2], [0, 2]), lock: 1 };
+  it('a locked piece cannot exit until its key carrier is gone', () => {
+    const level = lvl(5, 5, locked, keyCarrier);
+    expect(lockedBy(level, locked, new Set([1, 2]))).toBe(2);
+    expect(canExit(level, 1, new Set([1, 2]))).toBe(false);
+    expect(canExit(level, 1, new Set([1]))).toBe(true);
+  });
+  it('a sleeping piece wakes only when an adjacent piece has left', () => {
+    const sleeper: Piece = { ...p(1, [1, 2], [0, 2]), sleeping: true };
+    const neighbor = p(2, [1, 3], [0, 3]);
+    const far = p(3, [4, 0], [3, 0]);
+    const level = lvl(5, 5, sleeper, neighbor, far);
+    expect(isAsleep(level, sleeper, new Set([1, 2, 3]))).toBe(true);
+    expect(canExit(level, 1, new Set([1, 2, 3]))).toBe(false);
+    expect(isAsleep(level, sleeper, new Set([1, 3]))).toBe(false);
+    expect(isAsleep(level, sleeper, new Set([1, 2]))).toBe(true);
+  });
+  it('validateLevel rejects a lock without a key, a self-key, a lonely sleeper and a bad fuse', () => {
+    expect(validateLevel(lvl(5, 5, locked)).length).toBeGreaterThan(0);
+    expect(validateLevel(lvl(5, 5, { ...locked, key: 1 })).length).toBeGreaterThan(0);
+    expect(validateLevel(lvl(5, 5, { ...p(1, [1, 2], [0, 2]), sleeping: true })).length).toBeGreaterThan(0);
+    expect(validateLevel(lvl(5, 5, { ...p(1, [1, 2], [0, 2]), fuse: 0 })).length).toBeGreaterThan(0);
+    expect(validateLevel(lvl(5, 5, locked, keyCarrier))).toEqual([]);
   });
 });

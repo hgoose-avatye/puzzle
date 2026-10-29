@@ -65,3 +65,24 @@ describe('fixtures and hearts on the curve', () => {
     expect(r!.level.arrows).toHaveLength(levelSpec(8).params.arrowCount!);
   });
 });
+
+describe('chapters after the first introduce one mechanic each', () => {
+  it('uses keys in chapter 3, sleepers in chapter 4 and bombs in chapter 5', () => {
+    expect(levelSpec(61).params.lockCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(91).params.sleepCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(121).params.bombCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(35).params.lockCount ?? 0).toBe(0);
+  });
+  it('keeps rest levels free of mechanics and limits active elements to three', () => {
+    for (const n of [65, 95, 125, 155]) {
+      const p = levelSpec(n).params;
+      expect((p.lockCount ?? 0) + (p.sleepCount ?? 0) + (p.bombCount ?? 0)).toBe(0);
+    }
+    for (let n = 1; n <= 180; n++) {
+      const s = levelSpec(n);
+      const p = s.params;
+      const active = [(p.arrowCount ?? 0) > 0, s.hearts !== undefined, (p.lockCount ?? 0) > 0, (p.sleepCount ?? 0) > 0, (p.bombCount ?? 0) > 0].filter(Boolean).length;
+      expect(active).toBeLessThanOrEqual(3);
+    }
+  });
+});

@@ -14,6 +14,14 @@ export interface Piece {
   id: number;
   cells: Cell[];
   dir?: Direction;
+  /** Locked until the piece whose `key` equals this value has left. */
+  lock?: number;
+  /** Carries the key with this id. */
+  key?: number;
+  /** Ignores taps until an adjacent piece has left. */
+  sleeping?: boolean;
+  /** Bomb: the level fails if this many counted taps pass while the piece is still on the board. */
+  fuse?: number;
 }
 
 /** A floor tile that bends a piece's exit path. A piece entering from the opposite side hits a wall. */

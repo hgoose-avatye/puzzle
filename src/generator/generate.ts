@@ -2,6 +2,7 @@ import type { Rng } from '../core/rng';
 import { directionVector, traceExit } from '../core/rules';
 import type { ArrowTile, Cell, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
+import { tapsToExit } from '../solver/plan';
 
 export interface GenParams {
   width: number;
@@ -13,6 +14,14 @@ export interface GenParams {
   obstacleCount?: number;
   /** Direction tiles that bend exit paths (default 0). */
   arrowCount?: number;
+  /** Locked pieces; each gets a key carrier that leaves earlier (default 0). */
+  lockCount?: number;
+  /** Sleeping pieces; each has an adjacent piece that leaves earlier (default 0). */
+  sleepCount?: number;
+  /** Bomb pieces; fuse = taps needed to free them + slack (default 0). */
+  bombCount?: number;
+  /** Extra taps added to each bomb's fuse (default 3). */
+  bombSlack?: number;
 }
 
 export interface DifficultyTarget {
@@ -85,6 +94,44 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     rays.push(best.ray);
     for (const c of best.piece.cells) occupied.add(key(c));
   }
+  // Roles are only given along placement order (earlier-placed pieces leave later), so every new
+  // dependency points the same way as the blocking dependencies and the level stays solvable.
+  const list = board.pieces;
+  const n = list.length;
+  const used = new Set<number>();
+  const take = (candidates: number[]): number | null => {
+    const free = candidates.filter((i) => !used.has(i));
+    if (free.length === 0) return null;
+    const pick = free[rng.int(0, free.length - 1)];
+    used.add(pick);
+    return pick;
+  };
+  const indexAt = new Map<string, number>();
+  list.forEach((p, i) => p.cells.forEach((c) => indexAt.set(key(c), i)));
+  const adjacentTo = (i: number): number[] => {
+    const found = new Set<number>();
+    for (const c of list[i].cells) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const j = indexAt.get(key({ x: c.x + dx, y: c.y + dy }));
+        if (j !== undefined && j !== i) found.add(j);
+      }
+    }
+    return [...found];
+  };
+  const all = list.map((_, i) => i);
+  for (let t = 0; t < (params.lockCount ?? 0); t++) {
+    const locked = take(all.filter((i) => i < n - 1));
+    if (locked === null) return null;
+    const keyer = take(all.filter((j) => j > locked));
+    if (keyer === null) return null;
+    list[locked] = { ...list[locked], lock: t + 1 };
+    list[keyer] = { ...list[keyer], key: t + 1 };
+  }
+  for (let t = 0; t < (params.sleepCount ?? 0); t++) {
+    const sleeper = take(all.filter((i) => adjacentTo(i).some((j) => j > i)));
+    if (sleeper === null) return null;
+    list[sleeper] = { ...list[sleeper], sleeping: true };
+  }
   // Hide placement order: shuffle array order and reassign ids randomly.
   const ids = board.pieces.map((_, idx) => idx + 1);
   for (let i = ids.length - 1; i > 0; i--) {
@@ -96,13 +143,31 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const j = rng.int(0, i);
     [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
   }
-  return {
+  const level: Level = {
     width: params.width,
     height: params.height,
     pieces,
     ...(obstacles.length > 0 ? { obstacles } : {}),
     ...(arrows.length > 0 ? { arrows } : {}),
   };
+  const bombCount = params.bombCount ?? 0;
+  if (bombCount > 0) {
+    const pool = level.pieces.filter((p) => p.lock === undefined && p.key === undefined && !p.sleeping).map((p) => p.id);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = rng.int(0, i);
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    if (pool.length < bombCount) return null;
+    const chosen = new Set(pool.slice(0, bombCount));
+    const fuses = new Map<number, number>();
+    for (const id of chosen) {
+      const taps = tapsToExit(level, id);
+      if (taps === null) return null;
+      fuses.set(id, taps + (params.bombSlack ?? 3));
+    }
+    level.pieces = level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p));
+  }
+  return level;
 }
 
 export function generateLevel(params: GenParams, rng: Rng, maxAttempts = 200): Level | null {

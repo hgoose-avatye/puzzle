@@ -72,3 +72,49 @@ describe('hearts', () => {
     expect(isFailed(s)).toBe(false);
   });
 });
+
+describe('locks, sleepers and bombs', () => {
+  it('reports why a locked or sleeping piece did not move', () => {
+    const lockedLevel: Level = {
+      width: 5, height: 5,
+      pieces: [
+        { id: 1, cells: [{ x: 1, y: 2 }, { x: 0, y: 2 }], lock: 1 },
+        { id: 2, cells: [{ x: 4, y: 0 }, { x: 3, y: 0 }], key: 1 },
+      ],
+    };
+    expect(tap(createGame(lockedLevel), 1).event).toEqual({ type: 'blocked', id: 1, blockers: [], lockedBy: 2 });
+    const sleepLevel: Level = {
+      width: 5, height: 5,
+      pieces: [
+        { id: 1, cells: [{ x: 1, y: 2 }, { x: 0, y: 2 }], sleeping: true },
+        { id: 2, cells: [{ x: 1, y: 3 }, { x: 0, y: 3 }] },
+      ],
+    };
+    expect(tap(createGame(sleepLevel, { hearts: 2 }), 1)).toMatchObject({ event: { type: 'blocked', asleep: true }, state: { hearts: 1 } });
+    const woken = tap(createGame(sleepLevel), 2).state;
+    expect(tap(woken, 1).event).toEqual({ type: 'exited', id: 1 });
+  });
+  const bombLevel: Level = {
+    width: 5, height: 5,
+    pieces: [
+      { id: 1, cells: [{ x: 1, y: 2 }, { x: 0, y: 2 }] },
+      { id: 2, cells: [{ x: 4, y: 2 }, { x: 3, y: 2 }], fuse: 2 },
+    ],
+  };
+  it('a bomb explodes when its fuse runs out while it is still on the board', () => {
+    let s = createGame(bombLevel);
+    s = tap(s, 1).state;
+    expect(isFailed(s)).toBe(false);
+    s = tap(s, 1).state;
+    expect(isFailed(s)).toBe(true);
+    expect(s.alive.has(2)).toBe(true);
+  });
+  it('exiting the bomb in time defuses it', () => {
+    let s = createGame(bombLevel);
+    s = tap(s, 1).state;
+    s = tap(s, 2).state;
+    s = tap(s, 1).state;
+    expect(isCleared(s)).toBe(true);
+    expect(isFailed(s)).toBe(false);
+  });
+});

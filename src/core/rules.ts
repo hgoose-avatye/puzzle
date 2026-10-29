@@ -93,9 +93,40 @@ export function blockersOf(level: Level, piece: Piece, alive: ReadonlySet<number
   return [...found].sort((a, b) => a - b);
 }
 
+/** Ids of pieces with a cell directly next to one of this piece's cells. */
+export function neighborsOf(level: Level, piece: Piece): number[] {
+  const owner = new Map<string, number>();
+  for (const q of level.pieces) for (const c of q.cells) owner.set(`${c.x},${c.y}`, q.id);
+  const found = new Set<number>();
+  for (const c of piece.cells) {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const id = owner.get(`${c.x + dx},${c.y + dy}`);
+      if (id !== undefined && id !== piece.id) found.add(id);
+    }
+  }
+  return [...found].sort((a, b) => a - b);
+}
+
+/** Id of the alive key carrier that still locks this piece, if any. */
+export function lockedBy(level: Level, piece: Piece, alive: ReadonlySet<number>): number | undefined {
+  if (piece.lock === undefined) return undefined;
+  return level.pieces.find((q) => q.id !== piece.id && q.key === piece.lock && alive.has(q.id))?.id;
+}
+
+export function isAsleep(level: Level, piece: Piece, alive: ReadonlySet<number>): boolean {
+  if (!piece.sleeping) return false;
+  return !neighborsOf(level, piece).some((id) => !alive.has(id));
+}
+
 export function canExit(level: Level, id: number, alive: ReadonlySet<number>): boolean {
   const piece = level.pieces.find((q) => q.id === id);
-  return piece !== undefined && traceExit(level, piece).reachesEdge && blockersOf(level, piece, alive).length === 0;
+  return (
+    piece !== undefined &&
+    traceExit(level, piece).reachesEdge &&
+    blockersOf(level, piece, alive).length === 0 &&
+    lockedBy(level, piece, alive) === undefined &&
+    !isAsleep(level, piece, alive)
+  );
 }
 
 export interface ValidateOptions {
@@ -146,6 +177,13 @@ export function validateLevel(level: Level, options: ValidateOptions = {}): stri
     if (options.straightOnly && cells.length >= 2 && !cells.every((q) => q.x === cells[0].x) && !cells.every((q) => q.y === cells[0].y)) {
       errors.push(`piece ${piece.id}: not a straight bar`);
     }
+  }
+  const keys = new Set(level.pieces.filter((q) => q.key !== undefined).map((q) => q.key));
+  for (const piece of level.pieces) {
+    if (piece.lock !== undefined && !keys.has(piece.lock)) errors.push(`piece ${piece.id}: lock ${piece.lock} has no key carrier`);
+    if (piece.lock !== undefined && piece.key === piece.lock) errors.push(`piece ${piece.id}: carries the key to its own lock`);
+    if (piece.sleeping && neighborsOf(level, piece).length === 0) errors.push(`piece ${piece.id}: a sleeper needs an adjacent piece to wake it`);
+    if (piece.fuse !== undefined && (!Number.isInteger(piece.fuse) || piece.fuse < 1)) errors.push(`piece ${piece.id}: fuse must be a positive integer`);
   }
   for (const piece of level.pieces) {
     if (errors.some((e) => e.startsWith(`piece ${piece.id}:`))) continue;
