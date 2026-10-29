@@ -66,6 +66,49 @@ function chapterOneSpec(level: number): Omit<LevelSpec, 'chapter'> {
   return { level, role: 'ordinary', params: { ...full, pieceCount, arrowCount }, target: { rounds: [7, 11], initialFreeRatio: [0.25, 0.45] }, hearts: heartsFor(pieceCount) };
 }
 
+/**
+ * The board grows through a chapter: small boards to learn on, the full 8 x 12 (the most a phone shows readably) for
+ * the second half and the tough levels.
+ */
+export function boardSize(level: number, role: Role): { width: number; height: number } {
+  if (role === 'intro') return { width: 6, height: 9 };
+  if (role === 'rest') return { width: 7, height: 10 };
+  if (role === 'tough' || role === 'finale' || level >= 16) return { width: 8, height: 12 };
+  if (level < 10) return { width: 7, height: 11 };
+  return { width: 8, height: 11 };
+}
+
+/**
+ * Fixed obstacles (fences, crates, hay bales; the look comes from the stage). Chapter 1 brings them in with its second
+ * stage, chapter 2 makes them its new element, later chapters keep a few. Never on intro or rest levels, except as
+ * chapter 2's gentle introduction.
+ */
+export function obstaclesFor(chapter: number, level: number, role: Role): number {
+  if (role === 'rest') return 0;
+  const peak = role === 'tough' || role === 'finale';
+  if (chapter === 1) return level <= 10 ? 0 : peak ? 2 : level > 20 ? 2 : 1;
+  if (chapter === 2) return role === 'intro' ? 1 : peak ? 4 : level > 15 ? 3 : 2;
+  return role === 'intro' ? 0 : peak ? 2 : 1;
+}
+
+/** Three stages of ten levels per chapter; each stage is a sub-theme of the chapter's region (spec 6.1). */
+export const STAGE_LENGTH = 10;
+export interface StageInfo { chapter: number; stage: number; theme: Theme; name: string }
+const STAGE_NAMES: Record<Theme, [string, string, string]> = {
+  village: ['동물 마을 · 꽃밭', '동물 마을 · 농장', '동물 마을 · 마을 광장'],
+  forest: ['숲속 · 캠핑장', '숲속 · 강가', '숲속 · 깊은 숲'],
+  pirate: ['해적섬 · 해변', '해적섬 · 항구', '해적섬 · 보물 동굴'],
+  jungle: ['정글 · 밀림 입구', '정글 · 폭포', '정글 · 고대 유적'],
+  haunted: ['유령 성 · 호박밭', '유령 성 · 묘지', '유령 성 · 성 마당'],
+  winter: ['겨울 마을 · 눈 마을', '겨울 마을 · 얼음 호수', '겨울 마을 · 크리스마스 광장'],
+};
+export function stageFor(levelNumber: number): StageInfo {
+  const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
+  const stage = Math.min(3, Math.floor((((levelNumber - 1) % CHAPTER_LENGTH)) / STAGE_LENGTH) + 1);
+  const theme = CHAPTER_THEMES[chapter - 1];
+  return { chapter, stage, theme, name: STAGE_NAMES[theme][stage - 1] };
+}
+
 /** Background theme per chapter (spec 6.1): animal village, forest, pirate island, jungle ruins, haunted castle, winter. */
 export type Theme = 'village' | 'forest' | 'pirate' | 'jungle' | 'haunted' | 'winter';
 export const CHAPTER_THEMES: Theme[] = ['village', 'forest', 'pirate', 'jungle', 'haunted', 'winter'];
@@ -76,6 +119,8 @@ const SHAPE_CYCLE: BoardShape[] = ['octagon', 'plus', 'hexagon', 'tee', 'ellipse
 export function shapeFor(level: number, role: Role): BoardShape {
   if (role === 'intro') return level <= 2 ? 'rect' : 'rounded';
   if (role === 'rest') return 'ellipse';
+  // the biggest levels need the roomy outlines to fit 26-28 animals
+  if (role === 'tough' || role === 'finale') return (['rounded', 'octagon', 'rect'] as const)[level % 3];
   return SHAPE_CYCLE[level % SHAPE_CYCLE.length];
 }
 
@@ -85,12 +130,11 @@ export function levelSpec(levelNumber: number): LevelSpec {
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
   const level = ((levelNumber - 1) % CHAPTER_LENGTH) + 1;
   const raw = chapterOneSpec(level);
-  const base = { ...raw, params: { ...raw.params, shape: shapeFor(level, raw.role) } };
+  const base = { ...raw, params: { ...raw.params, ...boardSize(level, raw.role), shape: shapeFor(level, raw.role), obstacleCount: obstaclesFor(chapter, level, raw.role) } };
   if (chapter === 1) return { ...base, chapter };
   const params = { ...base.params };
   const { role } = base;
   const count = role === 'rest' ? 0 : role === 'intro' || level < 10 ? 1 : role === 'tough' || role === 'finale' ? 3 : 2;
-  if (chapter === 2 && role !== 'rest') params.maxLength = role === 'intro' ? 3 : 4;
   const mechanic = chapter === 3 ? 'lock' : chapter === 4 ? 'sleep' : chapter === 5 ? 'bomb' : chapter === 6 ? (['lock', 'sleep', 'bomb'] as const)[level % 3] : null;
   if (mechanic === 'lock') params.lockCount = count;
   if (mechanic === 'sleep') params.sleepCount = count;

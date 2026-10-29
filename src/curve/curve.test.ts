@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGameLevel, generateLevelFor, heartsFor, levelSpec } from './curve';
+import { boardSize, buildGameLevel, generateLevelFor, heartsFor, levelSpec, stageFor } from './curve';
 import { winnable } from '../solver/plan';
 
 describe('levelSpec', () => {
@@ -109,4 +109,42 @@ describe('bomb levels as the game builds them', () => {
     expect(checked).toBeGreaterThan(20);
     expect(bad).toEqual([]);
   }, 120_000);
+});
+
+describe('board size, obstacles and stages', () => {
+  it('the board grows through a chapter and never exceeds 8 x 12', () => {
+    const area = (n: number): number => levelSpec(n).params.width * levelSpec(n).params.height;
+    expect(area(1)).toBeLessThan(area(6));
+    expect(area(6)).toBeLessThan(area(11));
+    expect(area(11)).toBeLessThan(area(16));
+    expect(boardSize(10, 'tough')).toEqual({ width: 8, height: 12 });
+    for (let n = 1; n <= 180; n++) {
+      expect(levelSpec(n).params.width).toBeLessThanOrEqual(8);
+      expect(levelSpec(n).params.height).toBeLessThanOrEqual(12);
+    }
+  });
+  it('animals are at most three cells long, as in the art reference size classes', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).params.maxLength, `level ${n}`).toBeLessThanOrEqual(3);
+  });
+  it('obstacles start with chapter 1 stage 2, are chapter 2s new element, and never sit on rest levels', () => {
+    for (let n = 1; n <= 10; n++) expect(levelSpec(n).params.obstacleCount ?? 0).toBe(0);
+    expect(levelSpec(12).params.obstacleCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(31).params.obstacleCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(46).params.obstacleCount!).toBeGreaterThan(levelSpec(16).params.obstacleCount!);
+    for (const n of [5, 15, 25, 35, 65, 155]) expect(levelSpec(n).params.obstacleCount ?? 0).toBe(0);
+  });
+  it('generated levels carry their obstacles', () => {
+    const built = buildGameLevel(46)!;
+    expect(built.level.obstacles?.length).toBe(levelSpec(46).params.obstacleCount);
+  });
+  it('splits each chapter into three stages of ten levels', () => {
+    expect(stageFor(1)).toMatchObject({ chapter: 1, stage: 1, theme: 'village' });
+    expect(stageFor(10).stage).toBe(1);
+    expect(stageFor(11).stage).toBe(2);
+    expect(stageFor(30)).toMatchObject({ chapter: 1, stage: 3 });
+    expect(stageFor(31)).toMatchObject({ chapter: 2, stage: 1, theme: 'forest' });
+    expect(stageFor(180)).toMatchObject({ chapter: 6, stage: 3, theme: 'winter' });
+    const names = new Set(Array.from({ length: 180 }, (_, i) => stageFor(i + 1).name));
+    expect(names.size).toBe(18);
+  });
 });
