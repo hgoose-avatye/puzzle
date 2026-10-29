@@ -30,6 +30,11 @@
       #ilTitle { font-size: 30px; font-weight: 800; margin: 4px 0 8px; color: #3b3a36; }
       #ilSub { font-size: 18px; color: #6b6558; margin-bottom: 20px; line-height: 1.45; white-space: pre-line; }
       #ilBtn { background: #6cc24a; color: #fff; min-width: 180px; }
+      #bombBar { position: fixed; top: 104px; left: 50%; transform: translateX(-50%); background: #fff8e8; border: 3px solid #8a7a5c; border-radius: 20px; padding: 6px 16px; font-size: 17px; font-weight: 800; color: #3b3a36; white-space: nowrap; pointer-events: none; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+      #bombBar[hidden] { display: none; }
+      #bombBar.warn { border-color: #f2a33d; color: #b9670f; }
+      #bombBar.danger { border-color: #e0453a; color: #d0322a; animation: bombBeat .7s ease-in-out infinite; }
+      @keyframes bombBeat { 50% { transform: translateX(-50%) scale(1.06); } }
       #hud > div:first-child { max-width: calc(50% - 46px); }
       #stageLabel { font-size: 13px; line-height: 1.25; font-weight: 600; opacity: .75; margin-top: 2px; }
       #msg { position: fixed; top: 58px; left: 0; right: 0; text-align: center; font-size: 18px; font-weight: 600; color: #b3402f; min-height: 24px; pointer-events: none; text-shadow: 0 1px 0 #fff; }
@@ -49,6 +54,7 @@
     <div id="app"></div>
     <div id="hud"><div><div id="levelLabel"></div><div id="stageLabel"></div><div id="stageDots"></div></div><div id="hearts"></div></div>
     <button id="mute" aria-label="소리 켜기/끄기">🔊</button>
+    <div id="bombBar" hidden></div>
     <div id="msg"></div>
     <div id="bar"><button id="retry">다시 ↻</button><button id="hint">💡 힌트</button><button id="next" hidden>다음 ▶</button></div>
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
