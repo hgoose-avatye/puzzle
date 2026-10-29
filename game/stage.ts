@@ -4,7 +4,7 @@ import type { Level } from '../src/core/types';
 import { directionVector, exitCell, exitDirection, onBoard } from '../src/core/rules';
 import { createRng } from '../src/core/rng';
 import type { Theme } from '../src/curve/curve';
-import { buildScenery, PALETTES } from './scenery';
+import { buildScenery, obstacleFor, PALETTES } from './scenery';
 
 /** Free what a board group created for itself; scenery meshes share cached geometry and materials and are skipped. */
 function disposeOwned(root: THREE.Object3D): void {
@@ -59,7 +59,7 @@ export class Stage {
    * Board island for this level (only the cells of its outline) inside the chapter's surroundings. `seed` keeps the
    * scenery the same every time the same level is opened.
    */
-  setBoard(level: Level, theme: Theme = 'village', seed = 1): void {
+  setBoard(level: Level, theme: Theme = 'village', seed = 1, stage = 1): void {
     this.level = level;
     this.scene.remove(this.board);
     disposeOwned(this.board);
@@ -109,17 +109,17 @@ export class Stage {
       const side = Math.abs((x - c.x) * v.y - (y - c.y) * v.x);
       return along > -0.5 && along < 9 && side < 1.1;
     });
-    this.board.add(buildScenery(theme, {
+    this.board.add(buildScenery(theme, stage, {
       minX: -6, maxX: w + 5, minY: -8, maxY: h + 6,
       blocked: (x, y) => near(x, y) || inLane(x, y),
       world: (x, y) => this.worldOf(level, x, y),
     }, createRng(seed * 7 + 3)));
 
+    const orng = createRng(seed * 13 + 5);
     for (const o of level.obstacles ?? []) {
-      const bush = new THREE.Mesh(new RoundedBoxGeometry(0.85, 0.75, 0.85, 3, 0.25), new THREE.MeshStandardMaterial({ color: 0x6fa05a, roughness: 0.9 }));
-      bush.position.copy(this.worldOf(level, o.x, o.y)).setY(0.4);
-      bush.castShadow = true;
-      this.board.add(bush);
+      const ob = obstacleFor(theme, stage, orng);
+      ob.position.copy(this.worldOf(level, o.x, o.y));
+      this.board.add(ob);
     }
     for (const a of level.arrows ?? []) this.board.add(this.arrowTile(level, a.x, a.y, a.dir));
     this.fit();

@@ -181,15 +181,160 @@ const iceBlock: Prop = (rng) => {
   return g;
 };
 
-/** Props per theme with relative weights: landmarks are rare, small filler is common. */
-const PROPS: Record<Theme, Array<[Prop, number]>> = {
-  village: [[roundTree, 5], [flowers, 5], [fence, 2], [house(0xf6e3c4, 0xd9634c), 1], [house(0xfdf3e0, 0x4f8fc6), 1], [rock, 1]],
-  forest: [[pine(false), 7], [roundTree, 2], [rock, 2], [mushroom, 3], [house(0x9c6b45, 0x3e6e45), 1]],
-  pirate: [[palm, 5], [barrel, 2], [chest, 1], [rock, 2]],
-  jungle: [[jungleTree, 5], [ruin, 3], [rock, 2], [flowers, 2]],
-  haunted: [[deadTree, 4], [pumpkin, 4], [grave, 3], [lantern, 2]],
-  winter: [[pine(true), 6], [snowman, 2], [iceBlock, 3], [house(0xe9d7bf, 0xc7414b), 1]],
+const hay: Prop = () => {
+  const g = new THREE.Group();
+  part(g, cyl(), 0xe8c55a, 0, 0.32, 0, 0.78, 0.64, 0.78).rotation.z = Math.PI / 2;
+  for (const x of [-0.18, 0.18]) part(g, cyl(), 0xc99a35, x, 0.32, 0, 0.8, 0.05, 0.8).rotation.z = Math.PI / 2;
+  return g;
 };
+/** A small fenced pen that fills a board cell, so it reads as "blocked" from above as well as from the side. */
+const fenceBlock: Prop = () => {
+  const g = new THREE.Group();
+  for (const x of [-0.38, 0.38]) for (const z of [-0.38, 0.38]) part(g, box(), 0xb7834f, x, 0.33, z, 0.16, 0.66, 0.16);
+  for (const y of [0.24, 0.48]) {
+    for (const z of [-0.38, 0.38]) part(g, box(), 0xd3a26b, 0, y, z, 0.86, 0.1, 0.08);
+    for (const x of [-0.38, 0.38]) part(g, box(), 0xd3a26b, x, y, 0, 0.08, 0.1, 0.86);
+  }
+  part(g, box(), 0x9fcf7a, 0, 0.03, 0, 0.7, 0.06, 0.7);
+  return g;
+};
+/** Headstone on a stone slab, filling its cell. */
+const graveBlock: Prop = () => {
+  const g = new THREE.Group();
+  part(g, box(), 0x6f6c86, 0, 0.06, 0, 0.84, 0.12, 0.84);
+  part(g, box(), 0x9a98b0, 0, 0.45, -0.1, 0.62, 0.7, 0.28);
+  part(g, box(), 0x8b8aa0, 0, 0.16, 0.22, 0.5, 0.12, 0.3);
+  return g;
+};
+const crate: Prop = () => {
+  const g = new THREE.Group();
+  part(g, box(), 0xc08a52, 0, 0.36, 0, 0.72, 0.72, 0.72);
+  for (const s of [-1, 1]) part(g, box(), 0x8f5f33, 0, 0.36, s * 0.37, 0.76, 0.12, 0.03).rotation.z = s * 0.78;
+  return g;
+};
+const log: Prop = () => {
+  const g = new THREE.Group();
+  part(g, cyl(), 0x8a5a3b, 0, 0.24, 0, 0.48, 0.86, 0.48).rotation.z = Math.PI / 2;
+  for (const x of [-0.43, 0.43]) part(g, cyl(), 0xe0b984, x, 0.24, 0, 0.4, 0.02, 0.4).rotation.z = Math.PI / 2;
+  return g;
+};
+const stump: Prop = () => {
+  const g = new THREE.Group();
+  part(g, cyl(), 0x8a5a3b, 0, 0.25, 0, 0.7, 0.5, 0.7);
+  part(g, cyl(), 0xe0b984, 0, 0.505, 0, 0.6, 0.02, 0.6);
+  return g;
+};
+const tent: Prop = () => {
+  const g = new THREE.Group();
+  part(g, pyramid(), 0xf2a65a, 0, 0.5, 0, 1.6, 1, 1.4).rotation.y = Math.PI / 4;
+  return g;
+};
+const campfire: Prop = () => {
+  const g = new THREE.Group();
+  for (let i = 0; i < 3; i++) part(g, cyl(), 0x7a5236, 0, 0.08, 0, 0.12, 0.6, 0.12).rotation.set(Math.PI / 2, (i / 3) * Math.PI, 0);
+  part(g, cone(), 0xffa53a, 0, 0.3, 0, 0.3, 0.45, 0.3, 0xff7a1a);
+  return g;
+};
+const bush: Prop = () => {
+  const g = new THREE.Group();
+  part(g, ball(), 0x5aa84a, 0, 0.32, 0, 0.85, 0.7, 0.85);
+  part(g, ball(), 0x6dbb57, 0.15, 0.5, 0.1, 0.5, 0.4, 0.5);
+  return g;
+};
+const pillar: Prop = () => {
+  const g = new THREE.Group();
+  part(g, box(), 0xb7b2a0, 0, 0.42, 0, 0.6, 0.84, 0.6);
+  part(g, box(), 0xa29d8a, 0, 0.88, 0, 0.72, 0.1, 0.72);
+  return g;
+};
+const stoneWall: Prop = () => {
+  const g = new THREE.Group();
+  for (const [x, y] of [[-0.22, 0.17], [0.22, 0.17], [0, 0.5]] as const) part(g, box(), 0x8d8aa0, x, y, 0, 0.44, 0.32, 0.5);
+  return g;
+};
+const snowPile: Prop = () => {
+  const g = new THREE.Group();
+  part(g, ball(), 0xffffff, 0, 0.18, 0, 0.9, 0.45, 0.9);
+  part(g, ball(), 0xf4f8fc, 0.12, 0.35, 0.05, 0.5, 0.35, 0.5);
+  return g;
+};
+const gift: Prop = () => {
+  const g = new THREE.Group();
+  part(g, box(), 0xd94a4a, 0, 0.3, 0, 0.62, 0.6, 0.62);
+  part(g, box(), 0xf2d16b, 0, 0.3, 0, 0.66, 0.62, 0.12);
+  part(g, box(), 0xf2d16b, 0, 0.3, 0, 0.12, 0.62, 0.66);
+  return g;
+};
+const pond = (color: number): Prop => () => {
+  const g = new THREE.Group();
+  const m = part(g, cyl(), color, 0, 0.01, 0, 2.4, 0.04, 1.6);
+  m.castShadow = false;
+  return g;
+};
+const shell: Prop = (rng) => {
+  const g = new THREE.Group();
+  part(g, ball(), [0xffc2b0, 0xfff1e0, 0xf7a9c4][rng.int(0, 2)], 0, 0.06, 0, 0.3, 0.12, 0.26);
+  return g;
+};
+const ghostLight: Prop = () => {
+  const g = new THREE.Group();
+  part(g, ball(), 0xe9e4ff, 0, 1.1, 0, 0.45, 0.55, 0.45, 0x8a7fd0);
+  return g;
+};
+
+/**
+ * Props per stage (three sub-themes per chapter), with relative weights: landmarks are rare, filler is common.
+ * The same table also decides which obstacle sits on the board in that stage (see obstacleFor).
+ */
+const PROPS: Record<Theme, [Array<[Prop, number]>, Array<[Prop, number]>, Array<[Prop, number]>]> = {
+  village: [
+    [[flowers, 7], [roundTree, 4], [rock, 1], [house(0xfdf3e0, 0x4f8fc6), 1]],
+    [[hay, 3], [fence, 4], [roundTree, 3], [house(0xd9634c, 0x8a3b2c), 1], [flowers, 2]],
+    [[house(0xf6e3c4, 0xd9634c), 2], [house(0xfdf3e0, 0x4f8fc6), 2], [crate, 2], [roundTree, 3], [flowers, 2]],
+  ],
+  forest: [
+    [[tent, 2], [campfire, 1], [log, 2], [pine(false), 5], [mushroom, 2]],
+    [[pond(0x6cc3e0), 3], [rock, 3], [pine(false), 4], [roundTree, 2]],
+    [[pine(false), 9], [stump, 2], [mushroom, 3], [house(0x9c6b45, 0x3e6e45), 1]],
+  ],
+  pirate: [
+    [[palm, 6], [shell, 4], [rock, 2]],
+    [[barrel, 4], [crate, 3], [palm, 3], [rock, 1]],
+    [[rock, 5], [chest, 2], [palm, 2], [barrel, 1]],
+  ],
+  jungle: [
+    [[jungleTree, 6], [bush, 3], [flowers, 2]],
+    [[pond(0x5cbfd9), 3], [rock, 3], [jungleTree, 4]],
+    [[ruin, 5], [pillar, 2], [jungleTree, 3], [rock, 1]],
+  ],
+  haunted: [
+    [[pumpkin, 7], [deadTree, 3], [lantern, 1]],
+    [[grave, 6], [deadTree, 3], [ghostLight, 1], [lantern, 1]],
+    [[stoneWall, 3], [lantern, 3], [deadTree, 2], [ghostLight, 2], [pumpkin, 1]],
+  ],
+  winter: [
+    [[house(0xe9d7bf, 0xc7414b), 2], [pine(true), 5], [snowPile, 2], [snowman, 1]],
+    [[pond(0xcfeaf7), 3], [iceBlock, 4], [pine(true), 3], [snowPile, 1]],
+    [[pine(true), 5], [gift, 3], [snowman, 3], [house(0xe9d7bf, 0xc7414b), 1]],
+  ],
+};
+
+/** Board obstacle per stage: hay, fences and crates in the village, logs in the forest, barrels at the harbour... */
+const OBSTACLES: Record<Theme, [Prop, Prop, Prop]> = {
+  village: [hay, fenceBlock, crate],
+  forest: [log, rock, stump],
+  pirate: [rock, barrel, crate],
+  jungle: [bush, rock, pillar],
+  haunted: [pumpkin, graveBlock, stoneWall],
+  winter: [snowPile, iceBlock, gift],
+};
+
+/** One obstacle model for a board cell of this stage (1-3). */
+export function obstacleFor(theme: Theme, stage: number, rng: Rng): THREE.Group {
+  const g = OBSTACLES[theme][Math.max(0, Math.min(2, stage - 1))](rng);
+  g.rotation.y = rng.int(0, 3) * (Math.PI / 2);
+  return g;
+}
 
 /** Where props may go: a grid box around the board, minus `blocked` (the island and the exit lanes). */
 export interface SceneryArea {
@@ -202,7 +347,7 @@ export interface SceneryArea {
 }
 
 /** Ground plane plus props; the caller drops the group on the next level (shared geometry and materials stay). */
-export function buildScenery(theme: Theme, area: SceneryArea, rng: Rng): THREE.Group {
+export function buildScenery(theme: Theme, stage: number, area: SceneryArea, rng: Rng): THREE.Group {
   const g = new THREE.Group();
   const p = PALETTES[theme];
   const ground = new THREE.Mesh(geo('plane', () => new THREE.PlaneGeometry(1, 1)), mat(p.ground));
@@ -214,7 +359,7 @@ export function buildScenery(theme: Theme, area: SceneryArea, rng: Rng): THREE.G
   ground.userData.shared = true;
   g.add(ground);
 
-  const table = PROPS[theme];
+  const table = PROPS[theme][Math.max(0, Math.min(2, stage - 1))];
   const total = table.reduce((s, [, w]) => s + w, 0);
   const pick = (): Prop => {
     let r = rng.next() * total;

@@ -1,6 +1,6 @@
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
 import { crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
-import { buildGameLevel, levelSpec, themeFor, type Theme } from '../src/curve/curve';
+import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
@@ -88,7 +88,9 @@ async function loadLevel(n: number): Promise<void> {
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
-  stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : themeFor(n), n);
+  const st = stageFor(n);
+  stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
+  $('stageLabel').textContent = DEMO ? '' : st.name;
   if (token !== loadToken) return;
   maxHearts = built.hearts ?? 0;
   state = createGame(built.level, built.hearts === undefined ? {} : { hearts: built.hearts });
