@@ -73,4 +73,16 @@ describe('playOnce / simulate', () => {
     const h = simulate(l, hasty, createRng(3), 300);
     expect(h.blockedPerRun).toBeGreaterThan(c.blockedPerRun);
   });
+
+  it('a player who plans clears the way to a blocked bomb in time more often than one who does not', () => {
+    // bomb 2 is behind 1; fuse leaves room for exactly the focused plan plus one spare tap; 3..6 are free distractions
+    const l = level([
+      piece(1, [[3, 2]], 'up'), piece(2, [[3, 5]], 'up', { fuse: 3 }),
+      piece(3, [[0, 0]], 'left'), piece(4, [[7, 0]], 'right'), piece(5, [[0, 7]], 'left'), piece(6, [[7, 7]], 'right'),
+    ]);
+    const planner = { ...average, bombPlan: 1 };
+    const drifter = { ...average, bombPlan: 0 };
+    expect(simulate(l, planner, createRng(5), 200).failRate).toBe(0);
+    expect(simulate(l, drifter, createRng(5), 200).failRate).toBeGreaterThan(0.3);
+  });
 });

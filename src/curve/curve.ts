@@ -82,3 +82,14 @@ export function generateLevelFor(
   const result = generateMatching(spec.params, spec.target, rng, 300);
   return result ? { spec, ...result } : null;
 }
+
+/** The level the game plays as number `n`: the first base seed that meets the curve, else any solvable level. */
+export function buildGameLevel(n: number): { level: Level; hearts?: number } | null {
+  for (let seed = 1; seed <= 5; seed++) {
+    const r = generateLevelFor(n, seed);
+    if (r) return { level: r.level, hearts: r.spec.hearts };
+  }
+  const spec = levelSpec(n);
+  const fallback = generateMatching(spec.params, {}, createRng(n), 50);
+  return fallback ? { level: fallback.level, hearts: spec.hearts } : null;
+}

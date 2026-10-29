@@ -2,7 +2,7 @@ import type { Rng } from '../core/rng';
 import { directionVector, traceExit } from '../core/rules';
 import type { ArrowTile, Cell, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
-import { tapsToExit } from '../solver/plan';
+import { rescueSchedule } from '../solver/plan';
 
 export interface GenParams {
   width: number;
@@ -18,7 +18,7 @@ export interface GenParams {
   lockCount?: number;
   /** Sleeping pieces; each has an adjacent piece that leaves earlier (default 0). */
   sleepCount?: number;
-  /** Bomb pieces; fuse = taps needed to free them + slack (default 0). */
+  /** Bomb pieces; fuse = tap at which a focused player gets it out when rescuing all bombs in turn + slack. */
   bombCount?: number;
   /** Extra taps added to each bomb's fuse (default 3). */
   bombSlack?: number;
@@ -159,12 +159,11 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     }
     if (pool.length < bombCount) return null;
     const chosen = new Set(pool.slice(0, bombCount));
+    // one shared schedule: taps spent on one bomb burn the others' fuses too
+    const schedule = rescueSchedule(level, [...chosen]);
+    if (!schedule) return null;
     const fuses = new Map<number, number>();
-    for (const id of chosen) {
-      const taps = tapsToExit(level, id);
-      if (taps === null) return null;
-      fuses.set(id, taps + (params.bombSlack ?? 3));
-    }
+    for (const id of chosen) fuses.set(id, schedule.get(id)! + (params.bombSlack ?? 3));
     level.pieces = level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p));
   }
   return level;

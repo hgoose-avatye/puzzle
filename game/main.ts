@@ -1,8 +1,6 @@
-import { createRng } from '../src/core/rng';
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
 import { demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
-import { generateLevelFor, levelSpec } from '../src/curve/curve';
-import { generateMatching } from '../src/generator/generate';
+import { buildGameLevel, levelSpec } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
@@ -47,13 +45,7 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
     return { level: turnLevel(dir('from', 'up'), dir('to', 'right'), Number(params.get('len') ?? 2), Number(params.get('id') ?? 2)), hearts: 3 };
   }
   if (DEMO) return { level: demoLevel(), hearts: 3 };
-  for (let seed = 1; seed <= 5; seed++) {
-    const r = generateLevelFor(n, seed);
-    if (r) return { level: r.level, hearts: r.spec.hearts };
-  }
-  const spec = levelSpec(n);
-  const fallback = generateMatching(spec.params, {}, createRng(n), 50);
-  return fallback ? { level: fallback.level, hearts: spec.hearts } : null;
+  return buildGameLevel(n);
 }
 
 function refreshHud(): void {

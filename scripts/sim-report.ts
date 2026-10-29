@@ -4,29 +4,17 @@
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { createRng } from '../src/core/rng';
-import { generateLevelFor, levelSpec } from '../src/curve/curve';
-import { generateMatching } from '../src/generator/generate';
+import { buildGameLevel, levelSpec } from '../src/curve/curve';
 import { computeMetrics } from '../src/solver/metrics';
 import { PROFILES, simulate } from '../src/sim/player';
-import type { Level } from '../src/core/types';
 
 const last = Number(process.argv[2] ?? 180);
 const runs = Number(process.argv[3] ?? 200);
 
-function build(n: number): { level: Level; hearts?: number } | null {
-  for (let seed = 1; seed <= 5; seed++) {
-    const r = generateLevelFor(n, seed);
-    if (r) return { level: r.level, hearts: r.spec.hearts };
-  }
-  const spec = levelSpec(n);
-  const fallback = generateMatching(spec.params, {}, createRng(n), 50);
-  return fallback ? { level: fallback.level, hearts: spec.hearts } : null;
-}
-
 const rows = [];
 for (let n = 1; n <= last; n++) {
   const spec = levelSpec(n);
-  const built = build(n);
+  const built = buildGameLevel(n);
   if (!built) { rows.push({ n, chapter: spec.chapter, role: spec.role, missing: true }); continue; }
   const m = computeMetrics(built.level);
   const sims = Object.fromEntries(PROFILES.map((p) => [p.name, simulate(built.level, p, createRng(n * 7919 + p.name.length), runs, built.hearts)]));

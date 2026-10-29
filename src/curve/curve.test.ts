@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { generateLevelFor, levelSpec } from './curve';
+import { buildGameLevel, generateLevelFor, levelSpec } from './curve';
+import { winnable } from '../solver/plan';
 
 describe('levelSpec', () => {
   it('assigns roles on a 30-level chapter', () => {
@@ -85,4 +86,19 @@ describe('chapters after the first introduce one mechanic each', () => {
       expect(active).toBeLessThanOrEqual(3);
     }
   });
+});
+
+describe('bomb levels as the game builds them', () => {
+  it('every level with bombs in chapters 5 and 6 can be won', () => {
+    const bad: number[] = [];
+    let checked = 0;
+    for (let n = 121; n <= 180; n++) {
+      const built = buildGameLevel(n);
+      if (!built || !built.level.pieces.some((p) => p.fuse !== undefined)) continue;
+      checked++;
+      if (winnable(built.level) !== true) bad.push(n);
+    }
+    expect(checked).toBeGreaterThan(20);
+    expect(bad).toEqual([]);
+  }, 120_000);
 });

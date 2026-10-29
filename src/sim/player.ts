@@ -1,6 +1,7 @@
 import { createGame, isCleared, isFailed, tap, type GameState } from '../core/game';
 import type { Rng } from '../core/rng';
 import { blockersOf, canExit, isAsleep, lockedBy, traceExit } from '../core/rules';
+import { nextTapToward } from '../solver/plan';
 import type { Level, Piece } from '../core/types';
 
 /**
@@ -19,12 +20,14 @@ export interface Profile {
   badge: number;
   /** chance of rescuing a free bomb before anything else */
   bombAware: number;
+  /** chance, per tap, of working towards a bomb that is still blocked (clearing what is in its way) */
+  bombPlan: number;
 }
 
 export const PROFILES: Profile[] = [
-  { name: 'careful', misread: 0.02, perCell: 0.01, perTurn: 0.06, badge: 0.02, bombAware: 0.9 },
-  { name: 'average', misread: 0.05, perCell: 0.02, perTurn: 0.1, badge: 0.06, bombAware: 0.7 },
-  { name: 'hasty', misread: 0.12, perCell: 0.035, perTurn: 0.15, badge: 0.15, bombAware: 0.4 },
+  { name: 'careful', misread: 0.02, perCell: 0.01, perTurn: 0.06, badge: 0.02, bombAware: 0.9, bombPlan: 0.8 },
+  { name: 'average', misread: 0.05, perCell: 0.02, perTurn: 0.1, badge: 0.06, bombAware: 0.7, bombPlan: 0.5 },
+  { name: 'hasty', misread: 0.12, perCell: 0.035, perTurn: 0.15, badge: 0.15, bombAware: 0.4, bombPlan: 0.2 },
 ];
 
 const MAX_MISREAD = 0.6;
@@ -77,6 +80,11 @@ export function playOnce(level: Level, profile: Profile, rng: Rng, hearts?: numb
     let pick: number | undefined;
     const bombs = alive.filter((id) => byId.get(id)!.fuse !== undefined && canExit(level, id, state.alive));
     if (bombs.length && rng.next() < profile.bombAware) pick = bombs[0];
+    if (pick === undefined && rng.next() < profile.bombPlan) {
+      // the bomb closest to going off, worked on by clearing its way
+      const urgent = alive.filter((id) => byId.get(id)!.fuse !== undefined).sort((a, b) => state.fuses[a] - state.fuses[b])[0];
+      if (urgent !== undefined) pick = nextTapToward(level, state.alive, urgent) ?? undefined;
+    }
     // scan in random order until something looks free; a full pass with nothing believed starts over
     for (let pass = 0; pick === undefined && pass < 20; pass++) {
       for (let i = alive.length - 1; i > 0; i--) {
