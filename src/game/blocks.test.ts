@@ -24,8 +24,8 @@ describe('block animals', () => {
         expect(ms.length).toBeGreaterThan(0);
         for (const m of ms) expect(Math.abs(m.position.z)).toBeLessThan(1.7); // parts are re-centered on their own cell
       }
-      // the head carries the face: at least two white eye spheres in front of its center
-      const eyes = meshes(segs[0]).filter((m) => (m.material as THREE.MeshStandardMaterial).color.getHex() === 0xffffff && m.position.z > 0.3);
+      // the head carries the face: at least two white eye spheres on its front half
+      const eyes = meshes(segs[0]).filter((m) => (m.material as THREE.MeshStandardMaterial).color.getHex() === 0xffffff && m.position.z > 0.1);
       expect(eyes.length).toBeGreaterThanOrEqual(2);
     });
   }

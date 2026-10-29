@@ -40,12 +40,12 @@ export const SHEET_SPECIES = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox',
 const HEADINGS: Direction[] = ['up', 'down', 'left', 'right'];
 
 /** One row per species, one column per heading (up, down, left, right). Pieces are `len` cells long. */
-export function sheetLevel(names: string[], len = 1): { level: Level; species: Map<number, string> } {
+export function sheetLevel(names: string[], len = 1, headings: Direction[] = HEADINGS): { level: Level; species: Map<number, string> } {
   const species = new Map<number, string>();
   const pieces: Level['pieces'] = [];
   const pitch = len + 1;
   names.forEach((name, row) => {
-    HEADINGS.forEach((dir, col) => {
+    headings.forEach((dir, col) => {
       const id = 100 + row * 10 + col;
       species.set(id, name);
       const bx = col * pitch;
@@ -59,5 +59,5 @@ export function sheetLevel(names: string[], len = 1): { level: Level; species: M
       pieces.push(len === 1 ? { id, cells, dir } : { id, cells });
     });
   });
-  return { level: { width: 4 * pitch, height: names.length * pitch, pieces }, species };
+  return { level: { width: headings.length * pitch, height: names.length * pitch, pieces }, species };
 }
