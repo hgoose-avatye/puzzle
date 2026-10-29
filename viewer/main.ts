@@ -52,11 +52,12 @@ function show(flash?: Flash): void {
         `surge             ${m.surge.toFixed(2)}`,
         ``,
         `hearts            ${state.hearts === undefined ? '-' : '♥'.repeat(Math.max(0, state.hearts)) || '0'}`,
+        ...(Object.keys(state.fuses).length > 0 ? [`bomb fuses       ${Object.values(state.fuses).join(', ')}`] : []),
         `taps              ${state.taps}`,
         `blocked taps      ${state.blockedTaps}`,
       ].join('\n')
     : '';
-  $('status').textContent = isCleared(state) ? 'Cleared!' : isFailed(state) ? 'Failed - no hearts left (Retry level)' : '';
+  $('status').textContent = isCleared(state) ? 'Cleared!' : state.exploded && isFailed(state) ? 'Boom! The bomb exploded (Retry level)' : isFailed(state) ? 'Failed - no hearts left (Retry level)' : '';
 }
 
 function generate(): void {
@@ -89,6 +90,8 @@ canvas.addEventListener('click', (e) => {
   state = result.state;
   if (result.event.type === 'ignored') return;
   const blocked = result.event.type === 'blocked';
+  const ev = result.event;
+  $('hint').textContent = ev.type !== 'blocked' ? '' : ev.asleep ? 'Sleeping - it wakes when a neighbor leaves' : ev.lockedBy !== undefined ? 'Locked - the key carrier must leave first' : 'Something is in the way';
   if (isCleared(state)) closeAttempt(true);
   else if (isFailed(state)) closeAttempt(false);
   show(blocked ? { id, kind: 'blocked' } : undefined);
@@ -130,7 +133,9 @@ function playLevel(): void {
   metrics = result.metrics;
   attempt = { level: n, role: result.spec.role, startedAt: Date.now() };
   const tiles = result.level.arrows?.length ?? 0;
-  $('roleInfo').textContent = `Level ${result.spec.level} (${result.spec.role}) - ${result.spec.params.width}x${result.spec.params.height}, ${tiles} arrow tiles, ${state.hearts === undefined ? 'no hearts' : `${state.hearts} hearts`}`;
+  const ps = result.level.pieces;
+  const mech = `${ps.filter((p) => p.lock !== undefined).length} locks, ${ps.filter((p) => p.sleeping).length} sleepers, ${ps.filter((p) => p.fuse !== undefined).length} bombs`;
+  $('roleInfo').textContent = `Ch${result.spec.chapter} Level ${result.spec.level} (${result.spec.role}) - ${result.spec.params.width}x${result.spec.params.height}, ${tiles} arrow tiles, ${mech}, ${state.hearts === undefined ? 'no hearts' : `${state.hearts} hearts`}`;
   show();
 }
 

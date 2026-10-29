@@ -1,5 +1,5 @@
 import type { GameState } from '../src/core/game';
-import { blockersOf, directionVector, exitCell, exitDirection, headDirection } from '../src/core/rules';
+import { blockersOf, directionVector, exitCell, exitDirection, headDirection, lockedBy } from '../src/core/rules';
 import type { Direction, Piece } from '../src/core/types';
 
 export type Style = 'arrows' | 'blocks';
@@ -73,6 +73,8 @@ export function render(canvas: HTMLCanvasElement, state: GameState, cell: number
     if (piece) {
       highlighted.add(piece.id);
       for (const id of blockersOf(level, piece, state.alive)) highlighted.add(id);
+      const key = lockedBy(level, piece, state.alive);
+      if (key !== undefined) highlighted.add(key);
     }
   }
 
@@ -82,6 +84,7 @@ export function render(canvas: HTMLCanvasElement, state: GameState, cell: number
     drawGate(ctx, state, piece, color, cell);
     if (style === 'arrows') drawArrow(ctx, piece, color, cell, highlighted.has(piece.id));
     else drawBlocks(ctx, piece, color, cell, highlighted.has(piece.id));
+    drawBadges(ctx, state, piece, cell);
   }
 }
 
@@ -144,6 +147,31 @@ function drawBlocks(ctx: CanvasRenderingContext2D, piece: Piece, color: string, 
     ctx.strokeStyle = '#d22';
     ctx.lineWidth = 3;
     for (const c of piece.cells) ctx.strokeRect(m + c.x * cell + 1.5, m + c.y * cell + 1.5, cell - 3, cell - 3);
+    ctx.lineWidth = 1;
+  }
+}
+
+function drawBadges(ctx: CanvasRenderingContext2D, state: GameState, piece: Piece, cell: number): void {
+  const badges: string[] = [];
+  if (piece.key !== undefined) badges.push('🔑');
+  if (piece.lock !== undefined) badges.push('🔒');
+  if (piece.sleeping) badges.push('💤');
+  if (piece.fuse !== undefined) badges.push('💣');
+  if (badges.length === 0) return;
+  const mid = piece.cells[Math.floor((piece.cells.length - 1) / 2)];
+  const c = center(cell, mid.x, mid.y);
+  ctx.font = `${Math.round(cell * 0.5)}px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  badges.forEach((b, i) => ctx.fillText(b, c.x + (i - (badges.length - 1) / 2) * cell * 0.45, c.y));
+  if (piece.fuse !== undefined) {
+    const left = state.fuses[piece.id] ?? piece.fuse;
+    ctx.font = `bold ${Math.round(cell * 0.42)}px system-ui, sans-serif`;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fff';
+    ctx.fillStyle = left <= 2 ? '#d22' : '#222';
+    ctx.strokeText(String(left), c.x, c.y + cell * 0.38);
+    ctx.fillText(String(left), c.x, c.y + cell * 0.38);
     ctx.lineWidth = 1;
   }
 }
