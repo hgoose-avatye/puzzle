@@ -1,12 +1,12 @@
 import { createRng } from '../src/core/rng';
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
-import { demoLevel, turnLevel } from './demo';
+import { demoLevel, sheetLevel, turnLevel } from './demo';
 import { generateLevelFor, levelSpec } from '../src/curve/curve';
 import { generateMatching } from '../src/generator/generate';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
-import { PieceView, loadSpecies, speciesFor } from './animals';
+import { PieceView, loadSpecies, speciesFor, speciesOverride } from './animals';
 import { Stage } from './stage';
 import * as THREE from 'three';
 
@@ -26,6 +26,12 @@ const params = new URLSearchParams(location.search);
 const DEMO = params.has('demo');
 
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
+  if (params.get('demo') === 'sheet') {
+    const sheet = sheetLevel(Number(params.get('part') ?? 0));
+    speciesOverride.clear();
+    for (const [id, name] of sheet.species) speciesOverride.set(id, name);
+    return { level: sheet.level };
+  }
   if (params.get('demo') === 'turn') {
     const dir = (k: string, d: Direction): Direction => (params.get(k) as Direction | null) ?? d;
     return { level: turnLevel(dir('from', 'up'), dir('to', 'right'), Number(params.get('len') ?? 2), Number(params.get('id') ?? 2)), hearts: 3 };
@@ -75,6 +81,7 @@ async function loadLevel(n: number): Promise<void> {
   for (const piece of built.level.pieces) {
     const view = new PieceView(built.level, piece, gltfs.get(speciesFor(piece))!, (x, y) => stage.worldOf(built.level, x, y));
     views.set(piece.id, view);
+    if (params.has('raw')) view.hideMarkers();
     stage.scene.add(view.group);
   }
   refreshHud();

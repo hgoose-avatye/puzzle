@@ -6,6 +6,7 @@ import { directionVector, exitCell, exitDirection, traceExit } from '../src/core
 import type { Level, Piece } from '../src/core/types';
 import { sliceAlongZ } from '../src/game/slice';
 import { exitPath } from '../src/game/path';
+import { holderPlacement, localOffset, type Local } from '../src/game/bend';
 import { smoothPath, trackAt, type Track } from '../src/game/smooth';
 
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
@@ -15,7 +16,12 @@ const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
   long: ['caterpillar', 'dog', 'fish'],
 };
 
+/** Demo scenes can pin a species to a piece id (e.g. the species sheet). */
+export const speciesOverride = new Map<number, string>();
+
 export function speciesFor(piece: Piece): string {
+  const forced = speciesOverride.get(piece.id);
+  if (forced) return forced;
   const pool = piece.cells.length === 1 ? SPECIES.one : piece.cells.length === 2 ? SPECIES.two : SPECIES.long;
   return pool[piece.id % pool.length];
 }
@@ -38,8 +44,8 @@ const STRETCH_LO = -0.3;
 const STRETCH_HI = 0.1;
 
 /** Nodes behind the head follow the path: `shift` (cells) is how far back they sit beyond their rest position. */
-interface Tracked { holder: THREE.Object3D; z0: number; shift: number }
-interface Stretched { root: THREE.Object3D; body: THREE.Mesh | null; rest: Float32Array | null; tracked: Tracked[] }
+export interface Tracked { holder: THREE.Object3D; z0: number; shift: number }
+export interface Stretched { root: THREE.Object3D; body: THREE.Mesh | null; rest: Float32Array | null; tracked: Tracked[] }
 
 /** Long leggy animals get extra leg pairs along the body; the fish has none to copy. */
 const BENDY_LEGS = new Set(['dog']);
@@ -50,7 +56,7 @@ const BENDY_LEGS = new Set(['dog']);
  * get extra leg pairs along the body. `PieceView.bend` then curves the body mesh and the tracked nodes along the path.
  * The animation clips overwrite node translations, so shifted nodes sit under an offset holder instead.
  */
-function makeAnimal(gltf: GLTF, cells: number, species: string): Stretched {
+export function makeAnimal(gltf: GLTF, cells: number, species: string): Stretched {
   const root = SkeletonUtils.clone(gltf.scene);
   if (cells <= 1) return { root, body: null, rest: null, tracked: [] };
   const extra = (cells - 1) / MODEL_SCALE;
@@ -175,6 +181,7 @@ export class PieceView {
   private readonly stretched: Stretched | null;
   private readonly chain: boolean;
   private readonly modelRoot: THREE.Object3D;
+  private readonly markers: THREE.Object3D[] = [];
   private lastS = 0;
   private clock = 0;
   private readonly mixer: THREE.AnimationMixer;
@@ -211,6 +218,7 @@ export class PieceView {
     nose.rotation.x = Math.PI / 2;
     nose.position.set(0, size.y + 0.15, 0.62);
     headHolder.add(nose);
+    this.markers.push(nose);
     this.segments.push(headHolder);
     if (this.chain) for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeCaterpillarSegment(i, i === this.bodyLen - 1));
     for (const seg of this.segments) this.group.add(seg);
@@ -218,6 +226,7 @@ export class PieceView {
     for (let i = 0; i < this.bodyLen; i++) {
       const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
       this.plates.push(plate);
+      this.markers.push(plate);
       this.group.add(plate);
     }
 
@@ -243,7 +252,9 @@ export class PieceView {
 
     this.buildChevrons(color);
     this.group.add(this.chevrons);
-    this.group.add(this.buildGate(color));
+    const gate = this.buildGate(color);
+    this.markers.push(gate);
+    this.group.add(gate);
     this.place(this.headStart);
   }
 
@@ -281,27 +292,16 @@ export class PieceView {
       plate.position.copy(this.world(q.x, q.y)).setY(0.05);
       plate.rotation.y = q.angle;
     });
-    this.bend(sHead, p.angle);
+    this.bend(sHead);
     this.badge.position.set(head.position.x, 1.75, head.position.z);
     this.zzz.position.set(head.position.x, 0, head.position.z);
   }
 
   /** Curve the stretched body mesh and move the rear nodes onto the path, in the head's local frame. */
-  private bend(sHead: number, theta: number): void {
+  private bend(sHead: number): void {
     const st = this.stretched;
     if (!st) return;
-    const toLocal = (d: number, lateral: number): { x: number; z: number; rel: number } => {
-      const q = trackAt(this.track, sHead - d);
-      const head = trackAt(this.track, sHead);
-      const ux = q.x - head.x;
-      const uy = q.y - head.y;
-      const rel = q.angle - theta;
-      return {
-        x: (ux * Math.cos(theta) - uy * Math.sin(theta) + lateral * Math.cos(rel)) / MODEL_SCALE,
-        z: (ux * Math.sin(theta) + uy * Math.cos(theta) - lateral * Math.sin(rel)) / MODEL_SCALE,
-        rel,
-      };
-    };
+    const toLocal = (d: number, lateral: number): Local => localOffset(this.track, sHead, d, lateral, MODEL_SCALE);
     if (st.body && st.rest) {
       const pos = st.body.geometry.getAttribute('position');
       for (let i = 0; i < pos.count; i++) {
@@ -316,10 +316,8 @@ export class PieceView {
       pos.needsUpdate = true;
     }
     for (const t of st.tracked) {
-      const d = -t.z0 * MODEL_SCALE + t.shift;
-      const l = toLocal(d, 0);
-      // the node keeps its own z offset inside the holder, which is rotated by `rel`, so take it off along that heading
-      t.holder.position.set(l.x - t.z0 * Math.sin(l.rel), 0, l.z - t.z0 * Math.cos(l.rel));
+      const l = holderPlacement(this.track, sHead, t.z0, t.shift, MODEL_SCALE);
+      t.holder.position.set(l.x, 0, l.z);
       t.holder.rotation.y = l.rel;
     }
   }
@@ -357,6 +355,11 @@ export class PieceView {
     g.position.copy(this.world(cell.x + v.x * 0.62, cell.y + v.y * 0.62));
     g.traverse((o) => { o.castShadow = true; });
     return g;
+  }
+
+  /** Hide the nose cone, color plates and gate so the bare animal can be inspected. */
+  hideMarkers(): void {
+    for (const m of this.markers) m.visible = false;
   }
 
   showPath(visible: boolean): void {

@@ -35,3 +35,20 @@ export function turnLevel(from: Direction, to: Direction, len: number, id: numbe
     arrows: [{ x: head.x + v.x * 2, y: head.y + v.y * 2, dir: to }],
   };
 }
+
+export const SHEET_SPECIES = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'panda', 'koala', 'caterpillar', 'dog', 'fish'];
+const HEADINGS: Direction[] = ['up', 'down', 'left', 'right'];
+
+/** 6 species per part, one row each, one column per heading, all single cells so only the model's facing shows. */
+export function sheetLevel(part: number): { level: Level; species: Map<number, string> } {
+  const species = new Map<number, string>();
+  const pieces: Level['pieces'] = [];
+  SHEET_SPECIES.slice(part * 6, part * 6 + 6).forEach((name, row) => {
+    HEADINGS.forEach((dir, col) => {
+      const id = 100 + row * 10 + col;
+      species.set(id, name);
+      pieces.push({ id, cells: [{ x: col * 2 + 1, y: row }], dir });
+    });
+  });
+  return { level: { width: 8, height: 6, pieces }, species };
+}
