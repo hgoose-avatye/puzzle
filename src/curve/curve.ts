@@ -2,6 +2,7 @@ import { createRng } from '../core/rng';
 import type { Level } from '../core/types';
 import { generateMatching, type DifficultyTarget, type GenParams } from '../generator/generate';
 import type { Metrics } from '../solver/metrics';
+import pickedSeeds from './seeds.json';
 
 export type Role = 'intro' | 'rest' | 'ordinary' | 'tough' | 'finale';
 
@@ -98,8 +99,19 @@ export function generateLevelFor(
   return result ? { spec, ...result } : null;
 }
 
-/** The level the game plays as number `n`: the first base seed that meets the curve, else any solvable level. */
+/** Seed picked per level by scripts/pick-seeds.ts so difficulty climbs smoothly inside a chapter. */
+const PICKED: Record<string, number> = pickedSeeds;
+
+/**
+ * The level the game plays as number `n`: the picked seed if there is one, else the first base seed that meets the
+ * curve, else any solvable level.
+ */
 export function buildGameLevel(n: number): { level: Level; hearts?: number } | null {
+  const picked = PICKED[n];
+  if (picked !== undefined) {
+    const r = generateLevelFor(n, picked);
+    if (r) return { level: r.level, hearts: r.spec.hearts };
+  }
   for (let seed = 1; seed <= 5; seed++) {
     const r = generateLevelFor(n, seed);
     if (r) return { level: r.level, hearts: r.spec.hearts };
