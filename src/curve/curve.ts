@@ -19,6 +19,19 @@ export interface LevelSpec {
 export const CHAPTER_LENGTH = 30;
 
 /**
+ * Hearts scale with the number of animals: every animal is one more decision, and a fixed three hearts turned the
+ * large late levels into near-certain failures in the simulated-player report (docs/sim). Candidate values.
+ */
+export function heartsFor(pieceCount: number): number {
+  return 3 + Math.min(2, Math.floor(Math.max(0, pieceCount - 16) / 5));
+}
+
+/** First chapter-one level with hearts: an easy ordinary level, not the first tough one, and not level 6 (arrows arrive there). */
+const FIRST_HEART_LEVEL = 7;
+/** Generous hearts on the first heart levels (7-9) while players get used to losing them. */
+const ONBOARDING_HEARTS = 5;
+
+/**
  * Starting values for the chapter curve (spec 5.6). Every number here is a candidate to be tuned by playtests.
  * Known gap: the finale ("big release") cannot be filtered for with `surge` yet, because the generator front-loads
  * removals (large early rounds, small late rounds). A generator change is needed before the finale can be shaped.
@@ -26,12 +39,11 @@ export const CHAPTER_LENGTH = 30;
 function chapterOneSpec(level: number): Omit<LevelSpec, 'chapter'> {
   const small = { width: 7, height: 10, minLength: 1, maxLength: 2 };
   const full = { width: 8, height: 12, minLength: 1, maxLength: 3 };
-  const HEARTS = 3;
   if (level === 30) {
-    return { level, role: 'finale', params: { ...full, pieceCount: 28, arrowCount: 6 }, target: { rounds: [11, 20], initialFreeRatio: [0, 0.3] }, hearts: HEARTS };
+    return { level, role: 'finale', params: { ...full, pieceCount: 28, arrowCount: 6 }, target: { rounds: [11, 20], initialFreeRatio: [0, 0.3] }, hearts: heartsFor(28) };
   }
   if (level === 10 || level === 20) {
-    return { level, role: 'tough', params: { ...full, pieceCount: 26, arrowCount: level === 10 ? 5 : 6 }, target: { rounds: [10, 20], initialFreeRatio: [0, 0.34] }, hearts: HEARTS };
+    return { level, role: 'tough', params: { ...full, pieceCount: 26, arrowCount: level === 10 ? 5 : 6 }, target: { rounds: [10, 20], initialFreeRatio: [0, 0.34] }, hearts: heartsFor(26) };
   }
   if (level % 5 === 0) {
     return { level, role: 'rest', params: { ...small, pieceCount: 12, arrowCount: 0 }, target: { rounds: [2, 5], initialFreeRatio: [0.5, 1] } };
@@ -40,13 +52,16 @@ function chapterOneSpec(level: number): Omit<LevelSpec, 'chapter'> {
     return { level, role: 'intro', params: { ...small, pieceCount: 7 + level, arrowCount: 0 }, target: { rounds: [2, 4], initialFreeRatio: [0.5, 1] } };
   }
   if (level < 10) {
-    return { level, role: 'ordinary', params: { ...full, pieceCount: 16 + (level - 6), arrowCount: level < 8 ? 1 : 2 }, target: { rounds: [5, 8], initialFreeRatio: [0.35, 0.55] } };
+    const pieceCount = 16 + (level - 6);
+    return { level, role: 'ordinary', params: { ...full, pieceCount, arrowCount: level < 8 ? 1 : 2 }, target: { rounds: [5, 8], initialFreeRatio: [0.35, 0.55] }, ...(level >= FIRST_HEART_LEVEL ? { hearts: ONBOARDING_HEARTS } : {}) };
   }
   if (level < 15) {
-    return { level, role: 'ordinary', params: { ...full, pieceCount: 16 + (level - 6), arrowCount: level < 13 ? 2 : 3 }, target: { rounds: [5, 8], initialFreeRatio: [0.35, 0.55] }, hearts: HEARTS };
+    const pieceCount = 16 + (level - 6);
+    return { level, role: 'ordinary', params: { ...full, pieceCount, arrowCount: level < 13 ? 2 : 3 }, target: { rounds: [5, 8], initialFreeRatio: [0.35, 0.55] }, hearts: heartsFor(pieceCount) };
   }
   const arrowCount = level < 20 ? 3 + (level >= 18 ? 1 : 0) : level < 25 ? 3 + (level >= 23 ? 1 : 0) : 4 + (level >= 28 ? 1 : 0);
-  return { level, role: 'ordinary', params: { ...full, pieceCount: 22 + Math.min(4, Math.floor((level - 16) / 3)), arrowCount }, target: { rounds: [7, 11], initialFreeRatio: [0.25, 0.45] }, hearts: HEARTS };
+  const pieceCount = 22 + Math.min(4, Math.floor((level - 16) / 3));
+  return { level, role: 'ordinary', params: { ...full, pieceCount, arrowCount }, target: { rounds: [7, 11], initialFreeRatio: [0.25, 0.45] }, hearts: heartsFor(pieceCount) };
 }
 
 /** Chapter 2 stretches animals, 3 adds keys, 4 sleepers, 5 bombs, 6 rotates through all three (spec 6.1). */
@@ -64,7 +79,7 @@ export function levelSpec(levelNumber: number): LevelSpec {
   if (mechanic === 'lock') params.lockCount = count;
   if (mechanic === 'sleep') params.sleepCount = count;
   if (mechanic === 'bomb') params.bombCount = count;
-  const hearts = role !== 'rest' && level >= 4 ? 3 : undefined;
+  const hearts = role !== 'rest' && level >= 4 ? heartsFor(params.pieceCount) : undefined;
   // Longer animals and extra mechanics make the tightest targets of chapter 1 unreachable, so loosen them a little.
   const target = role === 'tough' || role === 'finale' ? { rounds: [10, 20] as [number, number], initialFreeRatio: [0, 0.38] as [number, number] } : base.target;
   return { ...base, chapter, params, target, hearts };

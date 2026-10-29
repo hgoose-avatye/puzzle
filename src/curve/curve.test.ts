@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildGameLevel, generateLevelFor, levelSpec } from './curve';
+import { buildGameLevel, generateLevelFor, heartsFor, levelSpec } from './curve';
 import { winnable } from '../solver/plan';
 
 describe('levelSpec', () => {
@@ -56,9 +56,17 @@ describe('fixtures and hearts on the curve', () => {
     expect(arrows(10)).toBeGreaterThanOrEqual(5);
     expect(arrows(30)).toBeGreaterThanOrEqual(5);
   });
-  it('gives hearts from the first tough level on, but not on rest levels', () => {
-    for (const n of [1, 6, 9, 15, 25]) expect(levelSpec(n).hearts).toBeUndefined();
-    for (const n of [10, 12, 20, 29, 30]) expect(levelSpec(n).hearts).toBe(3);
+  it('gives hearts from an easy ordinary level on (not the first tough one, not with the first arrows), never on rest levels', () => {
+    for (const n of [1, 5, 6, 15, 25]) expect(levelSpec(n).hearts).toBeUndefined();
+    for (const n of [7, 8, 9, 10, 12, 20, 29, 30]) expect(levelSpec(n).hearts).toBeGreaterThanOrEqual(3);
+    for (const n of [7, 8, 9]) expect(levelSpec(n).hearts).toBe(5); // onboarding
+  });
+  it('scales hearts with the number of animals: 3 up to 20, 4 up to 25, 5 beyond', () => {
+    expect([16, 20, 21, 25, 26, 28].map(heartsFor)).toEqual([3, 3, 4, 4, 5, 5]);
+    for (let n = 1; n <= 180; n++) {
+      const s = levelSpec(n);
+      if (s.hearts !== undefined && !(n >= 7 && n <= 9)) expect(s.hearts, `level ${n}`).toBe(heartsFor(s.params.pieceCount));
+    }
   });
   it('generated levels carry the requested number of arrow tiles', () => {
     const r = generateLevelFor(8, 1);

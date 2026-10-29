@@ -16,6 +16,8 @@ const fx = new Fx(stage.scene);
 let state: GameState | null = null;
 let views = new Map<number, PieceView>();
 let levelNumber = 1;
+/** Hearts the level started with, for the empty-heart outlines in the HUD. */
+let maxHearts = 0;
 let loadToken = 0;
 let pressed: number | null = null;
 /** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
@@ -52,7 +54,7 @@ function refreshHud(): void {
   if (!state) return;
   const spec = levelSpec(levelNumber);
   $('levelLabel').textContent = `레벨 ${levelNumber}`;
-  $('hearts').textContent = state.hearts === undefined ? '' : '♥'.repeat(Math.max(0, state.hearts)) + '♡'.repeat(Math.max(0, 3 - Math.max(0, state.hearts)));
+  $('hearts').textContent = state.hearts === undefined ? '' : '♥'.repeat(Math.max(0, state.hearts)) + '♡'.repeat(Math.max(0, maxHearts - Math.max(0, state.hearts)));
   void spec;
   for (const [id, v] of views) {
     const piece = state.level.pieces.find((p) => p.id === id)!;
@@ -82,6 +84,7 @@ async function loadLevel(n: number): Promise<void> {
   views = new Map();
   stage.setBoard(built.level);
   if (token !== loadToken) return;
+  maxHearts = built.hearts ?? 0;
   state = createGame(built.level, built.hearts === undefined ? {} : { hearts: built.hearts });
   for (const piece of built.level.pieces) {
     const view = new PieceView(built.level, piece, (x, y) => stage.worldOf(built.level, x, y));
