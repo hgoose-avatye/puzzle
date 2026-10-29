@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Puzzle Level Viewer</title>
+    <style>
+      body { font: 14px system-ui, sans-serif; margin: 16px; background: #faf7f2; color: #333; }
+      #controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 12px; }
+      label { display: flex; flex-direction: column; font-size: 12px; }
+      input { width: 64px; padding: 4px; }
+      button { padding: 6px 14px; }
+      #layout { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+      canvas { background: #fff; border: 1px solid #ddd; cursor: pointer; }
+      pre { margin: 0; line-height: 1.6; }
+      #status { font-weight: 600; margin-top: 8px; min-height: 1.4em; }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <label>seed<input id="seed" type="number" value="1" /></label>
+      <label>width<input id="width" type="number" value="10" /></label>
+      <label>height<input id="height" type="number" value="10" /></label>
+      <label>pieces<input id="count" type="number" value="12" /></label>
+      <label>min len<input id="minLen" type="number" value="2" /></label>
+      <label>max len<input id="maxLen" type="number" value="4" /></label>
+      <button id="generate">Generate</button>
+    </div>
+    <div id="layout">
+      <div>
+        <canvas id="board"></canvas>
+        <div id="status"></div>
+      </div>
+      <pre id="metrics"></pre>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
