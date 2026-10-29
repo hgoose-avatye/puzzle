@@ -1,5 +1,5 @@
 import { isOrthogonallyConvex } from './shapes';
-import type { Cell, Direction, Level, Piece } from './types';
+import type { Cell, Crate, Direction, Level, Piece } from './types';
 
 const VECTORS: Record<Direction, Cell> = {
   up: { x: 0, y: -1 },
@@ -128,12 +128,37 @@ export function isAsleep(level: Level, piece: Piece, alive: ReadonlySet<number>)
   return !neighborsOf(level, piece).some((id) => !alive.has(id));
 }
 
+/** Pieces with a cell right next to (x, y). */
+export function piecesAround(level: Level, x: number, y: number): number[] {
+  const found: number[] = [];
+  for (const p of level.pieces) if (p.cells.some((c) => Math.abs(c.x - x) + Math.abs(c.y - y) === 1)) found.push(p.id);
+  return found;
+}
+
+/**
+ * Cracks a crate has taken: one per neighbouring animal that has left. Derived from `alive` alone, so no extra game
+ * state is needed and every rule user (solver, generator, hints, simulator) sees crates the same way.
+ */
+export function crateCracks(level: Level, crate: Crate, alive: ReadonlySet<number>): number {
+  return piecesAround(level, crate.x, crate.y).filter((id) => !alive.has(id)).length;
+}
+
+export const crateStanding = (level: Level, crate: Crate, alive: ReadonlySet<number>): boolean => crateCracks(level, crate, alive) < crate.hits;
+
+/** Crates still standing on this piece's way out. */
+export function cratesInWay(level: Level, piece: Piece, alive: ReadonlySet<number>): Crate[] {
+  if (!level.crates?.length) return [];
+  const ray = new Set(exitRay(level, piece).map((c) => `${c.x},${c.y}`));
+  return level.crates.filter((k) => ray.has(`${k.x},${k.y}`) && crateStanding(level, k, alive));
+}
+
 export function canExit(level: Level, id: number, alive: ReadonlySet<number>): boolean {
   const piece = level.pieces.find((q) => q.id === id);
   return (
     piece !== undefined &&
     traceExit(level, piece).reachesEdge &&
     blockersOf(level, piece, alive).length === 0 &&
+    cratesInWay(level, piece, alive).length === 0 &&
     lockedBy(level, piece, alive) === undefined &&
     !isAsleep(level, piece, alive)
   );
@@ -151,7 +176,11 @@ export function validateLevel(level: Level, options: ValidateOptions = {}): stri
   const ids = new Set<number>();
   const owner = new Map<string, number>();
   const fixtures = new Set<string>();
-  for (const f of [...(level.obstacles ?? []), ...(level.arrows ?? [])]) {
+  for (const k of level.crates ?? []) {
+    if (!Number.isInteger(k.hits) || k.hits < 1) errors.push(`crate (${k.x},${k.y}): hits must be a positive integer`);
+    if (piecesAround(level, k.x, k.y).length < k.hits) errors.push(`crate (${k.x},${k.y}): fewer neighbours than hits, it can never break`);
+  }
+  for (const f of [...(level.obstacles ?? []), ...(level.arrows ?? []), ...(level.crates ?? [])]) {
     if (!inBounds(level, f.x, f.y)) errors.push(`fixture (${f.x},${f.y}) out of bounds`);
     const fk = `${f.x},${f.y}`;
     if (fixtures.has(fk)) errors.push(`fixture (${f.x},${f.y}) overlaps another fixture`);

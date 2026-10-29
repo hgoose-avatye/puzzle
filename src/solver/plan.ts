@@ -1,5 +1,5 @@
 import { createGame, tap } from '../core/game';
-import { blockersOf, canExit, isAsleep, lockedBy, neighborsOf, traceExit } from '../core/rules';
+import { blockersOf, canExit, cratesInWay, isAsleep, lockedBy, neighborsOf, piecesAround, traceExit } from '../core/rules';
 import type { Level } from '../core/types';
 
 function nextTap(level: Level, alive: ReadonlySet<number>, id: number, seen: Set<number>): number | null {
@@ -9,6 +9,8 @@ function nextTap(level: Level, alive: ReadonlySet<number>, id: number, seen: Set
   if (!piece || !traceExit(level, piece).reachesEdge) return null;
   if (canExit(level, id, alive)) return id;
   const needs = [...blockersOf(level, piece, alive)];
+  // a crate in the way breaks as its neighbours leave
+  for (const k of cratesInWay(level, piece, alive)) needs.push(...piecesAround(level, k.x, k.y).filter((n) => alive.has(n)));
   const key = lockedBy(level, piece, alive);
   if (key !== undefined) needs.push(key);
   if (isAsleep(level, piece, alive)) needs.push(...neighborsOf(level, piece).filter((n) => alive.has(n)));

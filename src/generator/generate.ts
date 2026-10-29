@@ -1,7 +1,7 @@
 import type { Rng } from '../core/rng';
-import { directionVector, onBoard, traceExit } from '../core/rules';
+import { canExit, directionVector, onBoard, traceExit } from '../core/rules';
 import { shapeVoids, type BoardShape } from '../core/shapes';
-import type { ArrowTile, Cell, Direction, Level, Piece } from '../core/types';
+import type { ArrowTile, Cell, Crate, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
 import { rescueSchedule } from '../solver/plan';
 
@@ -25,6 +25,15 @@ export interface GenParams {
   bombCount?: number;
   /** Extra taps added to each bomb's fuse (default 3). */
   bombSlack?: number;
+  /** Breakable crates, each placed on some animal's way out with enough earlier-leaving neighbours (default 0). */
+  crateCount?: number;
+  /** Cracks a crate takes before it breaks (default 2). */
+  crateHits?: number;
+  /**
+   * Teaching level: every lock and sleep must be the only thing holding its animal and every bomb must start blocked,
+   * no fallback. Otherwise these are only preferred.
+   */
+  teach?: boolean;
 }
 
 export interface DifficultyTarget {
@@ -71,6 +80,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
   const board: Level = { ...outline, pieces: [], obstacles, arrows };
   const occupied = new Set<string>();
   const rays: Set<string>[] = [];
+  const arrowsHit = new Set<string>();
   for (let i = 0; i < params.pieceCount; i++) {
     let best: { piece: Piece; ray: Set<string>; score: number } | null = null;
     let valid = 0;
@@ -91,12 +101,15 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
       valid++;
       const hitsLast = rays.length > 0 && cells.some((c) => rays[rays.length - 1].has(key(c)));
       const bends = trace.cells.some((c) => arrowKeys.has(key(c)));
-      const score = (hitsLast ? 100 : 0) + (bends ? 50 : 0) + rays.filter((r) => cells.some((c) => r.has(key(c)))).length;
+      // every arrow should end up on somebody's way out: strongly prefer a path over an arrow nobody uses yet
+      const newArrow = trace.cells.some((c) => arrowKeys.has(key(c)) && !arrowsHit.has(key(c)));
+      const score = (newArrow ? 200 : 0) + (hitsLast ? 100 : 0) + (bends ? 50 : 0) + rays.filter((r) => cells.some((c) => r.has(key(c)))).length;
       if (!best || score > best.score) best = { piece, ray, score };
     }
     if (!best) return null;
     board.pieces.push(best.piece);
     rays.push(best.ray);
+    for (const k of best.ray) if (arrowKeys.has(k)) arrowsHit.add(k);
     for (const c of best.piece.cells) occupied.add(key(c));
   }
   // Roles are only given along placement order (earlier-placed pieces leave later), so every new
@@ -124,8 +137,49 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     return [...found];
   };
   const all = list.map((_, i) => i);
+  // Open at the start: nothing stands on its way out. A lock or a sleep on such an animal is the only thing holding it,
+  // which is what makes the mechanic worth learning; on an animal that is blocked anyway it changes nothing.
+  const open = (i: number): boolean => ![...rays[i]].some((k) => { const j = indexAt.get(k); return j !== undefined && j !== i; });
+  const prefer = (cands: number[], good: (i: number) => boolean): number[] => {
+    const g = cands.filter((i) => good(i) && !used.has(i));
+    return g.length || params.teach ? g : cands;
+  };
+  // Crates: on a cell some animals' way out crosses, with at least `hits` neighbours that all leave before every one
+  // of those animals (higher placement index = leaves earlier), so the crate is broken in time and the level stays
+  // solvable. On a teaching level the crate must be the only thing in its owner's way.
+  const crates: Crate[] = [];
+  const hits = params.crateHits ?? 2;
+  const crateKeys = new Set<string>();
+  for (let t = 0; t < (params.crateCount ?? 0); t++) {
+    const options: Array<{ c: Cell; score: number }> = [];
+    for (let y = 0; y < params.height; y++) {
+      for (let x = 0; x < params.width; x++) {
+        const k = key({ x, y });
+        if (!onBoard(board, x, y) || occupied.has(k) || fixed.has(k) || crateKeys.has(k)) continue;
+        const owners = all.filter((i) => rays[i].has(k));
+        if (!owners.length) continue;
+        const last = Math.max(...owners);
+        const around = new Set<number>();
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const j = indexAt.get(key({ x: x + dx, y: y + dy }));
+          if (j !== undefined) around.add(j);
+        }
+        if ([...around].filter((j) => j > last).length < hits) continue;
+        if ([...around].some((j) => j <= last)) continue; // every neighbour must have left before the owners
+        // the crate alone holds an owner: nothing else stands on that owner's way out
+        const alone = owners.some((i) => ![...rays[i]].some((r) => r !== k && indexAt.has(r) && indexAt.get(r) !== i));
+        if (params.teach && !alone) continue;
+        options.push({ c: { x, y }, score: (alone ? 10 : 0) + rng.next() });
+      }
+    }
+    if (!options.length) return null;
+    const best = options.reduce((a, b) => (b.score > a.score ? b : a));
+    crates.push({ ...best.c, hits });
+    crateKeys.add(key(best.c));
+  }
+
   for (let t = 0; t < (params.lockCount ?? 0); t++) {
-    const locked = take(all.filter((i) => i < n - 1));
+    const locked = take(prefer(all.filter((i) => i < n - 1), open));
     if (locked === null) return null;
     const keyer = take(all.filter((j) => j > locked));
     if (keyer === null) return null;
@@ -133,7 +187,8 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     list[keyer] = { ...list[keyer], key: t + 1 };
   }
   for (let t = 0; t < (params.sleepCount ?? 0); t++) {
-    const sleeper = take(all.filter((i) => adjacentTo(i).some((j) => j > i)));
+    // a sleeper that is blocked anyway teaches nothing, so on every level the sleep must be what holds it
+    const sleeper = take(all.filter((i) => adjacentTo(i).some((j) => j > i) && open(i)));
     if (sleeper === null) return null;
     list[sleeper] = { ...list[sleeper], sleeping: true };
   }
@@ -148,21 +203,30 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const j = rng.int(0, i);
     [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
   }
+  // an arrow no animal passes over is only something more to read
+  const onPaths = new Set(rays.flatMap((r) => [...r]));
+  const usedArrows = arrows.filter((a) => onPaths.has(key(a)));
+  if (usedArrows.length < arrows.length) return null; // try again rather than ship fewer arrows than the curve asks for
   const level: Level = {
     width: params.width,
     height: params.height,
     ...(voids.length ? { voids } : {}),
     pieces,
     ...(obstacles.length > 0 ? { obstacles } : {}),
-    ...(arrows.length > 0 ? { arrows } : {}),
+    ...(usedArrows.length > 0 ? { arrows: usedArrows } : {}),
+    ...(crates.length > 0 ? { crates } : {}),
   };
   const bombCount = params.bombCount ?? 0;
   if (bombCount > 0) {
-    const pool = level.pieces.filter((p) => p.lock === undefined && p.key === undefined && !p.sleeping).map((p) => p.id);
-    for (let i = pool.length - 1; i > 0; i--) {
+    const plain = level.pieces.filter((p) => p.lock === undefined && p.key === undefined && !p.sleeping).map((p) => p.id);
+    for (let i = plain.length - 1; i > 0; i--) {
       const j = rng.int(0, i);
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+      [plain[i], plain[j]] = [plain[j], plain[i]];
     }
+    // a bomb whose way is already open is just tapped first; one that is blocked asks for a plan
+    const everyone = new Set(level.pieces.map((p) => p.id));
+    const blocked = plain.filter((id) => !canExit(level, id, everyone));
+    const pool = params.teach ? blocked : [...blocked, ...plain.filter((id) => !blocked.includes(id))];
     if (pool.length < bombCount) return null;
     const chosen = new Set(pool.slice(0, bombCount));
     // one shared schedule: taps spent on one bomb burn the others' fuses too

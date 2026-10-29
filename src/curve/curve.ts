@@ -4,6 +4,7 @@ import { generateMatching, type DifficultyTarget, type GenParams } from '../gene
 import type { Metrics } from '../solver/metrics';
 import type { BoardShape } from '../core/shapes';
 import pickedSeeds from './seeds.json';
+import bakedLevels from './levels.json';
 
 export type Role = 'intro' | 'rest' | 'ordinary' | 'tough' | 'finale';
 
@@ -21,17 +22,26 @@ export interface LevelSpec {
 export const CHAPTER_LENGTH = 30;
 
 /**
- * Hearts scale with the number of animals: every animal is one more decision, and a fixed three hearts turned the
- * large late levels into near-certain failures in the simulated-player report (docs/sim). Candidate values.
+ * Difficulty knobs, applied on top of the chapter structure below (2026-10-29). Hearts are fixed at three on every
+ * level that has them; the rest of the difficulty comes from how many animals and arrows a level has. With these the
+ * simulated average player fails roughly a third of ordinary levels (it assumes more misreading than real players may
+ * do); change one number and rerun scripts/pick-seeds.ts and scripts/build-levels.ts to retune.
  */
-export function heartsFor(pieceCount: number): number {
-  return 3 + Math.min(2, Math.floor(Math.max(0, pieceCount - 16) / 5));
+export const HEARTS = 3;
+/** share of the base animal count kept on ordinary, tough and finale levels */
+export const DENSITY = 0.6;
+/** share of the base arrow count kept (at least one where any were planned) */
+export const ARROW_SHARE = 0.5;
+
+/** Hearts for a level that has them: always HEARTS. Kept as a function so the count can depend on the level again. */
+export function heartsFor(_pieceCount: number): number {
+  return HEARTS;
 }
 
 /** First chapter-one level with hearts: an easy ordinary level, not the first tough one, and not level 6 (arrows arrive there). */
 const FIRST_HEART_LEVEL = 7;
-/** Generous hearts on the first heart levels (7-9) while players get used to losing them. */
-const ONBOARDING_HEARTS = 5;
+/** Hearts on the first heart levels (7-9): the same as everywhere since hearts were fixed at three. */
+const ONBOARDING_HEARTS = HEARTS;
 
 /**
  * Starting values for the chapter curve (spec 5.6). Every number here is a candidate to be tuned by playtests.
@@ -79,7 +89,9 @@ export function boardSize(level: number, role: Role): { width: number; height: n
 }
 
 /**
- * Fixed obstacles (fences, crates, hay bales; the look comes from the stage). Chapter 1 brings them in with its second
+ * Breakable crates (fences, crates, hay bales; the look comes from the stage). Each sits on some animal's way out and
+ * breaks after two of its neighbours have left, so it always matters (fixed obstacles never could: one on a path would
+ * make the level unsolvable). Chapter 1 brings them in with its second
  * stage, chapter 2 makes them its new element, later chapters keep a few. Never on intro or rest levels, except as
  * chapter 2's gentle introduction.
  */
@@ -140,24 +152,46 @@ export function shapeFor(level: number, role: Role, theme: Theme = 'village'): B
   return own[level % 3];
 }
 
+/** Fewer animals and arrows on the main levels (DENSITY, ARROW_SHARE), with the depth targets scaled to match. */
+function tune(spec: LevelSpec): LevelSpec {
+  if (spec.role === 'intro' || spec.role === 'rest') return spec;
+  const p = spec.params;
+  const scale = (r?: [number, number]): [number, number] | undefined => (r ? [Math.max(2, Math.round(r[0] * DENSITY)), Math.max(3, Math.round(r[1] * DENSITY))] : r);
+  return {
+    ...spec,
+    params: { ...p, pieceCount: Math.round(p.pieceCount * DENSITY), arrowCount: p.arrowCount ? Math.max(1, Math.round(p.arrowCount * ARROW_SHARE)) : 0 },
+    target: { ...spec.target, rounds: scale(spec.target.rounds) },
+  };
+}
+
 /** Chapter 2 stretches animals, 3 adds keys, 4 sleepers, 5 bombs, 6 rotates through all three (spec 6.1). */
 export function levelSpec(levelNumber: number): LevelSpec {
+  return tune(baseLevelSpec(levelNumber));
+}
+
+function baseLevelSpec(levelNumber: number): LevelSpec {
   if (!Number.isInteger(levelNumber) || levelNumber < 1) throw new Error(`invalid level number ${levelNumber}`);
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
   const level = ((levelNumber - 1) % CHAPTER_LENGTH) + 1;
   const raw = chapterOneSpec(level);
-  const base = { ...raw, params: { ...raw.params, ...boardSize(level, raw.role), shape: shapeFor(level, raw.role, CHAPTER_THEMES[chapter - 1]), obstacleCount: obstaclesFor(chapter, level, raw.role) } };
+  // crates are taught with a single crack on intro levels, two everywhere else
+  const base = { ...raw, params: { ...raw.params, ...boardSize(level, raw.role), shape: shapeFor(level, raw.role, CHAPTER_THEMES[chapter - 1]), crateCount: obstaclesFor(chapter, level, raw.role), crateHits: raw.role === 'intro' ? 1 : 2, ...(raw.role === 'intro' ? { teach: true } : {}) } };
   if (chapter === 1) return { ...base, chapter };
   const params = { ...base.params };
   const { role } = base;
   const count = role === 'rest' ? 0 : role === 'intro' || level < 10 ? 1 : role === 'tough' || role === 'finale' ? 3 : 2;
   const mechanic = chapter === 3 ? 'lock' : chapter === 4 ? 'sleep' : chapter === 5 ? 'bomb' : chapter === 6 ? (['lock', 'sleep', 'bomb'] as const)[level % 3] : null;
+  if (role === 'intro') params.teach = true;
   if (mechanic === 'lock') params.lockCount = count;
   if (mechanic === 'sleep') params.sleepCount = count;
   if (mechanic === 'bomb') params.bombCount = count;
   const hearts = role !== 'rest' && level >= 4 ? heartsFor(params.pieceCount) : undefined;
   // Longer animals and extra mechanics make the tightest targets of chapter 1 unreachable, so loosen them a little.
-  const target = role === 'tough' || role === 'finale' ? { rounds: [10, 20] as [number, number], initialFreeRatio: [0, 0.38] as [number, number] } : base.target;
+  // A crate that matters always adds a step (its neighbours, then the crate, then the animal behind it), so intro
+  // levels that teach crates get a little more depth.
+  const target = role === 'tough' || role === 'finale' ? { rounds: [10, 20] as [number, number], initialFreeRatio: [0, 0.38] as [number, number] }
+    : role === 'intro' && (params.crateCount ?? 0) > 0 ? { rounds: [2, 5] as [number, number], initialFreeRatio: [0.3, 1] as [number, number] }
+    : base.target;
   return { ...base, chapter, params, target, hearts };
 }
 
@@ -177,11 +211,19 @@ export function generateLevelFor(
 /** Seed picked per level by scripts/pick-seeds.ts so difficulty climbs smoothly inside a chapter. */
 const PICKED: Record<string, number> = pickedSeeds;
 
+/** Levels baked by scripts/build-levels.ts: the game reads these instead of generating on the device. */
+const BAKED = bakedLevels as unknown as Record<string, { level: Level; hearts?: number }>;
+
+/** The level the game plays as number `n`: the baked one, or generated on the spot past the baked range. */
+export function buildGameLevel(n: number): { level: Level; hearts?: number } | null {
+  return BAKED[n] ?? generateGameLevel(n);
+}
+
 /**
- * The level the game plays as number `n`: the picked seed if there is one, else the first base seed that meets the
+ * Generate level `n` the way it is baked: the picked seed if there is one, else the first base seed that meets the
  * curve, else any solvable level.
  */
-export function buildGameLevel(n: number): { level: Level; hearts?: number } | null {
+export function generateGameLevel(n: number): { level: Level; hearts?: number } | null {
   const picked = PICKED[n];
   if (picked !== undefined) {
     const r = generateLevelFor(n, picked);

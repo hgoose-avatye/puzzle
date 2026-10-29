@@ -5,8 +5,8 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { VerticalTiltShiftShader } from 'three/examples/jsm/shaders/VerticalTiltShiftShader.js';
-import type { Level } from '../src/core/types';
-import { directionVector, exitCell, exitDirection, onBoard } from '../src/core/rules';
+import type { Crate, Level } from '../src/core/types';
+import { crateCracks, directionVector, exitCell, exitDirection, onBoard } from '../src/core/rules';
 import { createRng } from '../src/core/rng';
 import type { Theme } from '../src/curve/curve';
 import { buildScenery, obstacleFor, PALETTES } from './scenery';
@@ -41,9 +41,39 @@ function groundTexture(color: number): THREE.CanvasTexture {
   return tex;
 }
 
+/** Cream pill with one brown dot per hit a crate has left. */
+function pipTexture(left: number): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  const w = 64 + 34 * left;
+  c.width = w;
+  c.height = 64;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#fff8e8';
+  ctx.strokeStyle = '#8a6a45';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(3, 3, w - 6, 58, 29);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#8a5a3b';
+  for (let i = 0; i < left; i++) {
+    ctx.beginPath();
+    ctx.arc(w / 2 + (i - (left - 1) / 2) * 34, 32, 11, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+const CRACK_GEO = new THREE.BoxGeometry(0.42, 0.02, 0.035);
+const CRACK_MAT = new THREE.MeshBasicMaterial({ color: 0x3b2a1e });
+
 /** Free what a board group created for itself; scenery meshes share cached geometry and materials and are skipped. */
 function disposeOwned(root: THREE.Object3D): void {
   root.traverse((o) => {
+    const sp = o as THREE.Sprite;
+    if (sp.isSprite) { sp.material.map?.dispose(); sp.material.dispose(); return; }
     const m = o as THREE.Mesh;
     if (!m.isMesh || m.userData.shared) return;
     if (!m.userData.sharedGeometry) m.geometry.dispose();
@@ -63,6 +93,7 @@ export class Stage {
   private level: Level | null = null;
   private readonly ray = new THREE.Raycaster();
   private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.1);
+  private crates: Array<{ crate: Crate; obj: THREE.Object3D; crack: THREE.Object3D; pips: THREE.Sprite; cracks: number; shakeT: number }> = [];
   /** Miniature look of the reference: the board stays sharp, the scenery above and below softens. */
   private composer!: EffectComposer;
   private tilt!: ShaderPass;
@@ -154,6 +185,29 @@ export class Stage {
       ob.position.copy(this.worldOf(level, o.x, o.y));
       this.board.add(ob);
     }
+    // crates take the stage's obstacle look, plus crack lines that show once they are hit
+    this.crates = [];
+    for (const k of level.crates ?? []) {
+      const obj = obstacleFor(theme, stage, orng);
+      obj.position.copy(this.worldOf(level, k.x, k.y));
+      const crack = new THREE.Group();
+      for (const [x, z, r] of [[-0.1, 0.05, 0.6], [0.12, -0.08, -0.5], [0.02, 0.18, 1.4]] as const) {
+        const line = new THREE.Mesh(CRACK_GEO, CRACK_MAT);
+        line.position.set(x, 0.72, z);
+        line.rotation.y = r;
+        crack.add(line);
+      }
+      crack.visible = false;
+      obj.add(crack);
+      // a small bubble with one dot per hit left, so any crate look (hay, rock, log) reads as "this breaks"
+      const pips = new THREE.Sprite(new THREE.SpriteMaterial({ map: pipTexture(k.hits), transparent: true, depthTest: false }));
+      pips.scale.set(0.34 + 0.18 * k.hits, 0.34, 1);
+      pips.position.set(0, 1.15, 0);
+      pips.renderOrder = 9;
+      obj.add(pips);
+      this.board.add(obj);
+      this.crates.push({ crate: k, obj, crack, pips, cracks: 0, shakeT: 0 });
+    }
     for (const a of level.arrows ?? []) this.board.add(this.arrowTile(level, a.x, a.y, a.dir));
     this.fit();
   }
@@ -222,6 +276,41 @@ export class Stage {
     const p = this.worldOf(level, x, y).project(this.camera);
     const rect = this.renderer.domElement.getBoundingClientRect();
     return { x: rect.left + ((p.x + 1) / 2) * rect.width, y: rect.top + ((1 - p.y) / 2) * rect.height };
+  }
+
+  /**
+   * Bring the crates in line with who has left: a new crack shows the crack lines and shakes the crate, a broken one
+   * disappears. Returns what changed so the caller can play sounds and effects.
+   */
+  updateCrates(level: Level, alive: ReadonlySet<number>): Array<{ pos: THREE.Vector3; broke: boolean }> {
+    const out: Array<{ pos: THREE.Vector3; broke: boolean }> = [];
+    for (const c of this.crates) {
+      const cracks = crateCracks(level, c.crate, alive);
+      if (cracks <= c.cracks) continue;
+      c.cracks = cracks;
+      const broke = cracks >= c.crate.hits;
+      if (broke) c.obj.visible = false;
+      else {
+        c.crack.visible = true;
+        c.shakeT = 0.35;
+        const m = c.pips.material;
+        m.map?.dispose();
+        m.map = pipTexture(c.crate.hits - cracks);
+        m.needsUpdate = true;
+        c.pips.scale.x = 0.34 + 0.18 * (c.crate.hits - cracks);
+      }
+      out.push({ pos: c.obj.position.clone(), broke });
+    }
+    return out;
+  }
+
+  update(dt: number): void {
+    for (const c of this.crates) {
+      if (c.shakeT <= 0) continue;
+      c.shakeT = Math.max(0, c.shakeT - dt);
+      c.obj.rotation.z = Math.sin(c.shakeT * 50) * 0.08 * (c.shakeT / 0.35);
+      c.obj.scale.setScalar(1 - 0.06 * Math.sin((c.shakeT / 0.35) * Math.PI));
+    }
   }
 
   render(): void {

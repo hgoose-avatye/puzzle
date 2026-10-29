@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Direction, Level, Piece } from '../core/types';
 import { canExit } from '../core/rules';
 import { createRng } from '../core/rng';
-import { generateLevelFor } from '../curve/curve';
+import { buildGameLevel } from '../curve/curve';
 import { exitPath } from './path';
 import { smoothPath, trackAt } from './smooth';
 import { MIN_GAP, Traffic } from './traffic';
@@ -171,7 +171,7 @@ describe('traffic', () => {
     let played = 0;
     let waits = 0;
     for (const n of [12, 20, 34, 50, 80]) {
-      const gen = generateLevelFor(n, 1);
+      const gen = buildGameLevel(n);
       if (!gen) continue;
       played++;
       const l = gen.level;

@@ -1,4 +1,4 @@
-import { blockersOf, canExit, isAsleep, lockedBy } from './rules';
+import { blockersOf, canExit, cratesInWay, isAsleep, lockedBy } from './rules';
 import type { Level } from './types';
 
 export interface GameState {
@@ -15,7 +15,7 @@ export interface GameState {
 
 export type TapEvent =
   | { type: 'exited'; id: number }
-  | { type: 'blocked'; id: number; blockers: number[]; lockedBy?: number; asleep?: boolean }
+  | { type: 'blocked'; id: number; blockers: number[]; lockedBy?: number; asleep?: boolean; crates?: number }
   | { type: 'ignored'; id: number };
 
 export function createGame(level: Level, options: { hearts?: number } = {}): GameState {
@@ -43,6 +43,7 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
     const blockers = blockersOf(state.level, piece, state.alive);
     const lock = lockedBy(state.level, piece, state.alive);
     const asleep = isAsleep(state.level, piece, state.alive);
+    const crates = cratesInWay(state.level, piece, state.alive).length;
     const counted: GameState = {
       ...state,
       taps: state.taps + 1,
@@ -51,7 +52,7 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
     };
     return {
       state: burnFuses(counted),
-      event: { type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}) },
+      event: { type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}), ...(crates ? { crates } : {}) },
     };
   }
   const alive = new Set(state.alive);
