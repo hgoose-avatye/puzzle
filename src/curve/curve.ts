@@ -114,14 +114,30 @@ export type Theme = 'village' | 'forest' | 'pirate' | 'jungle' | 'haunted' | 'wi
 export const CHAPTER_THEMES: Theme[] = ['village', 'forest', 'pirate', 'jungle', 'haunted', 'winter'];
 export const themeFor = (levelNumber: number): Theme => CHAPTER_THEMES[Math.min(5, Math.floor((levelNumber - 1) / CHAPTER_LENGTH))];
 
-/** Varied outlines through a chapter; intro levels stay simple and rest levels get the friendly oval. */
-const SHAPE_CYCLE: BoardShape[] = ['octagon', 'plus', 'hexagon', 'tee', 'ellipse', 'rounded', 'rect'];
-export function shapeFor(level: number, role: Role): BoardShape {
+/**
+ * Outlines each region leans towards, so a chapter has a shape of its own: a tidy village square, round forest
+ * clearings, island beaches, cross-shaped ruins, a crooked haunted yard, round snowy squares.
+ */
+export const CHAPTER_SHAPES: Record<Theme, [BoardShape, BoardShape, BoardShape]> = {
+  village: ['rect', 'rounded', 'octagon'],
+  forest: ['ellipse', 'rounded', 'octagon'],
+  pirate: ['ellipse', 'hexagon', 'rounded'],
+  jungle: ['plus', 'octagon', 'rect'],
+  haunted: ['tee', 'octagon', 'plus'],
+  winter: ['rounded', 'ellipse', 'rect'],
+};
+/** The biggest levels need the roomy outlines to fit 26-28 animals. */
+const ROOMY: BoardShape[] = ['rect', 'rounded', 'octagon'];
+
+export function shapeFor(level: number, role: Role, theme: Theme = 'village'): BoardShape {
+  const own = CHAPTER_SHAPES[theme];
   if (role === 'intro') return level <= 2 ? 'rect' : 'rounded';
-  if (role === 'rest') return 'ellipse';
-  // the biggest levels need the roomy outlines to fit 26-28 animals
-  if (role === 'tough' || role === 'finale') return (['rounded', 'octagon', 'rect'] as const)[level % 3];
-  return SHAPE_CYCLE[level % SHAPE_CYCLE.length];
+  if (role === 'rest') return own[1];
+  if (role === 'tough' || role === 'finale') {
+    const roomy = own.filter((s) => ROOMY.includes(s));
+    return roomy.length ? roomy[level % roomy.length] : ROOMY[level % 3];
+  }
+  return own[level % 3];
 }
 
 /** Chapter 2 stretches animals, 3 adds keys, 4 sleepers, 5 bombs, 6 rotates through all three (spec 6.1). */
@@ -130,7 +146,7 @@ export function levelSpec(levelNumber: number): LevelSpec {
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
   const level = ((levelNumber - 1) % CHAPTER_LENGTH) + 1;
   const raw = chapterOneSpec(level);
-  const base = { ...raw, params: { ...raw.params, ...boardSize(level, raw.role), shape: shapeFor(level, raw.role), obstacleCount: obstaclesFor(chapter, level, raw.role) } };
+  const base = { ...raw, params: { ...raw.params, ...boardSize(level, raw.role), shape: shapeFor(level, raw.role, CHAPTER_THEMES[chapter - 1]), obstacleCount: obstaclesFor(chapter, level, raw.role) } };
   if (chapter === 1) return { ...base, chapter };
   const params = { ...base.params };
   const { role } = base;
