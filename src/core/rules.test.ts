@@ -58,3 +58,26 @@ describe('validateLevel', () => {
     expect(validateLevel(line, { minLength: 2, maxLength: 5 }).length).toBeGreaterThan(0);
   });
 });
+
+describe('one-cell pieces and explicit dir', () => {
+  const single: Piece = { id: 1, cells: [c(2, 2)], dir: 'right' };
+  it('uses dir for direction, exit ray and exit cell', () => {
+    const level = lvl(5, 5, single);
+    expect(headDirection(single)).toBe('right');
+    expect(exitRay(level, single)).toEqual([c(3, 2), c(4, 2)]);
+    expect(exitCell(level, single)).toEqual(c(4, 2));
+  });
+  it('validateLevel accepts a one-cell piece with dir, rejects it without dir', () => {
+    expect(validateLevel(lvl(5, 5, single), { minLength: 1 })).toEqual([]);
+    expect(validateLevel(lvl(5, 5, { id: 1, cells: [c(2, 2)] })).length).toBeGreaterThan(0);
+  });
+  it('rejects a dir that contradicts the body of a longer piece', () => {
+    expect(validateLevel(lvl(5, 5, { id: 1, cells: [c(3, 2), c(2, 2)], dir: 'up' })).length).toBeGreaterThan(0);
+  });
+  it('a bent piece whose own tail lies ahead of its head is not blocked by itself', () => {
+    const u = p(1, [1, 0], [0, 0], [0, 1], [1, 1], [2, 1], [2, 0]);
+    const level = lvl(5, 5, u);
+    expect(validateLevel(level)).toEqual([]);
+    expect(blockersOf(level, u, new Set([1]))).toEqual([]);
+  });
+});

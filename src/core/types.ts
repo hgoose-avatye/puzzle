@@ -5,10 +5,15 @@ export interface Cell {
   y: number;
 }
 
-/** cells[0] is the head; the exit direction is cells[1] -> cells[0]. */
+/**
+ * cells[0] is the head; the exit direction is cells[1] -> cells[0].
+ * A one-cell piece has no body to read a direction from, so it must carry `dir`.
+ * The body follows its own path out, so a piece is only ever blocked by its exit ray.
+ */
 export interface Piece {
   id: number;
   cells: Cell[];
+  dir?: Direction;
 }
 
 export interface Level {

@@ -44,7 +44,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
       for (let k = 0; k < length; k++) cells.push({ x: head.x - v.x * k, y: head.y - v.y * k });
       if (cells.some((c) => c.x < 0 || c.y < 0 || c.x >= params.width || c.y >= params.height)) continue;
       if (cells.some((c) => occupied.has(key(c)))) continue;
-      const piece: Piece = { id: i + 1, cells };
+      const piece: Piece = length === 1 ? { id: i + 1, cells, dir } : { id: i + 1, cells };
       const ray = new Set(exitRay(board, piece).map(key));
       if ([...ray].some((k) => occupied.has(k))) continue;
       valid++;
@@ -63,7 +63,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const j = rng.int(0, i);
     [ids[i], ids[j]] = [ids[j], ids[i]];
   }
-  const pieces = board.pieces.map((p, idx) => ({ id: ids[idx], cells: p.cells }));
+  const pieces = board.pieces.map((p, idx) => ({ ...p, id: ids[idx] }));
   for (let i = pieces.length - 1; i > 0; i--) {
     const j = rng.int(0, i);
     [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
