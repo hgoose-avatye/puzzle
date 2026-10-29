@@ -61,3 +61,21 @@ export function sheetLevel(names: string[], len = 1, headings: Direction[] = HEA
   });
   return { level: { width: headings.length * pitch, height: names.length * pitch, pieces }, species };
 }
+
+/**
+ * Crossing paths on one 9x9 board, for checking simultaneous runs: 1 (3 cells) runs right along row 4; 2 drops down column 5,
+ * waits just above row 4 while 1 passes and then goes on by itself; 4 queues behind 2; 3 climbs through (7,4) after
+ * 1 has passed (no wait).
+ */
+export function crossLevel(): Level {
+  return {
+    width: 9,
+    height: 9,
+    pieces: [
+      { id: 1, cells: [{ x: 2, y: 4 }, { x: 1, y: 4 }, { x: 0, y: 4 }] },
+      { id: 2, cells: [{ x: 5, y: 1 }], dir: 'down' },
+      { id: 3, cells: [{ x: 7, y: 5 }], dir: 'up' },
+      { id: 4, cells: [{ x: 5, y: 0 }], dir: 'down' },
+    ],
+  };
+}
