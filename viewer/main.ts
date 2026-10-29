@@ -1,6 +1,7 @@
 import { createRng } from '../src/core/rng';
 import { createGame, isCleared, tap, type GameState } from '../src/core/game';
 import { generateMatching } from '../src/generator/generate';
+import { generateLevelFor } from '../src/curve/curve';
 import type { Metrics } from '../src/solver/metrics';
 import { computeCell, hitTest, render, type Flash, type Style } from './render';
 
@@ -10,6 +11,20 @@ const canvas = $<HTMLCanvasElement>('board');
 let state: GameState | null = null;
 let metrics: Metrics | null = null;
 let flashTimer: number | undefined;
+
+interface LogEntry { level: number; role: string; taps: number; blockedTaps: number; cleared: boolean; ms: number; at: string; viewportWidth: number; style: string }
+const LOG_KEY = 'puzzle-test-log';
+let attempt: { level: number; role: string; startedAt: number } | null = null;
+const readLog = (): LogEntry[] => { try { return JSON.parse(localStorage.getItem(LOG_KEY) ?? '[]'); } catch { return []; } };
+const writeLog = (entries: LogEntry[]): void => { try { localStorage.setItem(LOG_KEY, JSON.stringify(entries)); } catch { /* storage unavailable */ } };
+const refreshLogInfo = (): void => { $('logInfo').textContent = `log: ${readLog().length} attempts`; };
+
+function closeAttempt(cleared: boolean): void {
+  if (!attempt || !state || (!cleared && state.taps === 0)) { attempt = null; return; }
+  writeLog([...readLog(), { level: attempt.level, role: attempt.role, taps: state.taps, blockedTaps: state.blockedTaps, cleared, ms: Date.now() - attempt.startedAt, at: new Date().toISOString(), viewportWidth: window.innerWidth, style: style() }]);
+  attempt = null;
+  refreshLogInfo();
+}
 
 const PRESETS: Record<string, [number, number, number]> = { '7x10': [7, 10, 14], '8x12': [8, 12, 22], '10x10': [10, 10, 12] };
 
@@ -38,6 +53,8 @@ function show(flash?: Flash): void {
 }
 
 function generate(): void {
+  closeAttempt(false);
+  $('roleInfo').textContent = '';
   const result = generateMatching(
     { width: num('width'), height: num('height'), pieceCount: num('count'), minLength: num('minLen'), maxLength: num('maxLen') },
     {},
@@ -65,6 +82,7 @@ canvas.addEventListener('click', (e) => {
   state = result.state;
   if (result.event.type === 'ignored') return;
   const blocked = result.event.type === 'blocked';
+  if (isCleared(state)) closeAttempt(true);
   show(blocked ? { id, kind: 'blocked' } : undefined);
   window.clearTimeout(flashTimer);
   if (blocked) flashTimer = window.setTimeout(() => show(), 500);
@@ -80,5 +98,35 @@ $('preset').addEventListener('change', () => {
 });
 $('style').addEventListener('change', () => show());
 window.addEventListener('resize', () => show());
+function playLevel(): void {
+  closeAttempt(false);
+  const n = Math.max(1, Math.floor(num('level')));
+  let result = null;
+  for (let seedTry = 1; seedTry <= 5 && !result; seedTry++) result = generateLevelFor(n, seedTry);
+  if (!result) {
+    state = null;
+    metrics = null;
+    canvas.width = canvas.height = 0;
+    $('status').textContent = `Could not generate level ${n}`;
+    return;
+  }
+  state = createGame(result.level);
+  metrics = result.metrics;
+  attempt = { level: n, role: result.spec.role, startedAt: Date.now() };
+  $('roleInfo').textContent = `Level ${result.spec.level} (${result.spec.role}) - ${result.spec.params.width}x${result.spec.params.height}`;
+  show();
+}
+
+$('playLevel').addEventListener('click', playLevel);
+$('nextLevel').addEventListener('click', () => {
+  $<HTMLInputElement>('level').value = String(num('level') + 1);
+  playLevel();
+});
+$('copyLog').addEventListener('click', async () => {
+  const text = JSON.stringify(readLog(), null, 1);
+  try { await navigator.clipboard.writeText(text); $('logInfo').textContent = 'log copied'; } catch { window.prompt('Copy the log:', text); }
+});
+$('clearLog').addEventListener('click', () => { writeLog([]); refreshLogInfo(); });
 $('generate').addEventListener('click', generate);
-generate();
+refreshLogInfo();
+playLevel();

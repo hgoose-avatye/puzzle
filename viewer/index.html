@@ -6,6 +6,8 @@
     <title>Puzzle Level Viewer</title>
     <style>
       body { font: 14px system-ui, sans-serif; margin: 16px; background: #faf7f2; color: #333; }
+      #tester { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 8px; }
+      #roleInfo { margin-bottom: 12px; color: #666; min-height: 1.2em; }
       #controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 12px; }
       label { display: flex; flex-direction: column; font-size: 12px; }
       input { width: 56px; padding: 4px; }
@@ -18,6 +20,15 @@
     </style>
   </head>
   <body>
+    <div id="tester">
+      <label>level<input id="level" type="number" value="1" min="1" /></label>
+      <button id="playLevel">Play level</button>
+      <button id="nextLevel">Next level</button>
+      <button id="copyLog">Copy log</button>
+      <button id="clearLog">Clear log</button>
+      <span id="logInfo"></span>
+    </div>
+    <div id="roleInfo"></div>
     <div id="controls">
       <label>seed<input id="seed" type="number" value="1" /></label>
       <label>preset<select id="preset"><option value="8x12" selected>8x12</option><option value="7x10">7x10</option><option value="10x10">10x10</option><option value="">custom</option></select></label>
