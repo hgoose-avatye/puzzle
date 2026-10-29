@@ -106,6 +106,9 @@ function pick(clientX: number, clientY: number): number | null {
   return best?.id ?? null;
 }
 
+/** The logic state is cleared as soon as the last animal is tapped; the win only shows once every animal has left the board. */
+const anyRunning = (): boolean => [...views.values()].some((v) => v.running);
+
 function onTap(id: number): void {
   if (!state || isCleared(state) || isFailed(state)) return;
   const result = tap(state, id);
@@ -114,7 +117,7 @@ function onTap(id: number): void {
   const view = views.get(id);
   if (ev.type === 'exited' && view) {
     sound.run();
-    view.runOut(() => { if (state && isCleared(state)) showEnd(true); }, () => {
+    view.runOut(() => { if (state && isCleared(state) && !anyRunning()) showEnd(true); }, () => {
       sound.rescued();
       fx.burst(view.gateWorld(), view.color);
     });
