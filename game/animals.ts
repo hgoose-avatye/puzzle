@@ -4,12 +4,14 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { directionVector, exitCell, exitDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
+import { sliceAlongZ } from '../src/game/slice';
 import { exitPath, pointAlong, pointAt, type Pt } from '../src/game/path';
 
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
   one: ['penguin', 'chick', 'parrot'],
   two: ['cow', 'pig', 'fox', 'tiger', 'panda', 'koala'],
-  long: ['caterpillar', 'dog', 'bunny'],
+  // Cube Pets are all cube-bodied; only these read well stretched (no snake/crocodile asset exists).
+  long: ['caterpillar', 'dog', 'fish'],
 };
 
 export function speciesFor(piece: Piece): string {
@@ -36,42 +38,8 @@ const STRETCH_HI = 0.1;
 interface Tracked { holder: THREE.Object3D; z0: number; shift: number }
 interface Stretched { root: THREE.Object3D; body: THREE.Mesh | null; rest: Float32Array | null; tracked: Tracked[] }
 
-/** Cut every triangle of `geo` at each z plane in `planes`, interpolating all attributes, so the mesh can bend smoothly. */
-function sliceAlongZ(geo: THREE.BufferGeometry, planes: number[]): THREE.BufferGeometry {
-  let g = geo.index ? geo.toNonIndexed() : geo.clone();
-  const names = Object.keys(g.attributes);
-  for (const c of planes) {
-    const src = names.map((n) => g.getAttribute(n));
-    const out = names.map(() => [] as number[]);
-    const vert = (i: number): number[][] => src.map((a) => Array.from({ length: a.itemSize }, (_, k) => a.getComponent(i, k)));
-    const lerp = (a: number[][], b: number[][], t: number): number[][] => a.map((x, ai) => x.map((v, k) => v + (b[ai][k] - v) * t));
-    const emit = (...vs: number[][][]): void => vs.forEach((v) => v.forEach((comp, a) => out[a].push(...comp)));
-    for (let t = 0; t < g.getAttribute('position').count; t += 3) {
-      const v = [vert(t), vert(t + 1), vert(t + 2)];
-      const side = v.map((x) => x[0][2] - c);
-      const above = side.filter((d) => d > 0).length;
-      if (above === 0 || above === 3) { emit(v[0], v[1], v[2]); continue; }
-      // rotate so v[0] is the lone vertex on its side of the plane
-      const lone = above === 1 ? side.findIndex((d) => d > 0) : side.findIndex((d) => d <= 0);
-      const a = v[lone];
-      const b = v[(lone + 1) % 3];
-      const d = v[(lone + 2) % 3];
-      const tb = (c - a[0][2]) / (b[0][2] - a[0][2]);
-      const td = (c - a[0][2]) / (d[0][2] - a[0][2]);
-      const ab = lerp(a, b, tb);
-      const ad = lerp(a, d, td);
-      emit(a, ab, ad);
-      emit(ab, b, d);
-      emit(ab, d, ad);
-    }
-    const next = new THREE.BufferGeometry();
-    names.forEach((n, a) => next.setAttribute(n, new THREE.BufferAttribute(new Float32Array(out[a]), src[a].itemSize)));
-    g = next;
-  }
-  return g;
-}
-
-const BENDY_LEGS = new Set(['dog', 'bunny']);
+/** Long leggy animals get extra leg pairs along the body; the fish has none to copy. */
+const BENDY_LEGS = new Set(['dog']);
 
 /**
  * One continuous animal for a piece spanning `cells` cells. The body mesh is stretched in its flat middle only,
@@ -133,12 +101,16 @@ function makeAnimal(gltf: GLTF, cells: number, species: string): Stretched {
 }
 
 const CATERPILLAR_COLORS = [0xe8b93f, 0x5bb36f];
+/** Ball spacing (cells) and radii: neighbouring balls overlap so the body reads as one soft chain. */
+const CATERPILLAR_SPACING = 0.9;
+const CATERPILLAR_RADIUS = 0.5;
+const CATERPILLAR_TAIL_RADIUS = 0.4;
 
 function makeCaterpillarSegment(i: number, last: boolean): THREE.Group {
   const g = new THREE.Group();
-  const r = last ? 0.34 : 0.42;
+  const r = last ? CATERPILLAR_TAIL_RADIUS : CATERPILLAR_RADIUS;
   const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), new THREE.MeshStandardMaterial({ color: CATERPILLAR_COLORS[i % 2], roughness: 0.7 }));
-  ball.position.y = r + 0.12;
+  ball.position.y = r + 0.1;
   ball.castShadow = true;
   g.add(ball);
   return g;
@@ -195,6 +167,7 @@ export class PieceView {
   private readonly plates: THREE.Mesh[] = [];
   private readonly stretched: Stretched | null;
   private readonly chain: boolean;
+  private readonly modelRoot: THREE.Object3D;
   private lastS = 0;
   private clock = 0;
   private readonly mixer: THREE.AnimationMixer;
@@ -220,6 +193,7 @@ export class PieceView {
     const built = makeAnimal(gltf, this.chain ? 1 : this.bodyLen, species);
     this.stretched = built.body || built.tracked.length ? built : null;
     const head = built.root;
+    this.modelRoot = head;
     head.scale.setScalar(MODEL_SCALE);
     const size = new THREE.Box3().setFromObject(head).getSize(new THREE.Vector3());
     head.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
@@ -288,7 +262,7 @@ export class PieceView {
     head.position.copy(this.world(p.x, p.y));
     head.rotation.y = p.angle;
     for (let i = 1; i < this.segments.length; i++) {
-      const q = pointAlong(this.pts, sHead - i);
+      const q = pointAlong(this.pts, sHead - i * CATERPILLAR_SPACING);
       const seg = this.segments[i];
       seg.position.copy(this.world(q.x, q.y));
       seg.position.y += Math.sin(this.clock * 4 + i * 1.3) * 0.05;
@@ -410,6 +384,8 @@ export class PieceView {
 
   runOut(onDone: () => void): void {
     this.chevrons.visible = false;
+    this.pulseT = 0;
+    for (const seg of this.segments) seg.scale.setScalar(1);
     this.anim = { kind: 'run', s: this.bodyLen - 1, onDone };
     this.play('run', true);
   }
@@ -422,6 +398,27 @@ export class PieceView {
 
   pulse(): void {
     this.pulseT = 0.35;
+  }
+
+  /** Free what this view owns. The cached GLB geometry, materials and textures are shared and stay alive. */
+  dispose(): void {
+    const shared = new Set<THREE.Object3D>();
+    this.modelRoot.traverse((o) => shared.add(o));
+    this.group.traverse((o) => {
+      if (shared.has(o)) return;
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.geometry.dispose();
+        for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) m.dispose();
+      }
+      const sprite = o as THREE.Sprite;
+      if (sprite.isSprite) {
+        sprite.material.map?.dispose();
+        sprite.material.dispose();
+      }
+    });
+    this.stretched?.body?.geometry.dispose();
+    this.mixer.stopAllAction();
   }
 
   update(dt: number): void {
@@ -448,7 +445,7 @@ export class PieceView {
     if (this.pulseT > 0) {
       this.pulseT = Math.max(0, this.pulseT - dt);
       const k = 1 + Math.sin((1 - this.pulseT / 0.35) * Math.PI) * 0.12;
-      for (const s of this.segments) s.scale.setScalar(k);
+      for (const s of this.segments) s.scale.setScalar(this.pulseT === 0 ? 1 : k);
     }
   }
 }

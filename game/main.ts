@@ -60,7 +60,7 @@ async function loadLevel(n: number): Promise<void> {
   $('msg').textContent = '';
   const built = buildLevel(n);
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
-  for (const v of views.values()) stage.scene.remove(v.group);
+  for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
   stage.setBoard(built.level);
   const names = [...new Set(built.level.pieces.map(speciesFor))];
