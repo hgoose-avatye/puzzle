@@ -13,7 +13,8 @@
       #hearts { font-size: 21px; letter-spacing: 0; }
       #hud > div { background: rgba(255,255,255,.82); border-radius: 16px; padding: 4px 12px; }
       #hearts:empty { display: none; }
-      #stageLabel { font-size: 14px; font-weight: 600; opacity: .75; margin-top: 2px; }
+      #hud > div:first-child { max-width: calc(50% - 46px); }
+      #stageLabel { font-size: 13px; line-height: 1.25; font-weight: 600; opacity: .75; margin-top: 2px; }
       #msg { position: fixed; top: 58px; left: 0; right: 0; text-align: center; font-size: 18px; font-weight: 600; color: #b3402f; min-height: 24px; pointer-events: none; text-shadow: 0 1px 0 #fff; }
       #bar { position: fixed; bottom: 16px; left: 0; right: 0; display: flex; justify-content: center; gap: 16px; }
       button { min-height: 52px; min-width: 120px; font-size: 20px; font-weight: 700; border: 0; border-radius: 26px; background: #fff; color: #3b3a36; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
