@@ -155,6 +155,15 @@ function collide(id: number, view: PieceView): void {
   sound.play('collision');
 }
 
+/** Crates next to an animal that just left crack; a crate that breaks bursts and opens the way. */
+function crackCrates(): void {
+  if (!state) return;
+  for (const c of stage.updateCrates(state.level, state.alive)) {
+    if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); }
+    else { fx.dust(c.pos); sound.play('arrive'); }
+  }
+}
+
 function onTap(id: number): void {
   if (!state || isCleared(state) || isFailed(state)) return;
   const result = tap(state, id);
@@ -175,6 +184,7 @@ function onTap(id: number): void {
       fx.sparkle(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
+    crackCrates();
   } else if (ev.type === 'blocked' && view) {
     view.bump();
     fx.stars(view.headWorld());
@@ -182,7 +192,7 @@ function onTap(id: number): void {
     else if (cooled(id)) sound.play('wall');
     for (const b of ev.blockers) views.get(b)?.pulse();
     if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
-    $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : '앞이 막혔어요';
+    $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 옆 친구가 나가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
   if (isFailed(state)) {
@@ -199,6 +209,7 @@ const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolea
   ['basic', '👆', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르면 가는 길이 보여요.', () => true],
   ['arrow', '➡️', '바닥의 화살표 칸을 지나면 그 방향으로 꺾여요. 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
   ['obstacle', '🪵', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
+  ['crate', '📦', '상자나 건초더미가 길을 막고 있어요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
   ['long', '🐛', '몸이 긴 친구는 몸 전체가 지나갈 길이 비어 있어야 해요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
   ['hearts', '♥', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
   ['key', '🔑', '🔒 잠긴 친구는 🔑 열쇠를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
@@ -380,6 +391,7 @@ const clock = new THREE.Clock();
     }
   }
   fx.update(dt);
+  stage.update(dt);
   stage.render();
   requestAnimationFrame(loop);
 })();
