@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, isCleared, tap } from './game';
+import { createGame, isCleared, isFailed, tap } from './game';
 import type { Level } from './types';
 
 const level: Level = {
@@ -42,5 +42,33 @@ describe('tap', () => {
     tap(s0, 2);
     expect(s0.alive.size).toBe(2);
     expect(s0.taps).toBe(0);
+  });
+});
+
+describe('hearts', () => {
+  it('without hearts, blocked taps never fail the level', () => {
+    let s = createGame(level);
+    for (let i = 0; i < 5; i++) s = tap(s, 1).state;
+    expect(isFailed(s)).toBe(false);
+    expect(s.hearts).toBeUndefined();
+  });
+  it('each blocked tap costs a heart and the level fails at zero', () => {
+    let s = createGame(level, { hearts: 2 });
+    s = tap(s, 1).state;
+    expect(s.hearts).toBe(1);
+    expect(isFailed(s)).toBe(false);
+    s = tap(s, 1).state;
+    expect(s.hearts).toBe(0);
+    expect(isFailed(s)).toBe(true);
+    const after = tap(s, 2);
+    expect(after.event).toEqual({ type: 'ignored', id: 2 });
+    expect(after.state.alive.size).toBe(2);
+  });
+  it('exiting pieces costs no hearts and clearing is not a failure', () => {
+    let s = createGame(level, { hearts: 1 });
+    s = tap(tap(s, 2).state, 1).state;
+    expect(isCleared(s)).toBe(true);
+    expect(s.hearts).toBe(1);
+    expect(isFailed(s)).toBe(false);
   });
 });

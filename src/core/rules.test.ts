@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blockersOf, canExit, exitCell, exitRay, headDirection, validateLevel } from './rules';
+import { blockersOf, canExit, exitCell, exitRay, headDirection, traceExit, validateLevel } from './rules';
 import type { Cell, Level, Piece } from './types';
 
 const c = (x: number, y: number): Cell => ({ x, y });
@@ -79,5 +79,45 @@ describe('one-cell pieces and explicit dir', () => {
     const level = lvl(5, 5, u);
     expect(validateLevel(level)).toEqual([]);
     expect(blockersOf(level, u, new Set([1]))).toEqual([]);
+  });
+});
+
+describe('direction arrows and obstacles', () => {
+  const mover = p(1, [1, 2], [0, 2]); // faces right
+  const withFixtures = (pieces: Piece[], extra: Partial<Level>): Level => ({ ...lvl(5, 5, ...pieces), ...extra });
+
+  it('bends the exit path at an arrow tile and reports where the gate is', () => {
+    const level = withFixtures([mover], { arrows: [{ x: 3, y: 2, dir: 'up' }] });
+    const t = traceExit(level, mover);
+    expect(t.reachesEdge).toBe(true);
+    expect(t.cells).toEqual([c(2, 2), c(3, 2), c(3, 1), c(3, 0)]);
+    expect(t.endDir).toBe('up');
+    expect(exitCell(level, mover)).toEqual(c(3, 0));
+  });
+  it('blockers follow the bent path', () => {
+    const other = p(2, [3, 1], [4, 1]);
+    const level = withFixtures([mover, other], { arrows: [{ x: 3, y: 2, dir: 'up' }] });
+    expect(blockersOf(level, mover, new Set([1, 2]))).toEqual([2]);
+  });
+  it('an arrow facing the incoming piece is a wall', () => {
+    const level = withFixtures([mover], { arrows: [{ x: 3, y: 2, dir: 'left' }] });
+    expect(traceExit(level, mover).reachesEdge).toBe(false);
+    expect(canExit(level, 1, new Set([1]))).toBe(false);
+  });
+  it('an obstacle on the path means the piece can never exit', () => {
+    const level = withFixtures([mover], { obstacles: [c(3, 2)] });
+    expect(canExit(level, 1, new Set([1]))).toBe(false);
+    expect(validateLevel(level).length).toBeGreaterThan(0);
+  });
+  it('a loop of arrows terminates and cannot exit', () => {
+    const level = withFixtures([mover], {
+      arrows: [{ x: 2, y: 2, dir: 'down' }, { x: 2, y: 3, dir: 'right' }, { x: 3, y: 3, dir: 'up' }, { x: 3, y: 2, dir: 'left' }],
+    });
+    expect(traceExit(level, mover).reachesEdge).toBe(false);
+  });
+  it('validateLevel rejects fixtures that overlap pieces, each other or leave the board', () => {
+    expect(validateLevel(withFixtures([mover], { obstacles: [c(1, 2)] })).length).toBeGreaterThan(0);
+    expect(validateLevel(withFixtures([mover], { obstacles: [c(4, 4)], arrows: [{ x: 4, y: 4, dir: 'up' }] })).length).toBeGreaterThan(0);
+    expect(validateLevel(withFixtures([mover], { obstacles: [c(9, 9)] })).length).toBeGreaterThan(0);
   });
 });

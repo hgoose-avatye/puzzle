@@ -16,8 +16,18 @@ export interface Piece {
   dir?: Direction;
 }
 
+/** A floor tile that bends a piece's exit path. A piece entering from the opposite side hits a wall. */
+export interface ArrowTile {
+  x: number;
+  y: number;
+  dir: Direction;
+}
+
 export interface Level {
   width: number;
   height: number;
   pieces: Piece[];
+  /** Cells nothing can pass through. */
+  obstacles?: Cell[];
+  arrows?: ArrowTile[];
 }

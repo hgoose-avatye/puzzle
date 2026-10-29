@@ -28,22 +28,55 @@ export function headDirection(piece: Piece): Direction {
 const inBounds = (level: Level, x: number, y: number): boolean =>
   x >= 0 && y >= 0 && x < level.width && y < level.height;
 
-export function exitRay(level: Level, piece: Piece): Cell[] {
-  const v = directionVector(headDirection(piece));
-  const ray: Cell[] = [];
-  let x = piece.cells[0].x + v.x;
-  let y = piece.cells[0].y + v.y;
-  while (inBounds(level, x, y)) {
-    ray.push({ x, y });
+const OPPOSITE: Record<Direction, Direction> = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+export interface ExitTrace {
+  /** Cells the piece passes after its head, in order, up to the edge (or up to the wall that stops it). */
+  cells: Cell[];
+  /** Direction of travel when it leaves the board. */
+  endDir: Direction;
+  /** False when an obstacle, a facing arrow or an arrow loop stops the piece for good. */
+  reachesEdge: boolean;
+}
+
+export function traceExit(level: Level, piece: Piece): ExitTrace {
+  const obstacles = new Set((level.obstacles ?? []).map((c) => `${c.x},${c.y}`));
+  const arrows = new Map<string, Direction>((level.arrows ?? []).map((a) => [`${a.x},${a.y}`, a.dir]));
+  let dir = headDirection(piece);
+  let x = piece.cells[0].x;
+  let y = piece.cells[0].y;
+  const cells: Cell[] = [];
+  const seen = new Set<string>();
+  for (;;) {
+    const v = directionVector(dir);
     x += v.x;
     y += v.y;
+    if (!inBounds(level, x, y)) return { cells, endDir: dir, reachesEdge: true };
+    const k = `${x},${y}`;
+    if (obstacles.has(k)) return { cells, endDir: dir, reachesEdge: false };
+    const tile = arrows.get(k);
+    if (tile) {
+      if (tile === OPPOSITE[dir]) return { cells, endDir: dir, reachesEdge: false };
+      dir = tile;
+    }
+    const state = `${k},${dir}`;
+    if (seen.has(state)) return { cells, endDir: dir, reachesEdge: false };
+    seen.add(state);
+    cells.push({ x, y });
   }
-  return ray;
+}
+
+export function exitRay(level: Level, piece: Piece): Cell[] {
+  return traceExit(level, piece).cells;
 }
 
 export function exitCell(level: Level, piece: Piece): Cell {
   const ray = exitRay(level, piece);
   return ray.length > 0 ? ray[ray.length - 1] : piece.cells[0];
+}
+
+export function exitDirection(level: Level, piece: Piece): Direction {
+  return traceExit(level, piece).endDir;
 }
 
 export function blockersOf(level: Level, piece: Piece, alive: ReadonlySet<number>): number[] {
@@ -62,7 +95,7 @@ export function blockersOf(level: Level, piece: Piece, alive: ReadonlySet<number
 
 export function canExit(level: Level, id: number, alive: ReadonlySet<number>): boolean {
   const piece = level.pieces.find((q) => q.id === id);
-  return piece !== undefined && blockersOf(level, piece, alive).length === 0;
+  return piece !== undefined && traceExit(level, piece).reachesEdge && blockersOf(level, piece, alive).length === 0;
 }
 
 export interface ValidateOptions {
@@ -75,6 +108,13 @@ export function validateLevel(level: Level, options: ValidateOptions = {}): stri
   const errors: string[] = [];
   const ids = new Set<number>();
   const owner = new Map<string, number>();
+  const fixtures = new Set<string>();
+  for (const f of [...(level.obstacles ?? []), ...(level.arrows ?? [])]) {
+    if (!inBounds(level, f.x, f.y)) errors.push(`fixture (${f.x},${f.y}) out of bounds`);
+    const fk = `${f.x},${f.y}`;
+    if (fixtures.has(fk)) errors.push(`fixture (${f.x},${f.y}) overlaps another fixture`);
+    fixtures.add(fk);
+  }
   for (const piece of level.pieces) {
     if (ids.has(piece.id)) errors.push(`duplicate piece id ${piece.id}`);
     ids.add(piece.id);
@@ -86,6 +126,7 @@ export function validateLevel(level: Level, options: ValidateOptions = {}): stri
     for (const cell of cells) {
       if (!inBounds(level, cell.x, cell.y)) errors.push(`piece ${piece.id}: cell (${cell.x},${cell.y}) out of bounds`);
       const key = `${cell.x},${cell.y}`;
+      if (fixtures.has(key)) errors.push(`piece ${piece.id}: cell (${cell.x},${cell.y}) overlaps a fixture`);
       const other = owner.get(key);
       if (other !== undefined) errors.push(`cell (${cell.x},${cell.y}) shared by pieces ${other} and ${piece.id}`);
       else owner.set(key, piece.id);
@@ -104,6 +145,14 @@ export function validateLevel(level: Level, options: ValidateOptions = {}): stri
     }
     if (options.straightOnly && cells.length >= 2 && !cells.every((q) => q.x === cells[0].x) && !cells.every((q) => q.y === cells[0].y)) {
       errors.push(`piece ${piece.id}: not a straight bar`);
+    }
+  }
+  for (const piece of level.pieces) {
+    if (errors.some((e) => e.startsWith(`piece ${piece.id}:`))) continue;
+    try {
+      if (!traceExit(level, piece).reachesEdge) errors.push(`piece ${piece.id}: exit path never reaches the board edge`);
+    } catch {
+      /* geometry errors are already reported above */
     }
   }
   return errors;

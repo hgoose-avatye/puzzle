@@ -1,6 +1,6 @@
 import type { Rng } from '../core/rng';
-import { directionVector, exitRay } from '../core/rules';
-import type { Cell, Direction, Level, Piece } from '../core/types';
+import { directionVector, traceExit } from '../core/rules';
+import type { ArrowTile, Cell, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
 
 export interface GenParams {
@@ -9,6 +9,10 @@ export interface GenParams {
   pieceCount: number;
   minLength: number;
   maxLength: number;
+  /** Cells nothing can pass through (default 0). */
+  obstacleCount?: number;
+  /** Direction tiles that bend exit paths (default 0). */
+  arrowCount?: number;
 }
 
 export interface DifficultyTarget {
@@ -29,7 +33,28 @@ const key = (c: Cell): string => `${c.x},${c.y}`;
  * and the level is solvable by construction.
  */
 function buildOnce(params: GenParams, rng: Rng): Level | null {
-  const board: Level = { width: params.width, height: params.height, pieces: [] };
+  const fixed = new Set<string>();
+  const obstacles: Cell[] = [];
+  const arrows: ArrowTile[] = [];
+  const pickFree = (): Cell | null => {
+    for (let t = 0; t < 50; t++) {
+      const cell = { x: rng.int(0, params.width - 1), y: rng.int(0, params.height - 1) };
+      if (!fixed.has(key(cell))) { fixed.add(key(cell)); return cell; }
+    }
+    return null;
+  };
+  for (let i = 0; i < (params.obstacleCount ?? 0); i++) {
+    const cell = pickFree();
+    if (!cell) return null;
+    obstacles.push(cell);
+  }
+  for (let i = 0; i < (params.arrowCount ?? 0); i++) {
+    const cell = pickFree();
+    if (!cell) return null;
+    arrows.push({ ...cell, dir: DIRECTIONS[rng.int(0, 3)] });
+  }
+  const arrowKeys = new Set(arrows.map((a) => key(a)));
+  const board: Level = { width: params.width, height: params.height, pieces: [], obstacles, arrows };
   const occupied = new Set<string>();
   const rays: Set<string>[] = [];
   for (let i = 0; i < params.pieceCount; i++) {
@@ -43,13 +68,16 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
       const cells: Cell[] = [];
       for (let k = 0; k < length; k++) cells.push({ x: head.x - v.x * k, y: head.y - v.y * k });
       if (cells.some((c) => c.x < 0 || c.y < 0 || c.x >= params.width || c.y >= params.height)) continue;
-      if (cells.some((c) => occupied.has(key(c)))) continue;
+      if (cells.some((c) => occupied.has(key(c)) || fixed.has(key(c)))) continue;
       const piece: Piece = length === 1 ? { id: i + 1, cells, dir } : { id: i + 1, cells };
-      const ray = new Set(exitRay(board, piece).map(key));
+      const trace = traceExit(board, piece);
+      if (!trace.reachesEdge) continue;
+      const ray = new Set(trace.cells.map(key));
       if ([...ray].some((k) => occupied.has(k))) continue;
       valid++;
       const hitsLast = rays.length > 0 && cells.some((c) => rays[rays.length - 1].has(key(c)));
-      const score = (hitsLast ? 100 : 0) + rays.filter((r) => cells.some((c) => r.has(key(c)))).length;
+      const bends = trace.cells.some((c) => arrowKeys.has(key(c)));
+      const score = (hitsLast ? 100 : 0) + (bends ? 50 : 0) + rays.filter((r) => cells.some((c) => r.has(key(c)))).length;
       if (!best || score > best.score) best = { piece, ray, score };
     }
     if (!best) return null;
@@ -68,7 +96,13 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const j = rng.int(0, i);
     [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
   }
-  return { width: params.width, height: params.height, pieces };
+  return {
+    width: params.width,
+    height: params.height,
+    pieces,
+    ...(obstacles.length > 0 ? { obstacles } : {}),
+    ...(arrows.length > 0 ? { arrows } : {}),
+  };
 }
 
 export function generateLevel(params: GenParams, rng: Rng, maxAttempts = 200): Level | null {
