@@ -2,333 +2,273 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 /**
- * Procedural block animals following docs/art-reference (09 size classes, 02 back views). Every animal faces +z.
- * A piece of N cells is a head block plus N-1 body blocks, one per cell, so long animals are chains of cubes like in the
- * reference; the tail sits on the last block. Geometry and materials are shared and never disposed.
+ * Block animals, designed after docs/art-reference (09 size classes, 02 back views); the look of each species comes
+ * from the GPT-made reference sketch (eyes, snouts, ears, patterns, tails, colors).
+ *
+ * An animal is first assembled in one frame (head at +z, N cells long) and then cut into one segment per cell by z,
+ * so the path-following code can move the segments independently and the body bends at corners.
+ * Geometry and materials are cached and shared by every animal: never dispose anything built here.
  */
+
+export type AnimalType = 'penguin' | 'chick' | 'parrot' | 'cow' | 'pig' | 'fox' | 'tiger' | 'husky' | 'snake' | 'caterpillar' | 'dachshund' | 'crocodile';
 
 const geoCache = new Map<string, THREE.BufferGeometry>();
 const matCache = new Map<number, THREE.MeshStandardMaterial>();
 
-function rbox(w: number, h: number, d: number): THREE.BufferGeometry {
-  const key = `b${w}/${h}/${d}`;
-  if (!geoCache.has(key)) geoCache.set(key, new RoundedBoxGeometry(w, h, d, 3, Math.min(w, h, d) * 0.3));
+function mat(c: number): THREE.MeshStandardMaterial {
+  if (!matCache.has(c)) matCache.set(c, new THREE.MeshStandardMaterial({ color: c, roughness: 0.88, metalness: 0 }));
+  return matCache.get(c)!;
+}
+function cached(key: string, make: () => THREE.BufferGeometry): THREE.BufferGeometry {
+  if (!geoCache.has(key)) geoCache.set(key, make());
   return geoCache.get(key)!;
 }
-function sphere(r: number): THREE.BufferGeometry {
-  const key = `s${r}`;
-  if (!geoCache.has(key)) geoCache.set(key, new THREE.SphereGeometry(r, 14, 10));
-  return geoCache.get(key)!;
+function add(g: THREE.Group, geo: THREE.BufferGeometry, c: number, x: number, y: number, z: number): THREE.Mesh {
+  const o = new THREE.Mesh(geo, mat(c));
+  o.position.set(x, y, z);
+  o.castShadow = true;
+  o.receiveShadow = true;
+  g.add(o);
+  return o;
 }
-function cone(r: number, h: number): THREE.BufferGeometry {
-  const key = `c${r}/${h}`;
-  if (!geoCache.has(key)) geoCache.set(key, new THREE.ConeGeometry(r, h, 4));
-  return geoCache.get(key)!;
+function box(g: THREE.Group, x: number, y: number, z: number, w: number, h: number, d: number, c: number, r = 0.12): THREE.Mesh {
+  const rr = Math.min(r, w * 0.3, h * 0.3, d * 0.3);
+  return add(g, cached(`b${w}|${h}|${d}|${rr}`, () => new RoundedBoxGeometry(w, h, d, 3, rr)), c, x, y, z);
 }
-function mat(color: number): THREE.MeshStandardMaterial {
-  if (!matCache.has(color)) matCache.set(color, new THREE.MeshStandardMaterial({ color, roughness: 0.72 }));
-  return matCache.get(color)!;
+function ball(g: THREE.Group, x: number, y: number, z: number, sx: number, sy: number, sz: number, c: number): THREE.Mesh {
+  const o = add(g, cached('sphere', () => new THREE.SphereGeometry(1, 16, 12)), c, x, y, z);
+  o.scale.set(sx, sy, sz);
+  return o;
 }
-
-type V3 = [number, number, number];
-
-function put(parent: THREE.Object3D, geo: THREE.BufferGeometry, color: number, pos: V3, rot: V3 = [0, 0, 0]): THREE.Mesh {
-  const m = new THREE.Mesh(geo, mat(color));
-  m.position.set(...pos);
-  m.rotation.set(...rot);
-  m.castShadow = true;
-  parent.add(m);
-  return m;
+function cone(g: THREE.Group, x: number, y: number, z: number, r: number, h: number, c: number, rot = 0): THREE.Mesh {
+  const o = add(g, cached(`c${r}|${h}`, () => new THREE.ConeGeometry(r, h, 5)), c, x, y, z);
+  o.rotation.z = rot;
+  return o;
 }
-
-const HEAD_W = 0.98;
-const HEAD_H = 0.96;
-const HEAD_D = 0.94;
-const LEG_H = 0.2;
-const HEAD_Y = LEG_H + HEAD_H / 2 - 0.02;
-const BODY_W = 0.84;
-const BODY_H = 0.68;
-const BODY_LEN = 1.06;
-const BODY_Y = LEG_H + BODY_H / 2 - 0.02;
-const FACE_Z = HEAD_D / 2;
-
-interface Look {
-  /** main color of head and body blocks */
-  skin: number;
-  /** leg / paw color */
-  leg: number;
-  head: (g: THREE.Group) => void;
-  /** extra markings on a body block (spots, stripes...) */
-  body?: (g: THREE.Group, i: number) => void;
-  tail?: (g: THREE.Group) => void;
-  /** snake has no legs, caterpillar and crocodile have short ones */
-  legs?: 'none' | 'short';
-  bodyColor?: number;
-}
-
-function eyes(g: THREE.Group, y: number, x = 0.2, big = 1): void {
+function eyes(g: THREE.Group, y: number, z: number, sep = 0.24, scale = 1): void {
   for (const s of [-1, 1]) {
-    put(g, sphere(0.19 * big), 0xffffff, [s * x, y, FACE_Z - 0.03]).scale.z = 0.5;
-    put(g, sphere(0.115 * big), 0x20222b, [s * x, y - 0.01, FACE_Z + 0.04]).scale.z = 0.55;
-    put(g, sphere(0.042 * big), 0xffffff, [s * x + 0.04, y + 0.05, FACE_Z + 0.085]);
+    ball(g, s * sep, y, z, 0.17 * scale, 0.205 * scale, 0.085 * scale, 0xffffff);
+    ball(g, s * sep + 0.045, y - 0.02, z + 0.075 * scale, 0.088 * scale, 0.112 * scale, 0.052 * scale, 0x242333);
   }
 }
-
-const LOOKS: Record<string, Look> = {
-  penguin: {
-    skin: 0x363a47,
-    leg: 0xf29a2e,
-    head(g) {
-      put(g, rbox(0.7, 0.52, 0.08), 0xf6f4ee, [0, HEAD_Y - 0.08, FACE_Z - 0.01]);
-      eyes(g, HEAD_Y + 0.02, 0.19, 1.15);
-      put(g, rbox(0.2, 0.11, 0.14), 0xf29a2e, [0, HEAD_Y - 0.12, FACE_Z + 0.05]);
-      for (const s of [-1, 1]) put(g, rbox(0.12, 0.38, 0.34), 0x2c303c, [s * (HEAD_W / 2 + 0.03), HEAD_Y - 0.1, 0]);
-      for (const x of [-0.12, 0, 0.12]) put(g, rbox(0.09, 0.2, 0.09), 0x2c303c, [x, HEAD_Y + HEAD_H / 2 + 0.07, -0.05]);
-    },
-    tail(g) {
-      put(g, sphere(0.15), 0xb9c4d6, [0, 0.32, -HEAD_D / 2 - 0.04]);
-    },
-  },
-  chick: {
-    skin: 0xf8d94a,
-    leg: 0xf29a2e,
-    head(g) {
-      eyes(g, HEAD_Y + 0.05, 0.2, 1.15);
-      put(g, rbox(0.2, 0.11, 0.15), 0xf29a2e, [0, HEAD_Y - 0.1, FACE_Z + 0.05]);
-      for (const s of [-1, 1]) put(g, rbox(0.1, 0.34, 0.3), 0xf2c632, [s * (HEAD_W / 2 + 0.03), HEAD_Y - 0.12, 0]);
-      for (const x of [-0.1, 0.1]) put(g, rbox(0.1, 0.18, 0.1), 0xf8d94a, [x, HEAD_Y + HEAD_H / 2 + 0.07, 0]);
-    },
-    tail(g) {
-      put(g, rbox(0.2, 0.2, 0.12), 0xf2c632, [0, 0.55, -HEAD_D / 2 - 0.03]);
-    },
-  },
-  parrot: {
-    skin: 0xd9382b,
-    leg: 0x8a6a3a,
-    head(g) {
-      put(g, rbox(0.7, 0.5, 0.08), 0xf4eee6, [0, HEAD_Y + 0.02, FACE_Z - 0.01]);
-      eyes(g, HEAD_Y + 0.08, 0.2, 1.1);
-      put(g, rbox(0.26, 0.24, 0.22), 0x4a4f5c, [0, HEAD_Y - 0.12, FACE_Z + 0.08]);
-      for (const s of [-1, 1]) {
-        put(g, rbox(0.1, 0.36, 0.34), 0x2f6fd0, [s * (HEAD_W / 2 + 0.03), HEAD_Y - 0.1, 0.05]);
-        put(g, rbox(0.1, 0.18, 0.3), 0xf2c230, [s * (HEAD_W / 2 + 0.03), HEAD_Y - 0.25, 0.05]);
-      }
-      for (const [x, h] of [[-0.12, 0.2], [0, 0.28], [0.12, 0.2]] as const) put(g, rbox(0.1, h, 0.1), 0xe0402e, [x, HEAD_Y + HEAD_H / 2 + h / 2 - 0.02, -0.05]);
-    },
-    tail(g) {
-      for (const [x, c] of [[-0.1, 0x2f6fd0], [0.1, 0xf2c230]] as const) put(g, rbox(0.12, 0.1, 0.5), c, [x, 0.42, -HEAD_D / 2 - 0.22], [0.25, 0, 0]);
-    },
-  },
-  cow: {
-    skin: 0xf4f2ee,
-    leg: 0x2b2b30,
-    head(g) {
-      put(g, rbox(0.4, 0.34, 0.08), 0x2b2b30, [-0.22, HEAD_Y + HEAD_H / 2 - 0.1, 0.05]).rotation.z = 0.1;
-      put(g, rbox(0.52, 0.3, 0.16), 0xf2a9a9, [0, HEAD_Y - 0.2, FACE_Z + 0.04]);
-      for (const s of [-1, 1]) put(g, sphere(0.035), 0xc97a7a, [s * 0.1, HEAD_Y - 0.2, FACE_Z + 0.125]);
-      eyes(g, HEAD_Y + 0.1, 0.23);
-      for (const s of [-1, 1]) {
-        put(g, rbox(0.1, 0.2, 0.1), 0xe6c9a0, [s * 0.3, HEAD_Y + HEAD_H / 2 + 0.08, 0]);
-        put(g, rbox(0.22, 0.12, 0.14), 0x2b2b30, [s * (HEAD_W / 2 + 0.1), HEAD_Y + 0.22, -0.02]);
-      }
-    },
-    body(g, i) {
-      put(g, rbox(0.5, 0.06, 0.55), 0x2b2b30, [i % 2 ? 0.22 : -0.2, BODY_Y + BODY_H / 2 - 0.01, 0.05]);
-      put(g, rbox(0.06, 0.4, 0.5), 0x2b2b30, [(i % 2 ? -1 : 1) * (BODY_W / 2 - 0.01), BODY_Y, -0.1]);
-    },
-    tail(g) {
-      put(g, rbox(0.07, 0.4, 0.07), 0xf4f2ee, [0, 0.5, -0.04], [0.15, 0, 0]);
-      put(g, sphere(0.07), 0x2b2b30, [0, 0.28, -0.07]);
-    },
-  },
-  pig: {
-    skin: 0xf2a0b8,
-    leg: 0xc87a92,
-    head(g) {
-      put(g, rbox(0.46, 0.3, 0.16), 0xf7b9cb, [0, HEAD_Y - 0.15, FACE_Z + 0.06]);
-      for (const s of [-1, 1]) {
-        put(g, sphere(0.04), 0xc2677f, [s * 0.1, HEAD_Y - 0.15, FACE_Z + 0.14]);
-        put(g, rbox(0.22, 0.22, 0.08), 0xe58ba6, [s * 0.32, HEAD_Y + HEAD_H / 2 - 0.02, 0.1], [0.5, 0, s * 0.35]);
-      }
-      eyes(g, HEAD_Y + 0.13, 0.22);
-    },
-    tail(g) {
-      const t = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.025, 6, 10, Math.PI * 1.5), mat(0xe58ba6));
-      t.position.set(0, 0.6, -0.04);
-      t.castShadow = true;
-      g.add(t);
-    },
-  },
-  fox: {
-    skin: 0xe8742a,
-    leg: 0x6a3a1e,
-    head(g) {
-      for (const s of [-1, 1]) {
-        put(g, cone(0.17, 0.4), 0xe8742a, [s * 0.28, HEAD_Y + HEAD_H / 2 + 0.14, -0.05]);
-        put(g, cone(0.09, 0.22), 0x6a3a1e, [s * 0.28, HEAD_Y + HEAD_H / 2 + 0.1, 0.02]);
-        put(g, rbox(0.34, 0.26, 0.14), 0xf8f2e8, [s * 0.22, HEAD_Y - 0.18, FACE_Z + 0.01]);
-      }
-      put(g, rbox(0.22, 0.2, 0.18), 0xf8f2e8, [0, HEAD_Y - 0.14, FACE_Z + 0.04]);
-      put(g, sphere(0.06), 0x20222b, [0, HEAD_Y - 0.08, FACE_Z + 0.14]);
-      eyes(g, HEAD_Y + 0.12, 0.22);
-    },
-    tail(g) {
-      put(g, rbox(0.34, 0.34, 0.6), 0xe8742a, [0, 0.5, -0.2], [0.5, 0, 0]);
-      put(g, rbox(0.3, 0.3, 0.26), 0xf8f2e8, [0, 0.66, -0.52], [0.5, 0, 0]);
-    },
-  },
-  tiger: {
-    skin: 0xf2c230,
-    leg: 0xf2c230,
-    head(g) {
-      for (const s of [-1, 1]) {
-        put(g, sphere(0.15), 0x6b4423, [s * 0.34, HEAD_Y + HEAD_H / 2 - 0.02, 0]);
-        put(g, rbox(0.2, 0.08, 0.1), 0x6b4423, [s * 0.34, HEAD_Y + 0.3, FACE_Z - 0.02]);
-      }
-      put(g, rbox(0.46, 0.3, 0.14), 0xfff3d0, [0, HEAD_Y - 0.2, FACE_Z + 0.03]);
-      put(g, sphere(0.05), 0x20222b, [0, HEAD_Y - 0.12, FACE_Z + 0.11]);
-      eyes(g, HEAD_Y + 0.1, 0.22);
-    },
-    body(g) {
-      for (const z of [-0.3, 0, 0.3]) put(g, rbox(BODY_W + 0.02, 0.07, 0.12), 0x6b4423, [0, BODY_Y + BODY_H / 2 - 0.02, z]);
-      for (const s of [-1, 1]) for (const z of [-0.25, 0.15]) put(g, rbox(0.06, 0.3, 0.12), 0x6b4423, [s * (BODY_W / 2 - 0.005), BODY_Y, z]);
-    },
-    tail(g) {
-      put(g, rbox(0.1, 0.1, 0.5), 0xf2c230, [0, 0.55, -0.32], [-0.6, 0, 0]);
-      put(g, rbox(0.11, 0.11, 0.12), 0x6b4423, [0, 0.82, -0.5], [-0.6, 0, 0]);
-    },
-  },
-  husky: {
-    skin: 0x7d8290,
-    leg: 0xf5f5f5,
-    head(g) {
-      put(g, rbox(0.74, 0.5, 0.1), 0xf5f5f5, [0, HEAD_Y - 0.16, FACE_Z - 0.02]);
-      put(g, sphere(0.06), 0x20222b, [0, HEAD_Y - 0.1, FACE_Z + 0.1]);
-      eyes(g, HEAD_Y + 0.1, 0.22);
-      for (const s of [-1, 1]) {
-        put(g, cone(0.17, 0.38), 0x7d8290, [s * 0.27, HEAD_Y + HEAD_H / 2 + 0.13, -0.02]);
-        put(g, cone(0.09, 0.2), 0xf5f5f5, [s * 0.27, HEAD_Y + HEAD_H / 2 + 0.1, 0.04]);
-      }
-      put(g, rbox(HEAD_W + 0.04, 0.1, HEAD_D - 0.1), 0xd63a3a, [0, LEG_H + 0.1, -0.02]);
-      put(g, sphere(0.07), 0xf2c230, [0, LEG_H + 0.02, FACE_Z - 0.02]);
-    },
-    body(g) {
-      put(g, rbox(BODY_W - 0.1, 0.34, BODY_LEN - 0.12), 0xf5f5f5, [0, LEG_H + 0.14, 0]);
-    },
-    tail(g) {
-      put(g, rbox(0.2, 0.2, 0.4), 0xdfe1e6, [0, 0.62, -0.28], [0.7, 0, 0]);
-      put(g, rbox(0.2, 0.2, 0.15), 0xf5f5f5, [0, 0.78, -0.45], [0.7, 0, 0]);
-    },
-  },
-  snake: {
-    skin: 0x4caf50,
-    leg: 0x4caf50,
-    legs: 'none',
-    head(g) {
-      eyes(g, HEAD_Y + 0.1, 0.22, 1.25);
-      put(g, rbox(0.88, 0.2, 0.12), 0xcde05a, [0, HEAD_Y - 0.3, FACE_Z - 0.01]);
-      put(g, sphere(0.05), 0x20222b, [0.08, HEAD_Y - 0.05, FACE_Z + 0.04]);
-      put(g, rbox(0.05, 0.03, 0.3), 0xd8384a, [0, HEAD_Y - 0.2, FACE_Z + 0.14]);
-    },
-    body(g, i) {
-      put(g, rbox(0.3, 0.06, 0.3), 0xd8e04a, [0, BODY_Y + BODY_H / 2 - 0.005, 0], [0, i % 2 ? 0.6 : -0.6, 0]);
-      put(g, rbox(BODY_W - 0.04, 0.16, BODY_LEN - 0.08), 0xcde05a, [0, LEG_H + 0.06, 0]);
-    },
-  },
-  caterpillar: {
-    skin: 0xf28aa8,
-    leg: 0xe0607f,
-    legs: 'short',
-    head(g) {
-      eyes(g, HEAD_Y + 0.1, 0.21, 1.2);
-      put(g, sphere(0.09), 0xe5384e, [0, HEAD_Y - 0.1, FACE_Z + 0.04]);
-      for (const s of [-1, 1]) {
-        put(g, rbox(0.05, 0.28, 0.05), 0xf28aa8, [s * 0.22, HEAD_Y + HEAD_H / 2 + 0.12, 0.05], [0, 0, s * -0.25]);
-        put(g, sphere(0.06), 0xe5384e, [s * 0.27, HEAD_Y + HEAD_H / 2 + 0.27, 0.05]);
-      }
-    },
-    body(g, i) {
-      for (const [x, z] of [[-0.2, 0.2], [0.25, -0.15], [0, -0.35]] as const) put(g, sphere(0.09), 0xf9bcd0, [x, BODY_Y + BODY_H / 2 - 0.02, z + (i % 2) * 0.05]);
-      for (const s of [-1, 1]) put(g, sphere(0.1), 0xf9bcd0, [s * (BODY_W / 2 - 0.02), BODY_Y + 0.05, 0.1]);
-    },
-  },
-  dachshund: {
-    skin: 0x8b5a2b,
-    leg: 0x5e3a1a,
-    head(g) {
-      put(g, rbox(0.44, 0.3, 0.18), 0xd9a35a, [0, HEAD_Y - 0.2, FACE_Z + 0.05]);
-      put(g, sphere(0.06), 0x20222b, [0, HEAD_Y - 0.1, FACE_Z + 0.15]);
-      eyes(g, HEAD_Y + 0.1, 0.22);
-      for (const s of [-1, 1]) put(g, rbox(0.16, 0.5, 0.3), 0x5e3a1a, [s * (HEAD_W / 2 + 0.06), HEAD_Y - 0.02, -0.02], [0, 0, s * 0.12]);
-      put(g, rbox(HEAD_W + 0.04, 0.1, HEAD_D - 0.1), 0x2f4fa8, [0, LEG_H + 0.1, -0.02]);
-    },
-    body(g) {
-      put(g, rbox(BODY_W - 0.2, 0.3, BODY_LEN - 0.1), 0x9b6a38, [0, LEG_H + 0.16, 0]);
-    },
-    tail(g) {
-      put(g, rbox(0.13, 0.13, 0.5), 0x8b5a2b, [0, 0.62, -0.3], [-0.7, 0, 0]);
-    },
-  },
-  crocodile: {
-    skin: 0x3fa34d,
-    leg: 0x2f8a3f,
-    legs: 'short',
-    head(g) {
-      put(g, rbox(0.8, 0.34, 0.6), 0x3fa34d, [0, HEAD_Y - 0.14, FACE_Z + 0.2]);
-      put(g, rbox(0.8, 0.12, 0.6), 0xd8e86a, [0, HEAD_Y - 0.36, FACE_Z + 0.2]);
-      for (const s of [-1, 1]) {
-        put(g, sphere(0.15), 0xffffff, [s * 0.24, HEAD_Y + HEAD_H / 2 - 0.02, 0.18]);
-        put(g, sphere(0.085), 0x20222b, [s * 0.24, HEAD_Y + HEAD_H / 2 + 0.01, 0.28]);
-        put(g, sphere(0.04), 0x2a6a34, [s * 0.14, HEAD_Y - 0.06, FACE_Z + 0.5]);
-      }
-    },
-    body(g) {
-      for (const z of [-0.3, 0, 0.3]) put(g, rbox(0.14, 0.12, 0.14), 0x2f8a3f, [0, BODY_Y + BODY_H / 2 + 0.01, z]);
-      put(g, rbox(BODY_W - 0.04, 0.16, BODY_LEN - 0.08), 0xd8e86a, [0, LEG_H + 0.06, 0]);
-    },
-    tail(g) {
-      put(g, rbox(0.34, 0.26, 0.6), 0x3fa34d, [0, 0.4, -0.5]);
-      put(g, rbox(0.2, 0.18, 0.4), 0x3fa34d, [0, 0.38, -0.92]);
-    },
-  },
-};
-
-export const BLOCK_SPECIES = Object.keys(LOOKS);
-
-function legs(g: THREE.Group, look: Look, zs: number[]): void {
-  if (look.legs === 'none') return;
-  const h = look.legs === 'short' ? LEG_H * 0.75 : LEG_H;
-  for (const z of zs) for (const s of [-1, 1]) put(g, rbox(0.2, h, 0.22), look.leg, [s * 0.27, h / 2, z]);
+function feet(g: THREE.Group, length: number, color: number, offset = 0.31): void {
+  for (const z of [length / 2 - 0.22, -length / 2 + 0.22]) for (const x of [-offset, offset]) box(g, x, 0.095, z, 0.23, 0.19, 0.27, color, 0.045);
+}
+function ear(g: THREE.Group, x: number, y: number, z: number, c: number, inner?: number): void {
+  box(g, x, y, z, 0.24, 0.31, 0.2, c, 0.07);
+  if (inner) box(g, x, y, z + 0.11, 0.13, 0.19, 0.035, inner, 0.03);
+}
+function tail(g: THREE.Group, z: number, c: number): void {
+  box(g, 0, 0.61, z, 0.23, 0.24, 0.35, c, 0.08);
 }
 
-/** Head first. Each segment is a Group whose single child is the animated part, so tilt and bob never fight the path. */
-export function buildAnimal(species: string, cells: number): THREE.Group[] {
-  const look = LOOKS[species] ?? LOOKS.cow;
-  const segments: THREE.Group[] = [];
+interface Dim { w: number; h: number }
+const FLAT: Dim = { w: 0.98, h: 0.94 };
+const BODY_BASE = 0.09;
 
-  const headRoot = new THREE.Group();
-  const head = new THREE.Group();
-  headRoot.add(head);
-  put(head, rbox(HEAD_W, HEAD_H, HEAD_D), look.skin, [0, HEAD_Y, 0]);
-  look.head(head);
-  legs(head, look, cells === 1 ? [0.25, -0.25] : [0.22]);
-  if (cells === 1) look.tail?.(head);
-  segments.push(headRoot);
+/**
+ * The spine: one rounded box per cell. Neighbours overlap by 0.15 on each side, so the rounded ends vanish inside each
+ * other and a straight animal reads as one long body. The face end of the head and the rump end of the tail stay put.
+ */
+function spine(g: THREE.Group, n: number, color: (i: number) => number, head: Dim, bodyDim: Dim, r = 0.15, y = BODY_BASE): void {
+  const zh = (n - 1) / 2;
+  for (let i = 0; i < n; i++) {
+    const d = i === 0 ? head : bodyDim;
+    const first = i === 0;
+    const last = i === n - 1;
+    const depth = n === 1 ? 0.98 : first ? 1.14 : last ? 1.12 : 1.3;
+    const shift = n === 1 ? 0 : first ? -0.08 : last ? 0.07 : 0;
+    // later segments are a hair smaller so equal side faces never overlap exactly (no z-fighting line at the joint)
+    const inset = 0.006 * i;
+    box(g, 0, y + d.h / 2, zh - i + shift, d.w - inset, d.h - inset, depth, color(i), r);
+  }
+}
+const topOf = (d: Dim): number => BODY_BASE + d.h;
 
-  for (let i = 1; i < cells; i++) {
-    const root = new THREE.Group();
-    const body = new THREE.Group();
-    root.add(body);
-    put(body, rbox(BODY_W, BODY_H, BODY_LEN), look.bodyColor ?? look.skin, [0, BODY_Y, 0]);
-    look.body?.(body, i);
-    legs(body, look, [-0.15]);
-    if (i === cells - 1) {
-      const tail = new THREE.Group();
-      tail.position.z = -BODY_LEN / 2 + 0.02;
-      look.tail?.(tail);
-      body.add(tail);
+function build(type: AnimalType, n: 1 | 2 | 3): THREE.Group {
+  const g = new THREE.Group();
+  const len = 0.98 + (n - 1);
+  const zh = (n - 1) / 2;
+  const front = len / 2;
+  const f = front + 0.02;
+  const flat = (c: number): void => spine(g, n, () => c, FLAT, FLAT);
+
+  switch (type) {
+    case 'penguin':
+      flat(0x45414b);
+      box(g, 0, 0.55, f - 0.002, 0.78, 0.72, 0.055, 0xf5f1f6, 0.24);
+      eyes(g, 0.73, f + 0.04, 0.23);
+      ball(g, 0, 0.46, f + 0.17, 0.16, 0.13, 0.17, 0xffa22d);
+      ear(g, -0.53, 0.58, 0.05, 0x45414b);
+      ear(g, 0.53, 0.58, 0.05, 0x45414b);
+      feet(g, len, 0xffa229);
+      for (const x of [-0.12, 0, 0.12]) box(g, x, 1.13, -0.05, 0.15, 0.27, 0.17, 0x37323e, 0.07);
+      ball(g, 0, 0.42, -len / 2 - 0.1, 0.14, 0.13, 0.13, 0xcfd8e6); // back view: pale puff, like the reference
+      break;
+    case 'chick':
+      flat(0xffca49);
+      eyes(g, 0.55, f, 0.23);
+      ball(g, 0, 0.39, f + 0.16, 0.15, 0.13, 0.15, 0xf48728);
+      ear(g, -0.53, 0.54, 0, 0xffca44);
+      ear(g, 0.53, 0.54, 0, 0xffca44);
+      feet(g, len, 0xd98929);
+      for (const x of [-0.1, 0.08]) box(g, x, 1.13, -0.05, 0.18, 0.24, 0.2, 0xffd75b, 0.08);
+      box(g, 0, 0.5, -len / 2 - 0.07, 0.17, 0.16, 0.14, 0xf2b52e, 0.06); // back view: a tiny tail tuft
+      break;
+    case 'parrot':
+      flat(0xe95d3e);
+      eyes(g, 0.6, f, 0.25);
+      ball(g, 0, 0.43, f + 0.2, 0.18, 0.2, 0.22, 0x3d414a);
+      for (const x of [-0.54, 0.54]) {
+        box(g, x, 0.52, 0.05, 0.16, 0.46, 0.49, 0x1888c7, 0.06);
+        box(g, x, 0.65, 0.05, 0.17, 0.15, 0.45, 0xf6d54e, 0.04);
+      }
+      feet(g, len, 0x823b2d);
+      for (const x of [-0.14, 0, 0.14]) box(g, x, 1.15, -0.04, 0.15, 0.3, 0.17, 0xee5638, 0.07);
+      for (const [x, c] of [[-0.1, 0x1888c7], [0.1, 0xf6d54e]] as const) box(g, x, 0.42, -len / 2 - 0.2, 0.12, 0.09, 0.46, c, 0.04).rotation.x = 0.25; // long tail feathers
+      break;
+    case 'cow':
+      flat(0xf4f0ee);
+      for (const [x, z, w, d] of [[-0.31, 0.2, 0.33, 0.43], [0.35, -0.34, 0.32, 0.48], [-0.05, -0.45, 0.37, 0.28]] as const) box(g, x, 1.04, z, w, 0.028, d, 0x46434b, 0.04);
+      for (const x of [-0.51, 0.51]) box(g, x, 0.7, -0.18, 0.05, 0.45, 0.55, 0x48434b, 0.02);
+      eyes(g, 0.55, f, 0.23);
+      box(g, 0, 0.38, f + 0.15, 0.51, 0.32, 0.18, 0xf6a2a3, 0.13);
+      for (const x of [-0.13, 0.13]) ball(g, x, 0.4, f + 0.255, 0.045, 0.055, 0.025, 0xb36d77);
+      for (const x of [-0.3, 0.3]) {
+        ear(g, x, 1.12, 0.44 + zh, 0x4d4950);
+        box(g, x, 1.21, 0.46 + zh, 0.14, 0.24, 0.17, 0xffddbe, 0.04);
+      }
+      feet(g, len, 0x4e4a4d);
+      tail(g, -len / 2 - 0.14, 0x4d4a4d);
+      break;
+    case 'pig':
+      flat(0xf795a9);
+      eyes(g, 0.54, f, 0.23);
+      box(g, 0, 0.38, f + 0.14, 0.38, 0.28, 0.2, 0xe87990, 0.12);
+      for (const x of [-0.1, 0.1]) ball(g, x, 0.39, f + 0.25, 0.037, 0.048, 0.022, 0xaf4e65);
+      for (const x of [-0.31, 0.31]) ear(g, x, 1.11, 0.41 + zh, 0xf47f98, 0xe66884);
+      feet(g, len, 0x754447);
+      for (const x of [-0.5, 0.5]) ball(g, x, 0.63, -0.33, 0.015, 0.13, 0.19, 0xe76e88);
+      tail(g, -len / 2 - 0.13, 0xe97891);
+      break;
+    case 'fox':
+      flat(0xee8b3e);
+      box(g, 0, 0.34, f + 0.01, 0.83, 0.33, 0.07, 0xf9f4eb, 0.13);
+      eyes(g, 0.55, f, 0.22);
+      ball(g, 0, 0.39, f + 0.16, 0.12, 0.1, 0.14, 0x2b2930);
+      for (const x of [-0.34, 0.34]) ear(g, x, 1.12, 0.38 + zh, 0x9d5635, 0xf1c2a2);
+      feet(g, len, 0x603e36);
+      box(g, 0, 0.65, -len / 2 - 0.29, 0.37, 0.36, 0.62, 0xf3a55b, 0.13);
+      box(g, 0, 0.65, -len / 2 - 0.59, 0.39, 0.35, 0.18, 0xfaf7ee, 0.08);
+      break;
+    case 'tiger':
+      flat(0xf5b935);
+      eyes(g, 0.55, f, 0.22);
+      box(g, 0, 0.34, f + 0.025, 0.63, 0.32, 0.075, 0xffe1a0, 0.11);
+      ball(g, 0, 0.39, f + 0.16, 0.11, 0.1, 0.12, 0x543a29);
+      for (const x of [-0.34, 0.34]) ear(g, x, 1.11, 0.42 + zh, 0xa76a29, 0xf5b934);
+      for (const z of [-0.53, -0.05, 0.46]) {
+        box(g, -0.26, 1.045, z, 0.13, 0.034, 0.27, 0x86522c, 0.025);
+        box(g, 0.26, 1.045, z, 0.13, 0.034, 0.27, 0x86522c, 0.025);
+      }
+      for (const x of [-0.5, 0.5]) for (const z of [-0.4, 0.22]) box(g, x, 0.76, z, 0.028, 0.15, 0.2, 0x8b542b, 0.02);
+      feet(g, len, 0xb27c2c);
+      tail(g, -len / 2 - 0.16, 0xb87b26);
+      break;
+    case 'husky':
+      flat(0x69656f);
+      box(g, 0, 0.36, f + 0.02, 0.79, 0.38, 0.07, 0xf4f2f3, 0.13);
+      eyes(g, 0.57, f, 0.23);
+      ball(g, 0, 0.39, f + 0.16, 0.11, 0.09, 0.12, 0x29252b);
+      for (const x of [-0.32, 0.32]) ear(g, x, 1.12, 0.41 + zh, 0x66616c, 0xcac3ca);
+      feet(g, len, 0x4a464f);
+      box(g, 0, 0.26, f - 0.06, 0.88, 0.1, 0.13, 0xc3454c, 0.035);
+      ball(g, 0, 0.19, f + 0.12, 0.105, 0.105, 0.05, 0xe7ad3e);
+      tail(g, -len / 2 - 0.15, 0xe5e2e3);
+      break;
+    case 'snake': {
+      const head: Dim = { w: 1.0, h: 0.94 };
+      const bodyDim: Dim = { w: 0.93, h: 0.87 };
+      spine(g, 3, (i) => (i === 0 ? 0x52a85a : 0x469953), head, bodyDim);
+      for (let i = 0; i < 3; i++) {
+        const d = i === 0 ? head : bodyDim;
+        box(g, 0, 0.18, zh - i, d.w - 0.12, 0.15, 0.9, 0xc9c64d, 0.08);
+        box(g, 0.24, topOf(d), zh - i, 0.2, 0.03, 0.15, 0xc6d64b, 0.02);
+      }
+      eyes(g, 0.66, front + 0.075, 0.23);
+      box(g, 0, 0.36, front + 0.085, 0.54, 0.22, 0.13, 0xb5c450, 0.08);
+      box(g, 0, 0.23, front + 0.23, 0.13, 0.07, 0.3, 0xe95b6d, 0.03);
+      break;
     }
+    case 'caterpillar': {
+      const head: Dim = { w: 1.0, h: 0.98 };
+      const bodyDim: Dim = { w: 0.92, h: 0.88 };
+      spine(g, 3, (i) => (i === 0 ? 0xf58fa7 : 0xf6a1b4), head, bodyDim, 0.22);
+      for (let i = 0; i < 3; i++) for (const x of [-0.3, 0.3]) box(g, x, topOf(i === 0 ? head : bodyDim), zh - i, 0.17, 0.028, 0.18, 0xffc4cf, 0.025);
+      eyes(g, 0.57, front + 0.075, 0.23);
+      ball(g, 0, 0.35, front + 0.16, 0.15, 0.12, 0.12, 0xe77d93);
+      for (const x of [-0.22, 0.22]) box(g, x, topOf(head) + 0.12, zh - 0.07, 0.14, 0.33, 0.13, 0xe96e89, 0.07);
+      feet(g, len, 0x9b4b61);
+      break;
+    }
+    case 'dachshund': {
+      const head: Dim = { w: 1.0, h: 0.98 };
+      const bodyDim: Dim = { w: 0.92, h: 0.88 };
+      spine(g, 3, () => 0xb66c43, head, bodyDim);
+      box(g, 0, 0.28, f + 0.02, 0.72, 0.25, 0.08, 0xf4bd65, 0.1);
+      eyes(g, 0.57, f, 0.22);
+      ball(g, 0, 0.38, f + 0.17, 0.12, 0.11, 0.12, 0x343037);
+      for (const x of [-0.53, 0.53]) box(g, x, 0.64, f - 0.19, 0.19, 0.51, 0.31, 0x694536, 0.1);
+      feet(g, len, 0x7c4d35);
+      box(g, 0, 0.53, f - 0.35, 1.04, 0.13, 0.17, 0x3466a1, 0.025);
+      tail(g, -len / 2 - 0.18, 0x7c4b34);
+      break;
+    }
+    case 'crocodile': {
+      const head: Dim = { w: 0.98, h: 0.78 };
+      const bodyDim: Dim = { w: 0.92, h: 0.72 };
+      spine(g, 3, (i) => (i === 0 ? 0x4fa75b : 0x419c52), head, bodyDim, 0.13);
+      for (let i = 0; i < 3; i++) {
+        const d = i === 0 ? head : bodyDim;
+        box(g, 0, 0.23, zh - i, d.w - 0.02, 0.18, 0.93, 0xd2c75e, 0.06);
+        for (const x of [-0.24, 0.24]) cone(g, x, topOf(d) + 0.07, zh - i, 0.13, 0.23, 0x398c46);
+      }
+      box(g, 0, 0.41, zh + 0.68, 0.8, 0.35, 0.62, 0x4fa75b, 0.12);
+      box(g, 0, 0.24, zh + 0.78, 0.78, 0.13, 0.58, 0xd8ce74, 0.05);
+      eyes(g, 0.73, zh + 0.45, 0.24, 0.85);
+      for (const x of [-0.31, 0.31]) for (const z of [zh + 0.64, zh + 0.93]) cone(g, x, 0.2, z, 0.065, 0.15, 0xf8f1dc, Math.PI);
+      for (const x of [-0.55, 0.55]) for (const z of [-0.76, 0.76]) box(g, x, 0.23, z + 0, 0.21, 0.22, 0.33, 0x398b49, 0.05);
+      break;
+    }
+  }
+  return g;
+}
+
+export const BLOCK_SPECIES: AnimalType[] = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'husky', 'snake', 'caterpillar', 'dachshund', 'crocodile'];
+
+/**
+ * One segment per cell, head first. Each segment is a Group whose single child holds the meshes, so bob and nod never
+ * fight the path placement. A part belongs to the segment whose cell contains its z; parts in front of the head or
+ * behind the tail go to the first and last segment.
+ */
+export function buildAnimal(species: string, cells: number): THREE.Group[] {
+  const type = (BLOCK_SPECIES as string[]).includes(species) ? (species as AnimalType) : 'cow';
+  const n = Math.max(1, Math.min(3, cells)) as 1 | 2 | 3;
+  const whole = build(type, n);
+  const zh = (n - 1) / 2;
+  const segments: THREE.Group[] = [];
+  const parts: THREE.Group[] = [];
+  for (let i = 0; i < n; i++) {
+    const root = new THREE.Group();
+    const part = new THREE.Group();
+    root.add(part);
     segments.push(root);
+    parts.push(part);
+  }
+  for (const m of [...whole.children]) {
+    const idx = Math.max(0, Math.min(n - 1, Math.round(zh - m.position.z)));
+    m.position.z -= zh - idx;
+    parts[idx].add(m);
   }
   return segments;
 }

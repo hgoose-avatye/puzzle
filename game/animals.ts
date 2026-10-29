@@ -251,8 +251,10 @@ export class PieceView {
 
   /** Free what this view owns. Block geometry and materials are shared and stay alive. */
   dispose(): void {
+    const shared = new Set<THREE.Object3D>();
+    for (const seg of this.segments) seg.traverse((o) => shared.add(o));
     this.group.traverse((o) => {
-      if (this.segments.some((s) => s === o || s.children[0]?.getObjectById(o.id))) return;
+      if (shared.has(o)) return;
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
         mesh.geometry.dispose();
