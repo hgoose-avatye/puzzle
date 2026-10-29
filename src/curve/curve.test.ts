@@ -45,3 +45,23 @@ describe('generateLevelFor', () => {
     expect(r!.level.arrows).toHaveLength(2);
   });
 });
+
+describe('fixtures and hearts on the curve', () => {
+  const arrows = (n: number): number => levelSpec(n).params.arrowCount ?? 0;
+  it('introduces direction arrows gradually and relieves them on rest levels', () => {
+    for (const n of [1, 2, 3, 4, 5, 15, 25]) expect(arrows(n)).toBe(0);
+    expect(arrows(6)).toBeGreaterThanOrEqual(1);
+    expect(arrows(8)).toBeGreaterThan(arrows(6));
+    expect(arrows(10)).toBeGreaterThanOrEqual(5);
+    expect(arrows(30)).toBeGreaterThanOrEqual(5);
+  });
+  it('gives hearts from the first tough level on, but not on rest levels', () => {
+    for (const n of [1, 6, 9, 15, 25]) expect(levelSpec(n).hearts).toBeUndefined();
+    for (const n of [10, 12, 20, 29, 30]) expect(levelSpec(n).hearts).toBe(3);
+  });
+  it('generated levels carry the requested number of arrow tiles', () => {
+    const r = generateLevelFor(8, 1);
+    expect(r).not.toBeNull();
+    expect(r!.level.arrows).toHaveLength(levelSpec(8).params.arrowCount!);
+  });
+});

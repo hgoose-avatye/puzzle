@@ -8,7 +8,11 @@ import { computeCell, hitTest, render, type Flash, type Style } from './render';
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const num = (id: string): number => Number($<HTMLInputElement>(id).value);
 const heartsOn = (): boolean => $<HTMLInputElement>('hearts').checked;
-const newGame = (level: Parameters<typeof createGame>[0]): GameState => createGame(level, heartsOn() ? { hearts: 3 } : {});
+let startHearts: number | undefined;
+const newGame = (level: Parameters<typeof createGame>[0], hearts?: number): GameState => {
+  startHearts = hearts;
+  return createGame(level, hearts === undefined ? {} : { hearts });
+};
 const canvas = $<HTMLCanvasElement>('board');
 let state: GameState | null = null;
 let metrics: Metrics | null = null;
@@ -71,7 +75,7 @@ function generate(): void {
     $('status').textContent = 'Generation failed (parameters too tight?)';
     return;
   }
-  state = newGame(result.level);
+  state = newGame(result.level, heartsOn() ? 3 : undefined);
   metrics = result.metrics;
   show();
 }
@@ -106,7 +110,8 @@ function playLevel(): void {
   closeAttempt(false);
   const n = Math.max(1, Math.floor(num('level')));
   let result = null;
-  const fixtures = { obstacleCount: num('obstacles'), arrowCount: num('arrows') };
+  const useCurve = $<HTMLInputElement>('curveRules').checked;
+  const fixtures = useCurve ? {} : { obstacleCount: num('obstacles'), arrowCount: num('arrows') };
   for (let seedTry = 1; seedTry <= 5 && !result; seedTry++) result = generateLevelFor(n, seedTry, fixtures);
   if (!result) {
     // Fixtures can make the curve's difficulty target unreachable; fall back to an unfiltered level.
@@ -121,10 +126,11 @@ function playLevel(): void {
     $('status').textContent = `Could not generate level ${n}`;
     return;
   }
-  state = newGame(result.level);
+  state = newGame(result.level, useCurve ? result.spec.hearts : heartsOn() ? 3 : undefined);
   metrics = result.metrics;
   attempt = { level: n, role: result.spec.role, startedAt: Date.now() };
-  $('roleInfo').textContent = `Level ${result.spec.level} (${result.spec.role}) - ${result.spec.params.width}x${result.spec.params.height}`;
+  const tiles = result.level.arrows?.length ?? 0;
+  $('roleInfo').textContent = `Level ${result.spec.level} (${result.spec.role}) - ${result.spec.params.width}x${result.spec.params.height}, ${tiles} arrow tiles, ${state.hearts === undefined ? 'no hearts' : `${state.hearts} hearts`}`;
   show();
 }
 
@@ -132,7 +138,7 @@ $('playLevel').addEventListener('click', playLevel);
 $('retry').addEventListener('click', () => {
   if (!state) return;
   closeAttempt(isCleared(state));
-  state = newGame(state.level);
+  state = newGame(state.level, startHearts);
   if (attempt === null && $('roleInfo').textContent) attempt = { level: Math.max(1, Math.floor(num('level'))), role: 'retry', startedAt: Date.now() };
   show();
 });
