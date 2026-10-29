@@ -1,6 +1,6 @@
 import { createGame, isCleared, isFailed, tap, type GameState } from '../core/game';
 import type { Rng } from '../core/rng';
-import { blockersOf, canExit, isAsleep, lockedBy, traceExit } from '../core/rules';
+import { blockersOf, canExit, crateStanding, isAsleep, lockedBy, traceExit } from '../core/rules';
 import { nextTapToward } from '../solver/plan';
 import type { Level, Piece } from '../core/types';
 
@@ -42,6 +42,7 @@ export function readPiece(level: Level, piece: Piece, alive: ReadonlySet<number>
   const arrows = new Set((level.arrows ?? []).map((a) => `${a.x},${a.y}`));
   const owner = new Map<string, number>();
   for (const q of level.pieces) if (q.id !== piece.id && alive.has(q.id)) for (const c of q.cells) owner.set(`${c.x},${c.y}`, q.id);
+  for (const k of level.crates ?? []) if (crateStanding(level, k, alive)) owner.set(`${k.x},${k.y}`, -1); // a crate reads like an animal in the way
   let turns = 0;
   for (let i = 0; i < trace.cells.length; i++) {
     const k = `${trace.cells[i].x},${trace.cells[i].y}`;

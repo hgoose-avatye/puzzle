@@ -1,7 +1,7 @@
 import type { Rng } from '../core/rng';
 import { canExit, directionVector, onBoard, traceExit } from '../core/rules';
 import { shapeVoids, type BoardShape } from '../core/shapes';
-import type { ArrowTile, Cell, Direction, Level, Piece } from '../core/types';
+import type { ArrowTile, Cell, Crate, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
 import { rescueSchedule } from '../solver/plan';
 
@@ -25,6 +25,10 @@ export interface GenParams {
   bombCount?: number;
   /** Extra taps added to each bomb's fuse (default 3). */
   bombSlack?: number;
+  /** Breakable crates, each placed on some animal's way out with enough earlier-leaving neighbours (default 0). */
+  crateCount?: number;
+  /** Cracks a crate takes before it breaks (default 2). */
+  crateHits?: number;
   /**
    * Teaching level: every lock and sleep must be the only thing holding its animal and every bomb must start blocked,
    * no fallback. Otherwise these are only preferred.
@@ -140,6 +144,40 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const g = cands.filter((i) => good(i) && !used.has(i));
     return g.length || params.teach ? g : cands;
   };
+  // Crates: on a cell some animals' way out crosses, with at least `hits` neighbours that all leave before every one
+  // of those animals (higher placement index = leaves earlier), so the crate is broken in time and the level stays
+  // solvable. On a teaching level the crate must be the only thing in its owner's way.
+  const crates: Crate[] = [];
+  const hits = params.crateHits ?? 2;
+  const crateKeys = new Set<string>();
+  for (let t = 0; t < (params.crateCount ?? 0); t++) {
+    const options: Array<{ c: Cell; score: number }> = [];
+    for (let y = 0; y < params.height; y++) {
+      for (let x = 0; x < params.width; x++) {
+        const k = key({ x, y });
+        if (!onBoard(board, x, y) || occupied.has(k) || fixed.has(k) || crateKeys.has(k)) continue;
+        const owners = all.filter((i) => rays[i].has(k));
+        if (!owners.length) continue;
+        const last = Math.max(...owners);
+        const around = new Set<number>();
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const j = indexAt.get(key({ x: x + dx, y: y + dy }));
+          if (j !== undefined) around.add(j);
+        }
+        if ([...around].filter((j) => j > last).length < hits) continue;
+        if ([...around].some((j) => j <= last)) continue; // every neighbour must have left before the owners
+        // the crate alone holds an owner: nothing else stands on that owner's way out
+        const alone = owners.some((i) => ![...rays[i]].some((r) => r !== k && indexAt.has(r) && indexAt.get(r) !== i));
+        if (params.teach && !alone) continue;
+        options.push({ c: { x, y }, score: (alone ? 10 : 0) + rng.next() });
+      }
+    }
+    if (!options.length) return null;
+    const best = options.reduce((a, b) => (b.score > a.score ? b : a));
+    crates.push({ ...best.c, hits });
+    crateKeys.add(key(best.c));
+  }
+
   for (let t = 0; t < (params.lockCount ?? 0); t++) {
     const locked = take(prefer(all.filter((i) => i < n - 1), open));
     if (locked === null) return null;
@@ -149,7 +187,8 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     list[keyer] = { ...list[keyer], key: t + 1 };
   }
   for (let t = 0; t < (params.sleepCount ?? 0); t++) {
-    const sleeper = take(prefer(all.filter((i) => adjacentTo(i).some((j) => j > i)), open));
+    // a sleeper that is blocked anyway teaches nothing, so on every level the sleep must be what holds it
+    const sleeper = take(all.filter((i) => adjacentTo(i).some((j) => j > i) && open(i)));
     if (sleeper === null) return null;
     list[sleeper] = { ...list[sleeper], sleeping: true };
   }
@@ -175,6 +214,7 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     pieces,
     ...(obstacles.length > 0 ? { obstacles } : {}),
     ...(usedArrows.length > 0 ? { arrows: usedArrows } : {}),
+    ...(crates.length > 0 ? { crates } : {}),
   };
   const bombCount = params.bombCount ?? 0;
   if (bombCount > 0) {

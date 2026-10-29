@@ -43,4 +43,13 @@ export interface Level {
   /** Cells nothing can pass through. */
   obstacles?: Cell[];
   arrows?: ArrowTile[];
+  /** Breakable crates: block like an animal until `hits` of the animals next to them have left. */
+  crates?: Crate[];
+}
+
+/** A crate on a cell; each animal next to it that leaves cracks it once, and after `hits` cracks it is gone. */
+export interface Crate {
+  x: number;
+  y: number;
+  hits: number;
 }
