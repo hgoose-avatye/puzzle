@@ -36,19 +36,28 @@ export function turnLevel(from: Direction, to: Direction, len: number, id: numbe
   };
 }
 
-export const SHEET_SPECIES = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'panda', 'koala', 'caterpillar', 'dog', 'fish'];
+export const SHEET_SPECIES = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'husky', 'snake', 'caterpillar', 'dachshund', 'crocodile'];
 const HEADINGS: Direction[] = ['up', 'down', 'left', 'right'];
 
-/** 6 species per part, one row each, one column per heading, all single cells so only the model's facing shows. */
-export function sheetLevel(part: number): { level: Level; species: Map<number, string> } {
+/** One row per species, one column per heading (up, down, left, right). Pieces are `len` cells long. */
+export function sheetLevel(names: string[], len = 1): { level: Level; species: Map<number, string> } {
   const species = new Map<number, string>();
   const pieces: Level['pieces'] = [];
-  SHEET_SPECIES.slice(part * 6, part * 6 + 6).forEach((name, row) => {
+  const pitch = len + 1;
+  names.forEach((name, row) => {
     HEADINGS.forEach((dir, col) => {
       const id = 100 + row * 10 + col;
       species.set(id, name);
-      pieces.push({ id, cells: [{ x: col * 2 + 1, y: row }], dir });
+      const bx = col * pitch;
+      const by = row * pitch;
+      const cells = Array.from({ length: len }, (_, k) => {
+        if (dir === 'up') return { x: bx, y: by + k };
+        if (dir === 'down') return { x: bx, y: by + len - 1 - k };
+        if (dir === 'left') return { x: bx + k, y: by };
+        return { x: bx + len - 1 - k, y: by };
+      });
+      pieces.push(len === 1 ? { id, cells, dir } : { id, cells });
     });
   });
-  return { level: { width: 8, height: 6, pieces }, species };
+  return { level: { width: 4 * pitch, height: names.length * pitch, pieces }, species };
 }

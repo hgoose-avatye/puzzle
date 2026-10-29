@@ -1,12 +1,12 @@
 import { createRng } from '../src/core/rng';
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
-import { demoLevel, sheetLevel, turnLevel } from './demo';
+import { demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { generateLevelFor, levelSpec } from '../src/curve/curve';
 import { generateMatching } from '../src/generator/generate';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
-import { PieceView, loadSpecies, speciesFor, speciesOverride } from './animals';
+import { PieceView, speciesOverride } from './animals';
 import { Stage } from './stage';
 import * as THREE from 'three';
 
@@ -27,7 +27,8 @@ const DEMO = params.has('demo');
 
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
   if (params.get('demo') === 'sheet') {
-    const sheet = sheetLevel(Number(params.get('part') ?? 0));
+    const names = params.get('species')?.split(',') ?? SHEET_SPECIES.slice(0, 6);
+    const sheet = sheetLevel(names, Number(params.get('len') ?? 1));
     speciesOverride.clear();
     for (const [id, name] of sheet.species) speciesOverride.set(id, name);
     return { level: sheet.level };
@@ -74,12 +75,10 @@ async function loadLevel(n: number): Promise<void> {
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
   stage.setBoard(built.level);
-  const names = [...new Set(built.level.pieces.map(speciesFor))];
-  const gltfs = new Map(await Promise.all(names.map(async (s) => [s, await loadSpecies(s)] as const)));
   if (token !== loadToken) return;
   state = createGame(built.level, built.hearts === undefined ? {} : { hearts: built.hearts });
   for (const piece of built.level.pieces) {
-    const view = new PieceView(built.level, piece, gltfs.get(speciesFor(piece))!, (x, y) => stage.worldOf(built.level, x, y));
+    const view = new PieceView(built.level, piece, (x, y) => stage.worldOf(built.level, x, y));
     views.set(piece.id, view);
     if (params.has('raw')) view.hideMarkers();
     stage.scene.add(view.group);
