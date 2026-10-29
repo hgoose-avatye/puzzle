@@ -317,7 +317,9 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
       const green = head ? 0x4caa58 : 0x45a554;
       block(green, 0.14);
       cube(g, 0, B0 + 0.09, zc, W + 0.008, 0.18, D - 0.04, 0xd6cf63, 0.07); // yellow belly
-      for (const sx of [-1, 1]) for (const z of [0.2, -0.2]) cube(g, sx * (W / 2 + 0.06), 0.12, z + zc, 0.22, 0.24, 0.26, 0x3b9248, 0.06); // short side legs
+      // four short side legs in all: front pair at the back of the head block, hind pair at the front of the tail block
+      const legZ = n === 1 ? [0.2, -0.2] : head ? [-0.2] : last ? [0.2] : [];
+      for (const sx of [-1, 1]) for (const z of legZ) cube(g, sx * (W / 2 + 0.06), 0.12, z + zc, 0.22, 0.24, 0.26, 0x3b9248, 0.06);
       for (const sx of [-0.22, 0.22]) for (const z of head ? [-0.25] : [0.2, -0.2]) pyramid(g, sx, top + 0.08, z + zc, 0.1, 0.18, 0x2f8a40); // back spikes
       if (head) {
         cube(g, 0, B0 + 0.3, fz + 0.32, 0.84, 0.3, 0.7, green, 0.12); // long upper jaw
