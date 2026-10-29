@@ -34,6 +34,50 @@ const RUN_SPEED = 7.5;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
 
+/** Most common texture color among the vertices in the mid-torso band of the model, so the body matches the head asset. */
+function sampleBodyColor(root: THREE.Object3D): number | null {
+  const box = new THREE.Box3().setFromObject(root);
+  const lo = box.min.y + (box.max.y - box.min.y) * 0.5;
+  const hi = box.min.y + (box.max.y - box.min.y) * 0.85;
+  const counts = new Map<number, number>();
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    const geo = mesh.geometry;
+    const uv = geo.getAttribute('uv');
+    const pos = geo.getAttribute('position');
+    const img = mat.map?.image as CanvasImageSource & { width: number; height: number } | undefined;
+    const v = new THREE.Vector3();
+    let data: ImageData | null = null;
+    if (img && uv) {
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext('2d');
+      if (ctx) { ctx.drawImage(img, 0, 0); data = ctx.getImageData(0, 0, c.width, c.height); }
+    }
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+      if (v.y < lo || v.y > hi) continue;
+      let rgb: number;
+      if (data && uv) {
+        const px = Math.min(data.width - 1, Math.floor(uv.getX(i) * data.width));
+        const py = Math.min(data.height - 1, Math.floor((mat.map!.flipY ? 1 - uv.getY(i) : uv.getY(i)) * data.height));
+        const k = (py * data.width + px) * 4;
+        rgb = (data.data[k] << 16) | (data.data[k + 1] << 8) | data.data[k + 2];
+      } else rgb = mat.color.getHex();
+      const q = rgb & 0xf8f8f8;
+      counts.set(q, (counts.get(q) ?? 0) + 1);
+    }
+  });
+  let best: number | null = null;
+  let n = 0;
+  for (const [c, k] of counts) if (k > n) { best = c; n = k; }
+  return best;
+}
+
 function makeBodySegment(color: number, last: boolean, w: number, h: number): THREE.Group {
   const g = new THREE.Group();
   const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
@@ -74,19 +118,18 @@ function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
 
 function zzzTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
-  c.width = 256;
+  c.width = 128;
   c.height = 128;
   const ctx = c.getContext('2d')!;
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round';
+  ctx.font = '900 100px system-ui, sans-serif';
+  ctx.lineWidth = 16;
   ctx.strokeStyle = '#2d4a8a';
+  ctx.strokeText('Z', 64, 68);
   ctx.fillStyle = '#fff';
-  [[40, 90, 44], [92, 62, 62], [160, 34, 84]].forEach(([x, y, px]) => {
-    ctx.font = `900 ${px}px system-ui, sans-serif`;
-    ctx.lineWidth = 12;
-    ctx.strokeText('Z', x, y);
-    ctx.fillText('Z', x, y);
-  });
+  ctx.fillText('Z', 64, 68);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -104,7 +147,7 @@ export class PieceView {
   private current: THREE.AnimationAction | null = null;
   private readonly chevrons = new THREE.Group();
   private readonly badge: THREE.Sprite;
-  private readonly zzz: THREE.Sprite;
+  private readonly zzz = new THREE.Group();
   private zzzT = Math.random() * 6;
   private anim: Anim = { kind: 'idle' };
   private shakeT = 0;
@@ -122,6 +165,7 @@ export class PieceView {
     head.scale.setScalar(MODEL_SCALE);
     const size = new THREE.Box3().setFromObject(head).getSize(new THREE.Vector3());
     head.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
+    const bodyColor = sampleBodyColor(head) ?? BODY_COLOR[species] ?? 0xdddddd;
     const headHolder = new THREE.Group();
     headHolder.add(head);
     const belt = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 0.9, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
@@ -132,7 +176,7 @@ export class PieceView {
     nose.position.set(0, size.y + 0.15, 0.62);
     headHolder.add(nose);
     this.segments.push(headHolder);
-    for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeBodySegment(BODY_COLOR[species] ?? 0xdddddd, i === this.bodyLen - 1, 0.88, size.y * 0.8));
+    for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeBodySegment(bodyColor, i === this.bodyLen - 1, 0.88, size.y * 0.8));
     for (const s of this.segments) this.group.add(s);
 
     this.mixer = new THREE.AnimationMixer(head);
@@ -146,9 +190,12 @@ export class PieceView {
     this.badge.visible = false;
     this.group.add(this.badge);
 
-    this.zzz = new THREE.Sprite(new THREE.SpriteMaterial({ map: zzzTexture(), transparent: true, depthTest: false }));
-    this.zzz.scale.set(1.3, 0.65, 1);
-    this.zzz.renderOrder = 11;
+    const zTex = zzzTexture();
+    for (let i = 0; i < 3; i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthTest: false }));
+      sp.renderOrder = 11;
+      this.zzz.add(sp);
+    }
     this.zzz.visible = false;
     this.group.add(this.zzz);
 
@@ -179,7 +226,7 @@ export class PieceView {
     });
     const h = this.segments[0].position;
     this.badge.position.set(h.x, 1.75, h.z);
-    this.zzz.position.set(h.x + 0.35, 1.6 + Math.sin(this.zzzT * 3) * 0.08, h.z);
+    this.zzz.position.set(h.x, 0, h.z);
   }
 
   private buildChevrons(color: THREE.Color): void {
@@ -233,6 +280,18 @@ export class PieceView {
     this.badge.visible = true;
   }
 
+  /** Three Z's rise from the head one after another, growing and fading out. */
+  private animateZzz(): void {
+    this.zzz.children.forEach((c, i) => {
+      const sp = c as THREE.Sprite;
+      const t = ((this.zzzT * 0.45 + i / 3) % 1);
+      sp.position.set(0.15 + t * 0.5 + Math.sin(t * 6) * 0.06, 1.25 + t * 0.9, 0);
+      const k = 0.35 + t * 0.55;
+      sp.scale.set(k, k, 1);
+      (sp.material as THREE.SpriteMaterial).opacity = Math.min(1, t * 5) * (1 - t * t);
+    });
+  }
+
   setAsleep(asleep: boolean): void {
     this.zzz.visible = asleep;
   }
@@ -256,7 +315,7 @@ export class PieceView {
   update(dt: number): void {
     this.mixer.update(dt);
     this.zzzT += dt;
-    if (this.zzz.visible) this.zzz.position.y = 1.6 + Math.sin(this.zzzT * 3) * 0.08;
+    if (this.zzz.visible) this.animateZzz();
     if (this.anim.kind === 'run') {
       this.anim.s += RUN_SPEED * dt;
       this.place(this.anim.s);
