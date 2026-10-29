@@ -30,6 +30,18 @@ export function pointAt(pts: Pt[], s: number): Pt & { angle: number } {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, angle: Math.atan2(b.x - a.x, b.y - a.y) };
 }
 
+/** Like `pointAt`, but extrapolates straight along the end tangents instead of clamping. */
+export function pointAlong(pts: Pt[], s: number): Pt & { angle: number } {
+  const last = pts.length - 1;
+  if (s >= 0 && s <= last) return pointAt(pts, s);
+  const [a, b, over] = s < 0 ? [pts[0], pts[1], s] : [pts[last - 1], pts[last], s - last];
+  const angle = Math.atan2(b.x - a.x, b.y - a.y);
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const k = over / len;
+  const base = s < 0 ? pts[0] : pts[last];
+  return { x: base.x + (b.x - a.x) * k, y: base.y + (b.y - a.y) * k, angle };
+}
+
 /** Shortest distance (in cells) from point (px, py) to the polyline through `pts`. */
 export function distanceToPolyline(pts: Pt[], px: number, py: number): number {
   let best = Math.hypot(px - pts[0].x, py - pts[0].y);

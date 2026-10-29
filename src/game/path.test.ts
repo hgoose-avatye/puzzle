@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Level } from '../core/types';
-import { distanceToPolyline, exitPath, pointAt } from './path';
+import { distanceToPolyline, exitPath, pointAlong, pointAt } from './path';
 
 describe('exitPath', () => {
   it('lists tail to head, then the exit trace, then extra cells past the edge', () => {
@@ -38,5 +38,16 @@ describe('distanceToPolyline', () => {
     const body = [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }];
     expect(distanceToPolyline(body, 2, 0.5)).toBeCloseTo(0.5);
     expect(distanceToPolyline(body, 5, 0)).toBeCloseTo(2);
+  });
+});
+
+describe('pointAlong', () => {
+  const pts = [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }];
+  it('matches pointAt inside the path', () => {
+    expect(pointAlong(pts, 1.5)).toEqual(pointAt(pts, 1.5));
+  });
+  it('extrapolates behind the start and past the end along the end tangents', () => {
+    expect(pointAlong(pts, -0.5)).toMatchObject({ x: 0, y: -0.5 });
+    expect(pointAlong(pts, 2.5)).toMatchObject({ x: 1.5, y: 1 });
   });
 });

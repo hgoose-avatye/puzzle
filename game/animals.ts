@@ -4,7 +4,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { directionVector, exitCell, exitDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
-import { exitPath, pointAt, type Pt } from '../src/game/path';
+import { exitPath, pointAlong, pointAt, type Pt } from '../src/game/path';
 
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
   one: ['penguin', 'chick', 'parrot'],
@@ -32,30 +32,84 @@ export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(
 const STRETCH_LO = -0.3;
 const STRETCH_HI = 0.1;
 
+/** Nodes behind the head follow the path: `shift` (cells) is how far back they sit beyond their rest position. */
+interface Tracked { holder: THREE.Object3D; z0: number; shift: number }
+interface Stretched { root: THREE.Object3D; body: THREE.Mesh | null; rest: Float32Array | null; tracked: Tracked[] }
+
+/** Cut every triangle of `geo` at each z plane in `planes`, interpolating all attributes, so the mesh can bend smoothly. */
+function sliceAlongZ(geo: THREE.BufferGeometry, planes: number[]): THREE.BufferGeometry {
+  let g = geo.index ? geo.toNonIndexed() : geo.clone();
+  const names = Object.keys(g.attributes);
+  for (const c of planes) {
+    const src = names.map((n) => g.getAttribute(n));
+    const out = names.map(() => [] as number[]);
+    const vert = (i: number): number[][] => src.map((a) => Array.from({ length: a.itemSize }, (_, k) => a.getComponent(i, k)));
+    const lerp = (a: number[][], b: number[][], t: number): number[][] => a.map((x, ai) => x.map((v, k) => v + (b[ai][k] - v) * t));
+    const emit = (...vs: number[][][]): void => vs.forEach((v) => v.forEach((comp, a) => out[a].push(...comp)));
+    for (let t = 0; t < g.getAttribute('position').count; t += 3) {
+      const v = [vert(t), vert(t + 1), vert(t + 2)];
+      const side = v.map((x) => x[0][2] - c);
+      const above = side.filter((d) => d > 0).length;
+      if (above === 0 || above === 3) { emit(v[0], v[1], v[2]); continue; }
+      // rotate so v[0] is the lone vertex on its side of the plane
+      const lone = above === 1 ? side.findIndex((d) => d > 0) : side.findIndex((d) => d <= 0);
+      const a = v[lone];
+      const b = v[(lone + 1) % 3];
+      const d = v[(lone + 2) % 3];
+      const tb = (c - a[0][2]) / (b[0][2] - a[0][2]);
+      const td = (c - a[0][2]) / (d[0][2] - a[0][2]);
+      const ab = lerp(a, b, tb);
+      const ad = lerp(a, d, td);
+      emit(a, ab, ad);
+      emit(ab, b, d);
+      emit(ab, d, ad);
+    }
+    const next = new THREE.BufferGeometry();
+    names.forEach((n, a) => next.setAttribute(n, new THREE.BufferAttribute(new Float32Array(out[a]), src[a].itemSize)));
+    g = next;
+  }
+  return g;
+}
+
+const BENDY_LEGS = new Set(['dog', 'bunny']);
+
 /**
  * One continuous animal for a piece spanning `cells` cells. The body mesh is stretched in its flat middle only,
- * so face, ears and rump keep their shape; back legs and tail move back by the added length.
+ * so face, ears and rump keep their shape; back legs and tail move back by the added length. Long leggy animals
+ * get extra leg pairs along the body. `PieceView.bend` then curves the body mesh and the tracked nodes along the path.
  * The animation clips overwrite node translations, so shifted nodes sit under an offset holder instead.
  */
-function makeAnimal(gltf: GLTF, cells: number): THREE.Object3D {
+function makeAnimal(gltf: GLTF, cells: number, species: string): Stretched {
   const root = SkeletonUtils.clone(gltf.scene);
-  if (cells <= 1) return root;
+  if (cells <= 1) return { root, body: null, rest: null, tracked: [] };
   const extra = (cells - 1) / MODEL_SCALE;
   const span = STRETCH_HI - STRETCH_LO;
-  const bodies: THREE.Mesh[] = [];
-  const shifted: Array<{ node: THREE.Object3D; by: number }> = [];
+  let body: THREE.Mesh | null = null;
+  const shifted: Array<{ node: THREE.Object3D; shift: number }> = [];
   root.traverse((o) => {
     if (o === root || o.name === 'root') return;
     if (o.name === 'body') {
-      if ((o as THREE.Mesh).isMesh) bodies.push(o as THREE.Mesh);
+      if ((o as THREE.Mesh).isMesh) body = o as THREE.Mesh;
       return;
     }
     const z = o.position.z;
     const by = z <= -0.1 ? extra : Math.abs(z) < 0.1 ? extra / 2 : 0;
-    if (by > 0) shifted.push({ node: o, by });
+    if (by > 0) shifted.push({ node: o, shift: by * MODEL_SCALE });
+    if (BENDY_LEGS.has(species) && cells >= 3 && o.name.startsWith('leg-back')) {
+      for (let k = 1; k <= cells - 2; k++) {
+        const copy = o.clone();
+        copy.name = `mid${k}-${o.name}`;
+        shifted.push({ node: copy, shift: cells - 1 - k });
+        o.parent!.add(copy);
+      }
+    }
   });
-  for (const body of bodies) {
-    const geo = body.geometry.clone();
+  let rest: Float32Array | null = null;
+  const bodyMesh = body as THREE.Mesh | null;
+  if (bodyMesh) {
+    const rings = 4 * cells;
+    const planes = Array.from({ length: rings + 1 }, (_, i) => STRETCH_LO + (span * i) / rings);
+    const geo = sliceAlongZ(bodyMesh.geometry, planes);
     const pos = geo.getAttribute('position');
     for (let i = 0; i < pos.count; i++) {
       const z = pos.getZ(i);
@@ -63,18 +117,31 @@ function makeAnimal(gltf: GLTF, cells: number): THREE.Object3D {
       pos.setZ(i, z <= STRETCH_LO ? z - extra : STRETCH_LO - extra + (z - STRETCH_LO) * ((span + extra) / span));
     }
     pos.needsUpdate = true;
-    geo.computeBoundingBox();
-    geo.computeBoundingSphere();
-    body.geometry = geo;
+    rest = Float32Array.from(pos.array as ArrayLike<number>);
+    bodyMesh.geometry = geo;
+    bodyMesh.frustumCulled = false;
   }
-  for (const { node, by } of shifted) {
+  const tracked: Tracked[] = [];
+  for (const { node, shift } of shifted) {
     const parent = node.parent!;
     const holder = new THREE.Object3D();
-    holder.position.z = -by;
     parent.add(holder);
     holder.add(node);
+    tracked.push({ holder, z0: node.position.z, shift });
   }
-  return root;
+  return { root, body: bodyMesh, rest, tracked };
+}
+
+const CATERPILLAR_COLORS = [0xe8b93f, 0x5bb36f];
+
+function makeCaterpillarSegment(i: number, last: boolean): THREE.Group {
+  const g = new THREE.Group();
+  const r = last ? 0.34 : 0.42;
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), new THREE.MeshStandardMaterial({ color: CATERPILLAR_COLORS[i % 2], roughness: 0.7 }));
+  ball.position.y = r + 0.12;
+  ball.castShadow = true;
+  g.add(ball);
+  return g;
 }
 
 function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
@@ -125,6 +192,11 @@ export class PieceView {
   readonly piece: Piece;
   private readonly pts: Pt[];
   private readonly segments: THREE.Object3D[] = [];
+  private readonly plates: THREE.Mesh[] = [];
+  private readonly stretched: Stretched | null;
+  private readonly chain: boolean;
+  private lastS = 0;
+  private clock = 0;
   private readonly mixer: THREE.AnimationMixer;
   private readonly clips: THREE.AnimationClip[];
   private current: THREE.AnimationAction | null = null;
@@ -144,21 +216,28 @@ export class PieceView {
     const color = pieceColor(piece.id);
 
     const species = speciesFor(piece);
-    const head = makeAnimal(gltf, this.bodyLen);
+    this.chain = species === 'caterpillar' && this.bodyLen > 1;
+    const built = makeAnimal(gltf, this.chain ? 1 : this.bodyLen, species);
+    this.stretched = built.body || built.tracked.length ? built : null;
+    const head = built.root;
     head.scale.setScalar(MODEL_SCALE);
     const size = new THREE.Box3().setFromObject(head).getSize(new THREE.Vector3());
     head.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
     const headHolder = new THREE.Group();
     headHolder.add(head);
-    const belt = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 0.9 + (this.bodyLen - 1), 2, 0.04), new THREE.MeshStandardMaterial({ color }));
-    belt.position.set(0, 0.05, -(this.bodyLen - 1) / 2);
-    headHolder.add(belt);
     const nose = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 3), new THREE.MeshBasicMaterial({ color }));
     nose.rotation.x = Math.PI / 2;
     nose.position.set(0, size.y + 0.15, 0.62);
     headHolder.add(nose);
     this.segments.push(headHolder);
-    for (const s of this.segments) this.group.add(s);
+    if (this.chain) for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeCaterpillarSegment(i, i === this.bodyLen - 1));
+    for (const seg of this.segments) this.group.add(seg);
+    // Colored plate under each cell of the body, following the path, so the whole animal reads as one color.
+    for (let i = 0; i < this.bodyLen; i++) {
+      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
+      this.plates.push(plate);
+      this.group.add(plate);
+    }
 
     this.mixer = new THREE.AnimationMixer(head);
     this.clips = gltf.animations;
@@ -198,19 +277,68 @@ export class PieceView {
     this.current = action;
   }
 
-  /** Put the head at distance sHead along the path and let every body segment follow. */
+  /**
+   * Put the head at distance sHead along the path. Everything behind it follows the path itself: caterpillar balls
+   * and plates sample it per cell, a stretched body is curved along it (see `bend`), so corners are taken one part at a time.
+   */
   place(sHead: number): void {
-    const seg = this.segments[0];
+    this.lastS = sHead;
+    const head = this.segments[0];
     const p = pointAt(this.pts, sHead);
-    const tail = pointAt(this.pts, sHead - (this.bodyLen - 1));
-    seg.position.copy(this.world(p.x, p.y));
-    // The whole body is one rigid model: face along the chord from rump to head so bends stay smooth.
-    const dx = p.x - tail.x;
-    const dy = p.y - tail.y;
-    seg.rotation.y = this.bodyLen > 1 && Math.hypot(dx, dy) > 1e-3 ? Math.atan2(dx, dy) : p.angle;
-    const h = seg.position;
-    this.badge.position.set(h.x, 1.75, h.z);
-    this.zzz.position.set(h.x, 0, h.z);
+    head.position.copy(this.world(p.x, p.y));
+    head.rotation.y = p.angle;
+    for (let i = 1; i < this.segments.length; i++) {
+      const q = pointAlong(this.pts, sHead - i);
+      const seg = this.segments[i];
+      seg.position.copy(this.world(q.x, q.y));
+      seg.position.y += Math.sin(this.clock * 4 + i * 1.3) * 0.05;
+      seg.rotation.y = q.angle;
+    }
+    this.plates.forEach((plate, i) => {
+      const q = pointAlong(this.pts, sHead - i);
+      plate.position.copy(this.world(q.x, q.y)).setY(0.05);
+      plate.rotation.y = q.angle;
+    });
+    this.bend(sHead, p.angle);
+    this.badge.position.set(head.position.x, 1.75, head.position.z);
+    this.zzz.position.set(head.position.x, 0, head.position.z);
+  }
+
+  /** Curve the stretched body mesh and move the rear nodes onto the path, in the head's local frame. */
+  private bend(sHead: number, theta: number): void {
+    const st = this.stretched;
+    if (!st) return;
+    const toLocal = (d: number, lateral: number): { x: number; z: number; rel: number } => {
+      const q = pointAlong(this.pts, sHead - d);
+      const head = pointAlong(this.pts, sHead);
+      const ux = q.x - head.x;
+      const uy = q.y - head.y;
+      const rel = q.angle - theta;
+      return {
+        x: (ux * Math.cos(theta) - uy * Math.sin(theta) + lateral * Math.cos(rel)) / MODEL_SCALE,
+        z: (ux * Math.sin(theta) + uy * Math.cos(theta) - lateral * Math.sin(rel)) / MODEL_SCALE,
+        rel,
+      };
+    };
+    if (st.body && st.rest) {
+      const pos = st.body.geometry.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = st.rest[i * 3];
+        const y = st.rest[i * 3 + 1];
+        const z = st.rest[i * 3 + 2];
+        const d = -z * MODEL_SCALE;
+        if (d <= 0) { pos.setXYZ(i, x, y, z); continue; }
+        const l = toLocal(d, x * MODEL_SCALE);
+        pos.setXYZ(i, l.x, y, l.z);
+      }
+      pos.needsUpdate = true;
+    }
+    for (const t of st.tracked) {
+      const d = -t.z0 * MODEL_SCALE + t.shift;
+      const l = toLocal(d, 0);
+      t.holder.position.set(l.x, 0, l.z - t.z0);
+      t.holder.rotation.y = l.rel;
+    }
   }
 
   private buildChevrons(color: THREE.Color): void {
@@ -299,9 +427,11 @@ export class PieceView {
   update(dt: number): void {
     this.mixer.update(dt);
     this.zzzT += dt;
+    this.clock += dt;
+    if (this.chain && this.anim.kind !== 'run') this.place(this.lastS);
     if (this.zzz.visible) this.animateZzz();
     if (this.anim.kind === 'run') {
-      this.anim.s += RUN_SPEED * dt;
+      this.anim.s += ((window as unknown as { __runSpeed?: number }).__runSpeed ?? RUN_SPEED) * dt;
       this.place(this.anim.s);
       if (this.anim.s >= this.pts.length - 1) {
         const done = this.anim.onDone;

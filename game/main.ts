@@ -1,5 +1,6 @@
 import { createRng } from '../src/core/rng';
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
+import { demoLevel } from './demo';
 import { generateLevelFor, levelSpec } from '../src/curve/curve';
 import { generateMatching } from '../src/generator/generate';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
@@ -21,7 +22,10 @@ const PROGRESS_KEY = 'animal-rescue-progress';
 const readProgress = (): number => { try { return Math.max(1, Number(localStorage.getItem(PROGRESS_KEY) ?? 1)); } catch { return 1; } };
 const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS_KEY, String(n)); } catch { /* ignore */ } };
 
+const DEMO = new URLSearchParams(location.search).has('demo');
+
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
+  if (DEMO) return { level: demoLevel(), hearts: 3 };
   for (let seed = 1; seed <= 5; seed++) {
     const r = generateLevelFor(n, seed);
     if (r) return { level: r.level, hearts: r.spec.hearts };
@@ -120,6 +124,7 @@ const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolea
 ];
 
 function showIntro(level: Level, hearts: boolean): void {
+  if (DEMO) return;
   const seen = readSeen();
   const fresh = TIPS.filter(([id, , , test]) => test(level, hearts) && !seen.includes(id) && (id !== 'basic' || levelNumber === 1 || !seen.length));
   if (fresh.length === 0) return;
