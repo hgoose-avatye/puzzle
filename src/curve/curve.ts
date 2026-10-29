@@ -2,6 +2,7 @@ import { createRng } from '../core/rng';
 import type { Level } from '../core/types';
 import { generateMatching, type DifficultyTarget, type GenParams } from '../generator/generate';
 import type { Metrics } from '../solver/metrics';
+import type { BoardShape } from '../core/shapes';
 import pickedSeeds from './seeds.json';
 
 export type Role = 'intro' | 'rest' | 'ordinary' | 'tough' | 'finale';
@@ -65,12 +66,26 @@ function chapterOneSpec(level: number): Omit<LevelSpec, 'chapter'> {
   return { level, role: 'ordinary', params: { ...full, pieceCount, arrowCount }, target: { rounds: [7, 11], initialFreeRatio: [0.25, 0.45] }, hearts: heartsFor(pieceCount) };
 }
 
+/** Background theme per chapter (spec 6.1): animal village, forest, pirate island, jungle ruins, haunted castle, winter. */
+export type Theme = 'village' | 'forest' | 'pirate' | 'jungle' | 'haunted' | 'winter';
+export const CHAPTER_THEMES: Theme[] = ['village', 'forest', 'pirate', 'jungle', 'haunted', 'winter'];
+export const themeFor = (levelNumber: number): Theme => CHAPTER_THEMES[Math.min(5, Math.floor((levelNumber - 1) / CHAPTER_LENGTH))];
+
+/** Varied outlines through a chapter; intro levels stay simple and rest levels get the friendly oval. */
+const SHAPE_CYCLE: BoardShape[] = ['octagon', 'plus', 'hexagon', 'tee', 'ellipse', 'rounded', 'rect'];
+export function shapeFor(level: number, role: Role): BoardShape {
+  if (role === 'intro') return level <= 2 ? 'rect' : 'rounded';
+  if (role === 'rest') return 'ellipse';
+  return SHAPE_CYCLE[level % SHAPE_CYCLE.length];
+}
+
 /** Chapter 2 stretches animals, 3 adds keys, 4 sleepers, 5 bombs, 6 rotates through all three (spec 6.1). */
 export function levelSpec(levelNumber: number): LevelSpec {
   if (!Number.isInteger(levelNumber) || levelNumber < 1) throw new Error(`invalid level number ${levelNumber}`);
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
   const level = ((levelNumber - 1) % CHAPTER_LENGTH) + 1;
-  const base = chapterOneSpec(level);
+  const raw = chapterOneSpec(level);
+  const base = { ...raw, params: { ...raw.params, shape: shapeFor(level, raw.role) } };
   if (chapter === 1) return { ...base, chapter };
   const params = { ...base.params };
   const { role } = base;

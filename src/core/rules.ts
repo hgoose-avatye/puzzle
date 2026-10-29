@@ -1,3 +1,4 @@
+import { isOrthogonallyConvex } from './shapes';
 import type { Cell, Direction, Level, Piece } from './types';
 
 const VECTORS: Record<Direction, Cell> = {
@@ -25,8 +26,17 @@ export function headDirection(piece: Piece): Direction {
   return dy === 1 ? 'down' : 'up';
 }
 
-const inBounds = (level: Level, x: number, y: number): boolean =>
-  x >= 0 && y >= 0 && x < level.width && y < level.height;
+const voidSets = new WeakMap<Level, Set<string>>();
+const voidSet = (level: Level): Set<string> => {
+  let s = voidSets.get(level);
+  if (!s) { s = new Set((level.voids ?? []).map((c) => `${c.x},${c.y}`)); voidSets.set(level, s); }
+  return s;
+};
+
+/** Is (x, y) a cell of the board: inside the box and not one of its voids? */
+export const onBoard = (level: Level, x: number, y: number): boolean =>
+  x >= 0 && y >= 0 && x < level.width && y < level.height && (!level.voids?.length || !voidSet(level).has(`${x},${y}`));
+const inBounds = onBoard;
 
 const OPPOSITE: Record<Direction, Direction> = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
@@ -137,6 +147,7 @@ export interface ValidateOptions {
 
 export function validateLevel(level: Level, options: ValidateOptions = {}): string[] {
   const errors: string[] = [];
+  if (level.voids?.length && !isOrthogonallyConvex(level.width, level.height, level.voids)) errors.push('board outline is not orthogonally convex');
   const ids = new Set<number>();
   const owner = new Map<string, number>();
   const fixtures = new Set<string>();
