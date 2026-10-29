@@ -33,17 +33,14 @@ const ALERT_HOLD = 0.2;
 const ALERT_OUT = 0.15;
 const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
 const FLINCH_TIME = 0.12;
-/** flat arrow shown over one-cell animals */
-const AHEAD_ARROW = (() => {
-  const sh = new THREE.Shape();
-  for (const [x, y] of [[0, 0.3], [0.22, 0.04], [0.09, 0.04], [0.09, -0.2], [-0.09, -0.2], [-0.09, 0.04], [-0.22, 0.04]] as const) {
-    if (x === 0 && y === 0.3) sh.moveTo(x, y);
-    else sh.lineTo(x, y);
-  }
-  sh.closePath();
-  // lie flat with the tip pointing along +z (the animal's heading after the holder's rotation)
-  return new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: false }).rotateX(Math.PI / 2);
-})();
+/** unit bar for the floor mark at the front edge of a one-cell animal's tile, scaled per use */
+const EDGE_BAR = new THREE.BoxGeometry(1, 0.008, 1);
+/** the direction V: half width, depth from point to arm ends, line thickness (cells) */
+const V_HALF = 0.12;
+const V_DEPTH = 0.12;
+const V_THICK = 0.045;
+/** how far a sideways-facing animal's V slides along its front edge towards the camera */
+const V_SIDE_SHIFT = 0.34;
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
@@ -173,9 +170,8 @@ export class PieceView {
   private readonly plates: THREE.Mesh[] = [];
   private readonly markers: THREE.Object3D[] = [];
   private readonly chevrons = new THREE.Group();
-  /** arrow over a one-cell animal showing which way it faces */
+  /** low mark on the floor at the front edge of a one-cell animal's tile, showing which way it faces */
   private readonly aheadMarks = new THREE.Group();
-  private readonly aheadDir = new THREE.Vector3();
   private readonly badge: THREE.Sprite;
   private readonly zzz = new THREE.Group();
   private zzzT = Math.random() * 6;
@@ -269,10 +265,6 @@ export class PieceView {
     });
     const h = this.segments[0].position;
     this.badge.position.set(h.x, 2.1, h.z);
-    if (this.aheadMarks.children.length) {
-      const nudge = Math.max(0, Math.sin(this.clock * 3)) * 0.08;
-      this.aheadMarks.position.set(h.x + this.aheadDir.x * (0.06 + nudge), 1.32, h.z + this.aheadDir.z * (0.06 + nudge));
-    }
     this.zzz.position.set(h.x, 0, h.z);
   }
 
@@ -293,22 +285,35 @@ export class PieceView {
   }
 
   /**
-   * A small flat arrow floating over a one-cell animal, pointing the way it will run. From the camera an animal facing
-   * up the board shows only its back and a cube animal looks alike front and back; a floor mark in front of it is hidden
-   * by its own body or by the animal ahead, but a mark above the head is always in view. Hidden once it runs.
+   * One small, pale V lying on the colour plate of a one-cell animal's own tile, its point showing the way it will run.
+   * A cube animal looks alike front and back from the camera. The V sits at the tile's front edge, except for an animal
+   * facing up the board: that edge is hidden behind its body, so the same V sits at the edge nearest the camera, still
+   * pointing up. Same shape, size, colour and thickness in every direction; no outline, glow or shadow. Hidden once it
+   * runs.
    */
   private buildAheadMarks(color: THREE.Color): void {
     if (this.bodyLen !== 1) return;
-    const v = directionVector(headDirection(this.piece));
-    const rim = new THREE.Mesh(AHEAD_ARROW, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    rim.userData.sharedGeometry = true;
-    rim.scale.setScalar(1.25);
-    rim.position.y = -0.012;
-    const ink = new THREE.Mesh(AHEAD_ARROW, new THREE.MeshBasicMaterial({ color }));
-    ink.userData.sharedGeometry = true;
-    this.aheadMarks.add(rim, ink);
+    const dir = headDirection(this.piece);
+    const v = directionVector(dir);
+    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
+    // local frame: +z is the way it runs; the point is at tipZ and the arms end V_DEPTH behind it
+    const tipZ = dir === 'up' ? -0.47 + V_DEPTH : 0.46;
+    // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
+    // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
+    const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
+    for (const side of [-1, 1]) {
+      const x0 = side * V_HALF;
+      const z0 = tipZ - V_DEPTH;
+      const m = new THREE.Mesh(EDGE_BAR, tint);
+      m.userData.sharedGeometry = true;
+      m.scale.set(V_THICK, 1, Math.hypot(x0, tipZ - z0) + V_THICK);
+      m.position.set(along + x0 / 2, 0.104, (z0 + tipZ) / 2);
+      m.rotation.y = Math.atan2(-x0, tipZ - z0);
+      this.aheadMarks.add(m);
+    }
+    const head = this.piece.cells[0];
+    this.aheadMarks.position.copy(this.world(head.x, head.y));
     this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
-    this.aheadDir.set(v.x, 0, v.y);
   }
 
   private buildGate(color: THREE.Color): THREE.Object3D {
