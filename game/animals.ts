@@ -35,6 +35,8 @@ const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
 const FLINCH_TIME = 0.12;
 const LAUNCH_TIME = 0.2;
 const GATE_TIME = 0.4;
+/** cells past the gate over which a block shrinks away */
+const GATE_FADE = 0.8;
 /** Corner radius (cells) of the rounded exit path. */
 const CORNER_RADIUS = 0.3;
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
@@ -380,6 +382,21 @@ export class PieceView {
     for (const seg of this.segments) seg.scale.set(xz, y, xz);
   }
 
+  /**
+   * Past the gate each block shrinks away within GATE_FADE cells, as if stepping through it, so nothing runs on into
+   * the scenery around the board.
+   */
+  private shrinkIntoGate(): void {
+    if (this.anim.kind !== 'run') return;
+    const gateU = this.track.length - (this.bodyLen + 2) + 0.62;
+    this.segments.forEach((seg, i) => {
+      const k = Math.max(0, Math.min(1, 1 - (this.anim.kind === 'run' ? this.anim.s - i - gateU : 0) / GATE_FADE));
+      if (k < 1) seg.scale.setScalar(k); // set, not multiply: the scale carries over between frames
+      seg.visible = k > 0.02;
+      this.plates[i].visible = k > 0.5;
+    });
+  }
+
   /** Heading of the head block (rotation about y), for effects. */
   get heading(): number { return this.segments[0].rotation.y; }
 
@@ -440,6 +457,7 @@ export class PieceView {
       this.updateAlert();
       this.updateDots();
       this.animateLaunch(dt);
+      this.shrinkIntoGate();
       if (this.anim.onExit && this.anim.s >= this.track.length - (this.bodyLen + 2)) {
         const exit = this.anim.onExit;
         this.anim.onExit = undefined;

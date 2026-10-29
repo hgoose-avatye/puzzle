@@ -31,20 +31,20 @@ export const PALETTES: Record<Theme, Palette> = {
 };
 
 const geoCache = new Map<string, THREE.BufferGeometry>();
-const geo = (k: string, make: () => THREE.BufferGeometry): THREE.BufferGeometry => {
+export const geo = (k: string, make: () => THREE.BufferGeometry): THREE.BufferGeometry => {
   let g = geoCache.get(k);
   if (!g) { g = make(); geoCache.set(k, g); }
   return g;
 };
 const matCache = new Map<string, THREE.Material>();
-const mat = (color: number, emissive = 0): THREE.Material => {
+export const mat = (color: number, emissive = 0): THREE.Material => {
   const k = `${color}:${emissive}`;
   let m = matCache.get(k);
   if (!m) { m = new THREE.MeshStandardMaterial({ color, roughness: 0.85, emissive, emissiveIntensity: emissive ? 0.9 : 0 }); matCache.set(k, m); }
   return m;
 };
 
-function part(g: THREE.Group, geometry: THREE.BufferGeometry, color: number, x: number, y: number, z: number, sx = 1, sy = 1, sz = 1, emissive = 0): THREE.Mesh {
+export function part(g: THREE.Group, geometry: THREE.BufferGeometry, color: number, x: number, y: number, z: number, sx = 1, sy = 1, sz = 1, emissive = 0): THREE.Mesh {
   const m = new THREE.Mesh(geometry, mat(color, emissive));
   m.position.set(x, y, z);
   m.scale.set(sx, sy, sz);
@@ -54,11 +54,11 @@ function part(g: THREE.Group, geometry: THREE.BufferGeometry, color: number, x: 
   return m;
 }
 
-const box = (): THREE.BufferGeometry => geo('box', () => new RoundedBoxGeometry(1, 1, 1, 2, 0.12));
-const ball = (): THREE.BufferGeometry => geo('ball', () => new THREE.IcosahedronGeometry(0.5, 1));
-const cone = (): THREE.BufferGeometry => geo('cone', () => new THREE.ConeGeometry(0.5, 1, 7));
-const cyl = (): THREE.BufferGeometry => geo('cyl', () => new THREE.CylinderGeometry(0.5, 0.5, 1, 8));
-const pyramid = (): THREE.BufferGeometry => geo('pyramid', () => new THREE.ConeGeometry(0.62, 1, 4));
+export const box = (): THREE.BufferGeometry => geo('box', () => new RoundedBoxGeometry(1, 1, 1, 2, 0.12));
+export const ball = (): THREE.BufferGeometry => geo('ball', () => new THREE.IcosahedronGeometry(0.5, 1));
+export const cone = (): THREE.BufferGeometry => geo('cone', () => new THREE.ConeGeometry(0.5, 1, 7));
+export const cyl = (): THREE.BufferGeometry => geo('cyl', () => new THREE.CylinderGeometry(0.5, 0.5, 1, 8));
+export const pyramid = (): THREE.BufferGeometry => geo('pyramid', () => new THREE.ConeGeometry(0.62, 1, 4));
 
 type Prop = (rng: Rng) => THREE.Group;
 
@@ -319,9 +319,18 @@ const PROPS: Record<Theme, [Array<[Prop, number]>, Array<[Prop, number]>, Array<
   ],
 };
 
+/** Grass planter with flowers, the board obstacle of the village reference (03, 04). */
+const planter: Prop = (rng) => {
+  const g = new THREE.Group();
+  part(g, box(), 0x8b6a45, 0, 0.12, 0, 0.86, 0.24, 0.86);
+  part(g, box(), 0x6fbf55, 0, 0.36, 0, 0.88, 0.3, 0.88);
+  for (let i = 0; i < 4; i++) part(g, ball(), [0xffffff, 0xfff3a8, 0xffb3c7][rng.int(0, 2)], (rng.next() - 0.5) * 0.5, 0.56, (rng.next() - 0.5) * 0.5, 0.16, 0.12, 0.16);
+  return g;
+};
+
 /** Board obstacle per stage: hay, fences and crates in the village, logs in the forest, barrels at the harbour... */
 const OBSTACLES: Record<Theme, [Prop, Prop, Prop]> = {
-  village: [hay, fenceBlock, crate],
+  village: [planter, fenceBlock, crate],
   forest: [log, rock, stump],
   pirate: [rock, barrel, crate],
   jungle: [bush, rock, pillar],
