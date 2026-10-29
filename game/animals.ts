@@ -12,12 +12,6 @@ const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
   long: ['caterpillar', 'dog', 'bunny'],
 };
 
-/** Approximate body colors, used for the faceless follower segments of long animals. */
-const BODY_COLOR: Record<string, number> = {
-  cow: 0xf3f0ea, pig: 0xf4a7b9, fox: 0xe8742a, tiger: 0xf0b42d, panda: 0xf2f2f2, koala: 0x9aa1ad,
-  caterpillar: 0x8fcf4a, dog: 0xb9703f, bunny: 0xd98c5f, penguin: 0x38404f, chick: 0xf7d84a, parrot: 0xd9482b,
-};
-
 export function speciesFor(piece: Piece): string {
   const pool = piece.cells.length === 1 ? SPECIES.one : piece.cells.length === 2 ? SPECIES.two : SPECIES.long;
   return pool[piece.id % pool.length];
@@ -34,64 +28,53 @@ const RUN_SPEED = 7.5;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
 
-/** Most common texture color among the vertices in the mid-torso band of the model, so the body matches the head asset. */
-function sampleBodyColor(root: THREE.Object3D): number | null {
-  const box = new THREE.Box3().setFromObject(root);
-  const lo = box.min.y + (box.max.y - box.min.y) * 0.5;
-  const hi = box.min.y + (box.max.y - box.min.y) * 0.85;
-  const counts = new Map<number, number>();
-  root.updateMatrixWorld(true);
-  root.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    const geo = mesh.geometry;
-    const uv = geo.getAttribute('uv');
-    const pos = geo.getAttribute('position');
-    const img = mat.map?.image as CanvasImageSource & { width: number; height: number } | undefined;
-    const v = new THREE.Vector3();
-    let data: ImageData | null = null;
-    if (img && uv) {
-      const c = document.createElement('canvas');
-      c.width = img.width;
-      c.height = img.height;
-      const ctx = c.getContext('2d');
-      if (ctx) { ctx.drawImage(img, 0, 0); data = ctx.getImageData(0, 0, c.width, c.height); }
-    }
-    for (let i = 0; i < pos.count; i++) {
-      v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
-      if (v.y < lo || v.y > hi) continue;
-      let rgb: number;
-      if (data && uv) {
-        const px = Math.min(data.width - 1, Math.floor(uv.getX(i) * data.width));
-        const py = Math.min(data.height - 1, Math.floor((mat.map!.flipY ? 1 - uv.getY(i) : uv.getY(i)) * data.height));
-        const k = (py * data.width + px) * 4;
-        rgb = (data.data[k] << 16) | (data.data[k + 1] << 8) | data.data[k + 2];
-      } else rgb = mat.color.getHex();
-      const q = rgb & 0xf8f8f8;
-      counts.set(q, (counts.get(q) ?? 0) + 1);
-    }
-  });
-  let best: number | null = null;
-  let n = 0;
-  for (const [c, k] of counts) if (k > n) { best = c; n = k; }
-  return best;
-}
+/** Body z-range (model units) that gets stretched: the flat middle between the ears/face and the rump. */
+const STRETCH_LO = -0.3;
+const STRETCH_HI = 0.1;
 
-function makeBodySegment(color: number, last: boolean, w: number, h: number): THREE.Group {
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
-  // Longer than one cell so neighbours overlap and the body reads as one connected block.
-  const body = new THREE.Mesh(new RoundedBoxGeometry(w, h, 1.16, 3, Math.min(w, h) * 0.22), mat);
-  body.position.y = h / 2;
-  body.castShadow = true;
-  g.add(body);
-  if (last) {
-    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), mat);
-    tail.position.set(0, h * 0.65, -0.64);
-    g.add(tail);
+/**
+ * One continuous animal for a piece spanning `cells` cells. The body mesh is stretched in its flat middle only,
+ * so face, ears and rump keep their shape; back legs and tail move back by the added length.
+ * The animation clips overwrite node translations, so shifted nodes sit under an offset holder instead.
+ */
+function makeAnimal(gltf: GLTF, cells: number): THREE.Object3D {
+  const root = SkeletonUtils.clone(gltf.scene);
+  if (cells <= 1) return root;
+  const extra = (cells - 1) / MODEL_SCALE;
+  const span = STRETCH_HI - STRETCH_LO;
+  const bodies: THREE.Mesh[] = [];
+  const shifted: Array<{ node: THREE.Object3D; by: number }> = [];
+  root.traverse((o) => {
+    if (o === root || o.name === 'root') return;
+    if (o.name === 'body') {
+      if ((o as THREE.Mesh).isMesh) bodies.push(o as THREE.Mesh);
+      return;
+    }
+    const z = o.position.z;
+    const by = z <= -0.1 ? extra : Math.abs(z) < 0.1 ? extra / 2 : 0;
+    if (by > 0) shifted.push({ node: o, by });
+  });
+  for (const body of bodies) {
+    const geo = body.geometry.clone();
+    const pos = geo.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) {
+      const z = pos.getZ(i);
+      if (z >= STRETCH_HI) continue;
+      pos.setZ(i, z <= STRETCH_LO ? z - extra : STRETCH_LO - extra + (z - STRETCH_LO) * ((span + extra) / span));
+    }
+    pos.needsUpdate = true;
+    geo.computeBoundingBox();
+    geo.computeBoundingSphere();
+    body.geometry = geo;
   }
-  return g;
+  for (const { node, by } of shifted) {
+    const parent = node.parent!;
+    const holder = new THREE.Object3D();
+    holder.position.z = -by;
+    parent.add(holder);
+    holder.add(node);
+  }
+  return root;
 }
 
 function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
@@ -161,22 +144,20 @@ export class PieceView {
     const color = pieceColor(piece.id);
 
     const species = speciesFor(piece);
-    const head = SkeletonUtils.clone(gltf.scene);
+    const head = makeAnimal(gltf, this.bodyLen);
     head.scale.setScalar(MODEL_SCALE);
     const size = new THREE.Box3().setFromObject(head).getSize(new THREE.Vector3());
     head.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
-    const bodyColor = sampleBodyColor(head) ?? BODY_COLOR[species] ?? 0xdddddd;
     const headHolder = new THREE.Group();
     headHolder.add(head);
-    const belt = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 0.9, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
-    belt.position.y = 0.05;
+    const belt = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 0.9 + (this.bodyLen - 1), 2, 0.04), new THREE.MeshStandardMaterial({ color }));
+    belt.position.set(0, 0.05, -(this.bodyLen - 1) / 2);
     headHolder.add(belt);
     const nose = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 3), new THREE.MeshBasicMaterial({ color }));
     nose.rotation.x = Math.PI / 2;
     nose.position.set(0, size.y + 0.15, 0.62);
     headHolder.add(nose);
     this.segments.push(headHolder);
-    for (let i = 1; i < this.bodyLen; i++) this.segments.push(makeBodySegment(bodyColor, i === this.bodyLen - 1, 0.88, size.y * 0.8));
     for (const s of this.segments) this.group.add(s);
 
     this.mixer = new THREE.AnimationMixer(head);
@@ -219,12 +200,15 @@ export class PieceView {
 
   /** Put the head at distance sHead along the path and let every body segment follow. */
   place(sHead: number): void {
-    this.segments.forEach((seg, i) => {
-      const p = pointAt(this.pts, sHead - i);
-      seg.position.copy(this.world(p.x, p.y));
-      seg.rotation.y = p.angle;
-    });
-    const h = this.segments[0].position;
+    const seg = this.segments[0];
+    const p = pointAt(this.pts, sHead);
+    const tail = pointAt(this.pts, sHead - (this.bodyLen - 1));
+    seg.position.copy(this.world(p.x, p.y));
+    // The whole body is one rigid model: face along the chord from rump to head so bends stay smooth.
+    const dx = p.x - tail.x;
+    const dy = p.y - tail.y;
+    seg.rotation.y = this.bodyLen > 1 && Math.hypot(dx, dy) > 1e-3 ? Math.atan2(dx, dy) : p.angle;
+    const h = seg.position;
     this.badge.position.set(h.x, 1.75, h.z);
     this.zzz.position.set(h.x, 0, h.z);
   }
