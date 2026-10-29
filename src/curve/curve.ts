@@ -4,6 +4,7 @@ import { generateMatching, type DifficultyTarget, type GenParams } from '../gene
 import type { Metrics } from '../solver/metrics';
 import type { BoardShape } from '../core/shapes';
 import pickedSeeds from './seeds.json';
+import bakedLevels from './levels.json';
 
 export type Role = 'intro' | 'rest' | 'ordinary' | 'tough' | 'finale';
 
@@ -152,6 +153,7 @@ export function levelSpec(levelNumber: number): LevelSpec {
   const { role } = base;
   const count = role === 'rest' ? 0 : role === 'intro' || level < 10 ? 1 : role === 'tough' || role === 'finale' ? 3 : 2;
   const mechanic = chapter === 3 ? 'lock' : chapter === 4 ? 'sleep' : chapter === 5 ? 'bomb' : chapter === 6 ? (['lock', 'sleep', 'bomb'] as const)[level % 3] : null;
+  if (role === 'intro') params.teach = true;
   if (mechanic === 'lock') params.lockCount = count;
   if (mechanic === 'sleep') params.sleepCount = count;
   if (mechanic === 'bomb') params.bombCount = count;
@@ -177,11 +179,19 @@ export function generateLevelFor(
 /** Seed picked per level by scripts/pick-seeds.ts so difficulty climbs smoothly inside a chapter. */
 const PICKED: Record<string, number> = pickedSeeds;
 
+/** Levels baked by scripts/build-levels.ts: the game reads these instead of generating on the device. */
+const BAKED = bakedLevels as unknown as Record<string, { level: Level; hearts?: number }>;
+
+/** The level the game plays as number `n`: the baked one, or generated on the spot past the baked range. */
+export function buildGameLevel(n: number): { level: Level; hearts?: number } | null {
+  return BAKED[n] ?? generateGameLevel(n);
+}
+
 /**
- * The level the game plays as number `n`: the picked seed if there is one, else the first base seed that meets the
+ * Generate level `n` the way it is baked: the picked seed if there is one, else the first base seed that meets the
  * curve, else any solvable level.
  */
-export function buildGameLevel(n: number): { level: Level; hearts?: number } | null {
+export function generateGameLevel(n: number): { level: Level; hearts?: number } | null {
   const picked = PICKED[n];
   if (picked !== undefined) {
     const r = generateLevelFor(n, picked);
