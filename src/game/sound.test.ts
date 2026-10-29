@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { MANIFEST, Sound, type SoundName } from '../../game/sound';
 
-interface Played { gain: number; stopped: boolean }
+interface Played { gain: number; stopped: boolean; args: number[] }
 
 function rig(opts: { failLoad?: string[]; missing?: boolean } = {}) {
   let t = 1000;
@@ -13,12 +13,12 @@ function rig(opts: { failLoad?: string[]; missing?: boolean } = {}) {
     resume: async () => {},
     createGain: () => ({ gain: { value: 1 }, connect: (n: unknown) => n }),
     createBufferSource: () => {
-      const src: { buffer: unknown; onended: (() => void) | null; connect: (g: { gain: { value: number } }) => unknown; start: () => void; stop: () => void } = {
+      const src: { buffer: unknown; onended: (() => void) | null; connect: (g: { gain: { value: number } }) => unknown; start: (...a: number[]) => void; stop: () => void } = {
         buffer: null, onended: null,
         connect(g) { return g; },
-        start() {}, stop() { rec.stopped = true; },
+        start(...a: number[]) { rec.args = a; }, stop() { rec.stopped = true; },
       };
-      const rec: Played = { gain: 0, stopped: false };
+      const rec: Played = { gain: 0, stopped: false, args: [] };
       played.push(rec);
       const origConnect = src.connect;
       src.connect = (g) => { rec.gain = g.gain.value; return origConnect(g); };
@@ -57,11 +57,34 @@ describe('sound system', () => {
   });
 
   it('a sound without a source file stays silent: no substitute is played', async () => {
+    const saved = MANIFEST.arrive.file;
+    MANIFEST.arrive.file = null;
+    try {
+      const r = rig();
+      await ready(r);
+      expect(r.sound.play('arrive')).toBe(false);
+      expect(r.loaded.some((u) => u.includes(saved!))).toBe(false);
+    } finally {
+      MANIFEST.arrive.file = saved;
+    }
+  });
+
+  it('select plays only the pop, skipping the silence at the start of the file', async () => {
     const r = rig();
     await ready(r);
-    expect(MANIFEST.select.file).toBeNull();
-    expect(r.sound.play('select')).toBe(false);
-    expect(r.loaded.some((u) => u.includes('select'))).toBe(false);
+    expect(MANIFEST.select.file).toBe('pop-cartoon.mp3');
+    expect(r.sound.play('select')).toBe(true);
+    expect(r.played[0].args).toEqual([0, 0.49, 0.15]);
+  });
+
+  it('a new select cuts the previous one, so rapid taps never pile up pops', async () => {
+    const r = rig();
+    await ready(r);
+    r.sound.play('select');
+    r.advance(100);
+    r.sound.play('select');
+    expect(r.played[0].stopped).toBe(true);
+    expect(r.played[1].stopped).toBe(false);
   });
 
   it('ignores a rapid repeat of the same sound but allows it after the cooldown', async () => {
@@ -151,5 +174,44 @@ describe('sound system', () => {
     for (const [name, e] of Object.entries(MANIFEST)) {
       if (e.file) expect(files.some((f) => f.endsWith(`/${e.file}`)), name).toBe(true);
     }
+  });
+
+  it('wall and collision use their own files and initial volumes', async () => {
+    const r = rig();
+    await ready(r);
+    expect(MANIFEST.wall).toMatchObject({ file: 'wall.mp3', volume: 0.22 });
+    expect(MANIFEST.collision).toMatchObject({ file: 'collision.mp3', volume: 0.25 });
+    expect(r.sound.play('wall')).toBe(true);
+    r.advance(1000);
+    expect(r.sound.play('collision')).toBe(true);
+  });
+
+  it('a collision cuts a select sound that is still sounding, and a repeat collision is rate limited', async () => {
+    const r = rig();
+    await ready(r);
+    r.sound.play('move');
+    r.advance(30);
+    expect(r.sound.play('collision')).toBe(true);
+    expect(r.played[0].stopped).toBe(true); // move cut
+    expect(r.sound.play('collision')).toBe(false); // inside cooldown
+  });
+
+  it('no more than four sounds at once, but the result sounds always get through', async () => {
+    const r = rig();
+    await ready(r);
+    const names: SoundName[] = ['move', 'rescued', 'wall', 'arrive', 'collision'];
+    const results = names.map((n) => { r.advance(200); return r.sound.play(n); });
+    expect(results.filter(Boolean).length).toBeLessThanOrEqual(4);
+    expect(r.sound.play('clear')).toBe(true);
+  });
+
+  it('prepare decodes before any gesture, but nothing plays until unlock', async () => {
+    const r = rig();
+    r.sound.prepare();
+    await r.sound.preload();
+    expect(r.sound.isReady('move')).toBe(true);
+    expect(r.sound.play('move')).toBe(false);
+    r.sound.unlock();
+    expect(r.sound.play('move')).toBe(true);
   });
 });

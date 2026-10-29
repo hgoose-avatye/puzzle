@@ -1,10 +1,11 @@
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
-import { demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
+import { crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
-import { PieceView, speciesOverride } from './animals';
+import { PieceView, runSpeed, speciesOverride } from './animals';
+import { Traffic } from '../src/game/traffic';
 import { Stage } from './stage';
 import { Fx } from './fx';
 import { sound } from './sound';
@@ -15,6 +16,8 @@ const stage = new Stage($('app'));
 const fx = new Fx(stage.scene);
 let state: GameState | null = null;
 let views = new Map<number, PieceView>();
+/** Animals on their way out: who may move how far this frame (first come, first served; later ones wait). */
+const traffic = new Traffic();
 let levelNumber = 1;
 /** Hearts the level started with, for the empty-heart outlines in the HUD. */
 let maxHearts = 0;
@@ -46,6 +49,7 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
     const dir = (k: string, d: Direction): Direction => (params.get(k) as Direction | null) ?? d;
     return { level: turnLevel(dir('from', 'up'), dir('to', 'right'), Number(params.get('len') ?? 2), Number(params.get('id') ?? 2)), hearts: 3 };
   }
+  if (params.get('demo') === 'cross') return { level: crossLevel(), hearts: 3 };
   if (DEMO) return { level: demoLevel(), hearts: 3 };
   return buildGameLevel(n);
 }
@@ -78,6 +82,8 @@ async function loadLevel(n: number): Promise<void> {
   clearPlayed = false;
   failPlayed = false;
   pendingExits.clear();
+  lastHit.clear();
+  traffic.clear();
   const built = buildLevel(n);
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
@@ -112,13 +118,31 @@ function pick(clientX: number, clientY: number): number | null {
 /** The logic state is cleared as soon as the last animal is tapped; the win only shows once every animal has left the board. */
 const anyRunning = (): boolean => [...views.values()].some((v) => v.running);
 
+const lastHit = new Map<number, number>();
+/** Same animal, repeated input: react at most once per 200 ms. */
+function cooled(id: number): boolean {
+  const now = performance.now();
+  if (now - (lastHit.get(id) ?? -Infinity) < 200) return false;
+  lastHit.set(id, now);
+  return true;
+}
+
+/** Hit another animal (standing or running): punch sound, flinch and a "!" on the animal that was tapped. */
+function collide(id: number, view: PieceView): void {
+  if (!cooled(id)) return;
+  view.collide();
+  sound.play('collision');
+}
+
 function onTap(id: number): void {
   if (!state || isCleared(state) || isFailed(state)) return;
   const result = tap(state, id);
-  state = result.state;
   const ev = result.event;
   const view = views.get(id);
+  state = result.state;
   if (ev.type === 'exited' && view) {
+    // The logic treats it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
+    traffic.add(id, view.track, view.bodyLen, view.headStart);
     sound.play('move');
     pendingExits.add(id);
     view.runOut(() => { if (state && isCleared(state) && !anyRunning()) showEnd(true); }, () => {
@@ -131,6 +155,8 @@ function onTap(id: number): void {
   } else if (ev.type === 'blocked' && view) {
     view.bump();
     fx.stars(view.headWorld());
+    if (ev.blockers.length > 0) collide(id, view);
+    else if (cooled(id)) sound.play('wall');
     for (const b of ev.blockers) views.get(b)?.pulse();
     if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
     $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : '앞이 막혔어요';
@@ -190,6 +216,10 @@ function showEnd(won: boolean): void {
   $('popupBtn').onclick = () => { if (won) { writeProgress(levelNumber + 1); void loadLevel(levelNumber + 1); } else void loadLevel(levelNumber); };
 }
 
+// Decode the sounds now; unlock on any gesture the browser counts as user activation (touch pointerdown may not count on iOS).
+sound.prepare();
+for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, () => sound.unlock(), { capture: true, passive: true });
+
 const canvas = stage.renderer.domElement;
 canvas.addEventListener('pointerdown', (e) => {
   sound.unlock();
@@ -216,9 +246,15 @@ const clock = new THREE.Clock();
   dustT += dt;
   const dust = dustT > 0.07;
   if (dust) dustT = 0;
+  for (const e of traffic.step(dt, runSpeed())) {
+    const v = views.get(e.id);
+    if (e.type === 'wait' && !e.quiet && v) collide(e.id, v);
+  }
+  for (const r of traffic.runners) views.get(r.id)?.setRun(r.s, r.state === 'waiting');
   for (const v of views.values()) {
+    if (v.running && !traffic.get(v.piece.id)) v.setRun(v.track.length, false); // stepped past the end this frame
     v.update(dt);
-    if (dust && v.running) fx.dust(v.headWorld());
+    if (dust && v.running && !v.isWaiting) fx.dust(v.headWorld());
   }
   fx.update(dt);
   stage.render();
@@ -238,6 +274,8 @@ void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgres
   tap: (id: number) => onTap(id),
   free: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id) && canExit(state!.level, p.id, state!.alive)).map((p) => p.id) : []),
   views: () => views,
+  runSpeed: () => runSpeed(),
+  traffic,
   scene: () => stage.scene,
   sound,
   ids: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id)).map((p) => p.id) : []),

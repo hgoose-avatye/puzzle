@@ -24,6 +24,15 @@ export function speciesFor(piece: Piece): string {
 }
 
 const RUN_SPEED = 7.5;
+/** Current running speed in cells/s (tests may override it with window.__runSpeed). */
+export const runSpeed = (): number => (typeof window === 'undefined' ? undefined : (window as unknown as { __runSpeed?: number }).__runSpeed) ?? RUN_SPEED;
+
+/** Collision "!" bubble: appear, hold, fade out. */
+const ALERT_IN = 0.08;
+const ALERT_HOLD = 0.2;
+const ALERT_OUT = 0.15;
+const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
+const FLINCH_TIME = 0.12;
 /** Corner radius (cells) of the rounded exit path. */
 const CORNER_RADIUS = 0.3;
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
@@ -48,6 +57,44 @@ function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
     ctx.strokeText(String(number), 128, 108);
     ctx.fillText(String(number), 128, 108);
   }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function alertTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext('2d')!;
+  ctx.beginPath();
+  ctx.arc(64, 64, 52, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffd84a';
+  ctx.fill();
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#fffbe8';
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 84px system-ui, sans-serif';
+  ctx.fillStyle = '#8a5a00';
+  ctx.fillText('!', 64, 70);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function dotsTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 64;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = 'rgba(255, 251, 232, 0.92)';
+  ctx.beginPath();
+  ctx.roundRect(4, 6, 120, 52, 26);
+  ctx.fill();
+  ctx.fillStyle = '#8a7a5a';
+  for (const x of [38, 64, 90]) { ctx.beginPath(); ctx.arc(x, 32, 7, 0, Math.PI * 2); ctx.fill(); }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -78,8 +125,8 @@ export class PieceView {
   readonly group = new THREE.Group();
   readonly piece: Piece;
   /** Exit path with rounded corners; every block is placed by arc length along it. */
-  private readonly track: Track;
-  private readonly headStart: number;
+  readonly track: Track;
+  readonly headStart: number;
   private readonly segments: THREE.Group[];
   private readonly plates: THREE.Mesh[] = [];
   private readonly markers: THREE.Object3D[] = [];
@@ -91,8 +138,15 @@ export class PieceView {
   private lastS = 0;
   private anim: Anim = { kind: 'idle' };
   private shakeT = 0;
+  private flinchT = 0;
+  private alertT = 0;
+  private alert: THREE.Sprite | null = null;
+  private dots: THREE.Sprite | null = null;
+  private waiting = false;
+  /** seconds the current wait has lasted */
+  private waitT = 0;
   private pulseT = 0;
-  private readonly bodyLen: number;
+  readonly bodyLen: number;
   private gatePos = new THREE.Vector3();
 
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
@@ -253,6 +307,74 @@ export class PieceView {
     this.anim = { kind: 'run', s: this.headStart, onDone, onExit };
   }
 
+  /** Running position, driven by the traffic system (see src/game/traffic.ts). */
+  setRun(sHead: number, waiting: boolean): void {
+    if (this.anim.kind !== 'run') return;
+    this.anim.s = sHead;
+    this.waiting = waiting;
+  }
+
+  /** Running but held up by an animal ahead. */
+  get isWaiting(): boolean { return this.anim.kind === 'run' && this.waiting; }
+
+  /** Collision with another animal: a short flinch and one "!" over the head. A repeat restarts the same bubble. */
+  collide(): void {
+    this.flinchT = FLINCH_TIME;
+    this.alertT = ALERT_TOTAL;
+    if (!this.alert) {
+      this.alert = new THREE.Sprite(new THREE.SpriteMaterial({ map: alertTexture(), transparent: true, depthTest: false }));
+      this.alert.renderOrder = 12;
+      this.group.add(this.alert);
+    }
+    this.updateAlert();
+  }
+
+  /** Small "…" over the head while waiting, once the "!" is gone. Built once, only shown or hidden afterwards. */
+  private updateDots(): void {
+    const show = this.isWaiting && this.alertT <= 0 && this.waitT > 0.15;
+    if (!show) { if (this.dots) this.dots.visible = false; return; }
+    if (!this.dots) {
+      this.dots = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotsTexture(), transparent: true, depthTest: false, opacity: 0.9 }));
+      this.dots.renderOrder = 12;
+      this.dots.scale.set(0.5, 0.25, 1);
+      this.group.add(this.dots);
+    }
+    const h = this.segments[0].position;
+    this.dots.position.set(h.x, 1.65 + Math.sin(this.clock * 3) * 0.03, h.z);
+    this.dots.visible = true;
+  }
+
+  /** True while the "!" is showing (for tests). */
+  get alerting(): boolean { return this.alertT > 0; }
+
+  private updateAlert(): void {
+    const a = this.alert;
+    if (!a) return;
+    if (this.alertT <= 0) { a.visible = false; return; }
+    const t = ALERT_TOTAL - this.alertT;
+    const k = t < ALERT_IN ? t / ALERT_IN : t < ALERT_IN + ALERT_HOLD ? 1 : 1 - (t - ALERT_IN - ALERT_HOLD) / ALERT_OUT;
+    const pop = t < ALERT_IN ? 0.7 + 0.5 * k : 1;
+    const h = this.segments[0].position;
+    a.visible = true;
+    a.position.set(h.x, 1.7 + (t / ALERT_TOTAL) * 0.25, h.z);
+    a.scale.setScalar(0.62 * pop);
+    (a.material as THREE.SpriteMaterial).opacity = Math.max(0, Math.min(1, k));
+  }
+
+  /**
+   * Short flinch; true while it is playing. Standing animals jiggle sideways; a running one only hops and nods, so it
+   * never shifts toward the animal it is waiting behind.
+   */
+  private flinch(dt: number, lateral = true): boolean {
+    if (this.flinchT <= 0) return false;
+    this.flinchT = Math.max(0, this.flinchT - dt);
+    const f = this.flinchT / FLINCH_TIME;
+    if (lateral) this.group.position.x = Math.sin(f * Math.PI * 3) * 0.08 * f;
+    else this.group.position.y = Math.sin(f * Math.PI) * 0.06;
+    this.segments[0].children[0].rotation.x = this.flinchT > 0 ? Math.sin((1 - f) * Math.PI) * 0.2 : 0;
+    return true;
+  }
+
   /** Blocked tap: shake sideways and nod the head. */
   bump(): void {
     this.shakeT = 0.4;
@@ -285,9 +407,13 @@ export class PieceView {
     this.clock += dt;
     this.zzzT += dt;
     if (this.zzz.visible) this.animateZzz();
+    if (this.alertT > 0) this.alertT = Math.max(0, this.alertT - dt);
     if (this.anim.kind === 'run') {
-      this.anim.s += ((window as unknown as { __runSpeed?: number }).__runSpeed ?? RUN_SPEED) * dt;
       this.place(this.anim.s);
+      this.waitT = this.waiting ? this.waitT + dt : 0;
+      this.flinch(dt, false);
+      this.updateAlert();
+      this.updateDots();
       if (this.anim.onExit && this.anim.s >= this.track.length - (this.bodyLen + 2)) {
         const exit = this.anim.onExit;
         this.anim.onExit = undefined;
@@ -297,12 +423,16 @@ export class PieceView {
         const done = this.anim.onDone;
         this.anim = { kind: 'done' };
         this.group.visible = false;
+        this.updateDots();
         done();
       }
       return;
     }
     this.place(this.lastS);
-    if (this.shakeT > 0) {
+    this.updateAlert();
+    if (this.flinch(dt)) {
+      // flinch owns the offset this frame
+    } else if (this.shakeT > 0) {
       this.shakeT = Math.max(0, this.shakeT - dt);
       this.group.position.x = Math.sin(this.shakeT * 70) * 0.07 * (this.shakeT / 0.4);
       this.segments[0].children[0].rotation.x = Math.sin((1 - this.shakeT / 0.4) * Math.PI) * 0.25;
