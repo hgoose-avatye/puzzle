@@ -72,7 +72,7 @@ function zzzTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-type Anim = { kind: 'idle' } | { kind: 'run'; s: number; onDone: () => void } | { kind: 'done' };
+type Anim = { kind: 'idle' } | { kind: 'run'; s: number; onDone: () => void; onExit?: () => void } | { kind: 'done' };
 
 export class PieceView {
   readonly group = new THREE.Group();
@@ -93,6 +93,7 @@ export class PieceView {
   private shakeT = 0;
   private pulseT = 0;
   private readonly bodyLen: number;
+  private gatePos = new THREE.Vector3();
 
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
@@ -192,6 +193,7 @@ export class PieceView {
     lintel.position.y = 0.78;
     g.add(lintel);
     g.position.copy(this.world(cell.x + v.x * 0.62, cell.y + v.y * 0.62));
+    this.gatePos = g.position.clone();
     g.traverse((o) => { o.castShadow = true; });
     return g;
   }
@@ -229,15 +231,26 @@ export class PieceView {
     });
   }
 
+  get running(): boolean { return this.anim.kind === 'run'; }
+
+  /** World position of the head block (for effects). */
+  headWorld(): THREE.Vector3 { return this.segments[0].position; }
+
+  /** World position of the exit gate. */
+  gateWorld(): THREE.Vector3 { return this.gatePos; }
+
+  get color(): number { return pieceColor(this.piece.id).getHex(); }
+
   setAsleep(asleep: boolean): void {
     this.zzz.visible = asleep;
   }
 
-  runOut(onDone: () => void): void {
+  /** `onExit` fires once when the head crosses the board edge (the gate); `onDone` when the whole body is gone. */
+  runOut(onDone: () => void, onExit?: () => void): void {
     this.chevrons.visible = false;
     this.pulseT = 0;
     for (const seg of this.segments) seg.scale.setScalar(1);
-    this.anim = { kind: 'run', s: this.headStart, onDone };
+    this.anim = { kind: 'run', s: this.headStart, onDone, onExit };
   }
 
   /** Blocked tap: shake sideways and nod the head. */
@@ -275,6 +288,11 @@ export class PieceView {
     if (this.anim.kind === 'run') {
       this.anim.s += ((window as unknown as { __runSpeed?: number }).__runSpeed ?? RUN_SPEED) * dt;
       this.place(this.anim.s);
+      if (this.anim.onExit && this.anim.s >= this.track.length - (this.bodyLen + 2)) {
+        const exit = this.anim.onExit;
+        this.anim.onExit = undefined;
+        exit();
+      }
       if (this.anim.s >= this.track.length) {
         const done = this.anim.onDone;
         this.anim = { kind: 'done' };

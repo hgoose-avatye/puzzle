@@ -8,10 +8,13 @@ import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, speciesOverride } from './animals';
 import { Stage } from './stage';
+import { Fx } from './fx';
+import { sound } from './sound';
 import * as THREE from 'three';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const stage = new Stage($('app'));
+const fx = new Fx(stage.scene);
 let state: GameState | null = null;
 let views = new Map<number, PieceView>();
 let levelNumber = 1;
@@ -71,6 +74,8 @@ async function loadLevel(n: number): Promise<void> {
   levelNumber = n;
   $('popup').hidden = true;
   $('msg').textContent = '';
+  fx.clear();
+  sound.resetCombo();
   const built = buildLevel(n);
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
@@ -108,16 +113,26 @@ function onTap(id: number): void {
   const ev = result.event;
   const view = views.get(id);
   if (ev.type === 'exited' && view) {
-    view.runOut(() => { if (state && isCleared(state)) showEnd(true); });
+    sound.run();
+    view.runOut(() => { if (state && isCleared(state)) showEnd(true); }, () => {
+      sound.rescued();
+      fx.burst(view.gateWorld(), view.color);
+    });
     $('msg').textContent = '';
   } else if (ev.type === 'blocked' && view) {
     view.bump();
+    sound.bump();
+    fx.stars(view.headWorld());
     for (const b of ev.blockers) views.get(b)?.pulse();
     if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
     $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : '앞이 막혔어요';
   }
   refreshHud();
-  if (isFailed(state)) showEnd(false);
+  if (isFailed(state)) {
+    if (state.exploded) sound.boom();
+    sound.fail();
+    showEnd(false);
+  }
 }
 
 const SEEN_KEY = 'animal-rescue-seen';
@@ -157,6 +172,10 @@ function showIntro(level: Level, hearts: boolean): void {
 
 function showEnd(won: boolean): void {
   if (!state) return;
+  if (won) {
+    sound.clear();
+    fx.confetti(new THREE.Vector3(0, 0, 0), 8);
+  }
   $('popup').hidden = false;
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
@@ -166,6 +185,7 @@ function showEnd(won: boolean): void {
 
 const canvas = stage.renderer.domElement;
 canvas.addEventListener('pointerdown', (e) => {
+  sound.unlock();
   pressed = pick(e.clientX, e.clientY);
   if (pressed !== null) views.get(pressed)?.showPath(true);
 });
@@ -179,16 +199,29 @@ canvas.addEventListener('pointercancel', () => {
   if (pressed !== null) views.get(pressed)?.showPath(false);
   pressed = null;
 });
-$('retry').addEventListener('click', () => void loadLevel(levelNumber));
+$('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 
+let dustT = 0;
 const clock = new THREE.Clock();
 (function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
-  for (const v of views.values()) v.update(dt);
+  dustT += dt;
+  const dust = dustT > 0.07;
+  if (dust) dustT = 0;
+  for (const v of views.values()) {
+    v.update(dt);
+    if (dust && v.running) fx.dust(v.headWorld());
+  }
+  fx.update(dt);
   stage.render();
   requestAnimationFrame(loop);
 })();
+
+const muteBtn = $('mute');
+const paintMute = (): void => { muteBtn.textContent = sound.muted ? '🔇' : '🔊'; };
+paintMute();
+muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
 
 const fromUrl = Number(new URLSearchParams(location.search).get('level'));
 void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgress());
@@ -198,6 +231,7 @@ void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgres
   tap: (id: number) => onTap(id),
   free: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id) && canExit(state!.level, p.id, state!.alive)).map((p) => p.id) : []),
   views: () => views,
+  scene: () => stage.scene,
   ids: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id)).map((p) => p.id) : []),
   screenOf: (id: number) => {
     const p = state?.level.pieces.find((q) => q.id === id);
