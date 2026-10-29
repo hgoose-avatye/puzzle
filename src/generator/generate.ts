@@ -19,8 +19,8 @@ export interface DifficultyTarget {
 }
 
 const DIRECTIONS: Direction[] = ['up', 'down', 'left', 'right'];
-const SAMPLES = 8;
-const DRAWS_PER_PIECE = 60;
+const SAMPLES = 40;
+const DRAWS_PER_PIECE = 400;
 const key = (c: Cell): string => `${c.x},${c.y}`;
 
 /**
@@ -48,7 +48,8 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
       const ray = new Set(exitRay(board, piece).map(key));
       if ([...ray].some((k) => occupied.has(k))) continue;
       valid++;
-      const score = rays.filter((r) => cells.some((c) => r.has(key(c)))).length;
+      const hitsLast = rays.length > 0 && cells.some((c) => rays[rays.length - 1].has(key(c)));
+      const score = (hitsLast ? 100 : 0) + rays.filter((r) => cells.some((c) => r.has(key(c)))).length;
       if (!best || score > best.score) best = { piece, ray, score };
     }
     if (!best) return null;
