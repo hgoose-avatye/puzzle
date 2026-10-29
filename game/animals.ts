@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { directionVector, exitCell, exitDirection, traceExit } from '../src/core/rules';
+import { directionVector, exitCell, exitDirection, headDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
 import { exitPath } from '../src/game/path';
 import { smoothPath, trackAt, type Track } from '../src/game/smooth';
@@ -33,6 +33,17 @@ const ALERT_HOLD = 0.2;
 const ALERT_OUT = 0.15;
 const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
 const FLINCH_TIME = 0.12;
+/** flat arrow shown over one-cell animals */
+const AHEAD_ARROW = (() => {
+  const sh = new THREE.Shape();
+  for (const [x, y] of [[0, 0.3], [0.22, 0.04], [0.09, 0.04], [0.09, -0.2], [-0.09, -0.2], [-0.09, 0.04], [-0.22, 0.04]] as const) {
+    if (x === 0 && y === 0.3) sh.moveTo(x, y);
+    else sh.lineTo(x, y);
+  }
+  sh.closePath();
+  // lie flat with the tip pointing along +z (the animal's heading after the holder's rotation)
+  return new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: false }).rotateX(Math.PI / 2);
+})();
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
@@ -162,6 +173,9 @@ export class PieceView {
   private readonly plates: THREE.Mesh[] = [];
   private readonly markers: THREE.Object3D[] = [];
   private readonly chevrons = new THREE.Group();
+  /** arrow over a one-cell animal showing which way it faces */
+  private readonly aheadMarks = new THREE.Group();
+  private readonly aheadDir = new THREE.Vector3();
   private readonly badge: THREE.Sprite;
   private readonly zzz = new THREE.Group();
   private zzzT = Math.random() * 6;
@@ -222,6 +236,8 @@ export class PieceView {
     this.group.add(this.zzz);
 
     this.buildChevrons(color);
+    this.buildAheadMarks(color);
+    this.group.add(this.aheadMarks);
     this.group.add(this.chevrons);
     const gate = this.buildGate(color);
     this.gate = gate;
@@ -253,6 +269,10 @@ export class PieceView {
     });
     const h = this.segments[0].position;
     this.badge.position.set(h.x, 2.1, h.z);
+    if (this.aheadMarks.children.length) {
+      const nudge = Math.max(0, Math.sin(this.clock * 3)) * 0.08;
+      this.aheadMarks.position.set(h.x + this.aheadDir.x * (0.06 + nudge), 1.32, h.z + this.aheadDir.z * (0.06 + nudge));
+    }
     this.zzz.position.set(h.x, 0, h.z);
   }
 
@@ -270,6 +290,25 @@ export class PieceView {
       prev = c;
     }
     this.chevrons.visible = false;
+  }
+
+  /**
+   * A small flat arrow floating over a one-cell animal, pointing the way it will run. From the camera an animal facing
+   * up the board shows only its back and a cube animal looks alike front and back; a floor mark in front of it is hidden
+   * by its own body or by the animal ahead, but a mark above the head is always in view. Hidden once it runs.
+   */
+  private buildAheadMarks(color: THREE.Color): void {
+    if (this.bodyLen !== 1) return;
+    const v = directionVector(headDirection(this.piece));
+    const rim = new THREE.Mesh(AHEAD_ARROW, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    rim.userData.sharedGeometry = true;
+    rim.scale.setScalar(1.25);
+    rim.position.y = -0.012;
+    const ink = new THREE.Mesh(AHEAD_ARROW, new THREE.MeshBasicMaterial({ color }));
+    ink.userData.sharedGeometry = true;
+    this.aheadMarks.add(rim, ink);
+    this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
+    this.aheadDir.set(v.x, 0, v.y);
   }
 
   private buildGate(color: THREE.Color): THREE.Object3D {
@@ -360,6 +399,7 @@ export class PieceView {
   /** `onExit` fires once when the head crosses the board edge (the gate); `onDone` when the whole body is gone. */
   runOut(onDone: () => void, onExit?: () => void): void {
     this.chevrons.visible = false;
+    this.aheadMarks.visible = false;
     this.pulseT = 0;
     for (const seg of this.segments) seg.scale.setScalar(1);
     this.anim = { kind: 'run', s: this.headStart, onDone, onExit };
@@ -482,7 +522,7 @@ export class PieceView {
       if (shared.has(o)) return;
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
-        mesh.geometry.dispose();
+        if (!mesh.userData.sharedGeometry) mesh.geometry.dispose();
         for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) m.dispose();
       }
       const sprite = o as THREE.Sprite;
