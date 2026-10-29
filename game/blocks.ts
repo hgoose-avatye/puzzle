@@ -2,309 +2,350 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 /**
- * Block animals, designed after docs/art-reference (09 size classes, 02 back views); the look of each species comes
- * from the GPT-made reference sketch (eyes, snouts, ears, patterns, tails, colors).
- *
- * An animal is first assembled in one frame (head at +z, N cells long) and then cut into one segment per cell by z,
- * so the path-following code can move the segments independently and the body bends at corners.
- * Geometry and materials are cached and shared by every animal: never dispose anything built here.
+ * Block animals after docs/art-reference 01 (front sheet), 02 (back sheet) and 09 (1/2/3-cell classes).
+ * +Z is the face direction. One segment per occupied cell, head first; parts are built directly in their own segment.
+ * Geometry and materials are cached and shared by every animal: never dispose them per animal.
  */
-
 export type AnimalType = 'penguin' | 'chick' | 'parrot' | 'cow' | 'pig' | 'fox' | 'tiger' | 'husky' | 'snake' | 'caterpillar' | 'dachshund' | 'crocodile';
+export const BLOCK_SPECIES: AnimalType[] = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'husky', 'snake', 'caterpillar', 'dachshund', 'crocodile'];
 
-const geoCache = new Map<string, THREE.BufferGeometry>();
-const matCache = new Map<number, THREE.MeshStandardMaterial>();
+const geometries = new Map<string, THREE.BufferGeometry>();
+const materials = new Map<number, THREE.MeshStandardMaterial>();
+function material(color: number): THREE.MeshStandardMaterial {
+  let m = materials.get(color);
+  if (!m) { m = new THREE.MeshStandardMaterial({ color, roughness: 0.78, metalness: 0 }); materials.set(color, m); }
+  return m;
+}
+function geometry(key: string, create: () => THREE.BufferGeometry): THREE.BufferGeometry {
+  let g = geometries.get(key);
+  if (!g) { g = create(); geometries.set(key, g); }
+  return g;
+}
+function mesh(g: THREE.Group, geo: THREE.BufferGeometry, color: number, x: number, y: number, z: number): THREE.Mesh {
+  const m = new THREE.Mesh(geo, material(color));
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  g.add(m);
+  return m;
+}
+function cube(g: THREE.Group, x: number, y: number, z: number, w: number, h: number, d: number, c: number, r = 0.13): THREE.Mesh {
+  const rad = Math.max(0.004, Math.min(r, w * 0.32, h * 0.32, d * 0.32));
+  return mesh(g, geometry(`box:${w}:${h}:${d}:${rad}`, () => new RoundedBoxGeometry(w, h, d, 3, rad)), c, x, y, z);
+}
+function oval(g: THREE.Group, x: number, y: number, z: number, sx: number, sy: number, sz: number, c: number): THREE.Mesh {
+  const m = mesh(g, geometry('sphere', () => new THREE.SphereGeometry(1, 20, 14)), c, x, y, z);
+  m.scale.set(sx, sy, sz);
+  return m;
+}
+function taper(g: THREE.Group, x: number, y: number, z: number, r: number, h: number, c: number, rz = 0): THREE.Mesh {
+  const m = mesh(g, geometry(`cone:${r}:${h}`, () => new THREE.ConeGeometry(r, h, 5)), c, x, y, z);
+  m.rotation.z = rz;
+  return m;
+}
+/** Four-sided pyramid with a flat face to the front: block-style pointed ears and spikes. */
+function pyramid(g: THREE.Group, x: number, y: number, z: number, r: number, h: number, c: number, rz = 0): THREE.Mesh {
+  const m = mesh(g, geometry(`pyr:${r}:${h}`, () => { const geo = new THREE.ConeGeometry(r, h, 4); geo.rotateY(Math.PI / 4); return geo; }), c, x, y, z);
+  m.rotation.z = rz;
+  return m;
+}
+function ring(g: THREE.Group, x: number, y: number, z: number, r: number, t: number, c: number): THREE.Mesh {
+  return mesh(g, geometry(`ring:${r}:${t}`, () => new THREE.TorusGeometry(r, t, 10, 20)), c, x, y, z);
+}
 
-function mat(c: number): THREE.MeshStandardMaterial {
-  if (!matCache.has(c)) matCache.set(c, new THREE.MeshStandardMaterial({ color: c, roughness: 0.88, metalness: 0 }));
-  return matCache.get(c)!;
-}
-function cached(key: string, make: () => THREE.BufferGeometry): THREE.BufferGeometry {
-  if (!geoCache.has(key)) geoCache.set(key, make());
-  return geoCache.get(key)!;
-}
-function add(g: THREE.Group, geo: THREE.BufferGeometry, c: number, x: number, y: number, z: number): THREE.Mesh {
-  const o = new THREE.Mesh(geo, mat(c));
-  o.position.set(x, y, z);
-  o.castShadow = true;
-  o.receiveShadow = true;
-  g.add(o);
-  return o;
-}
-function box(g: THREE.Group, x: number, y: number, z: number, w: number, h: number, d: number, c: number, r = 0.12): THREE.Mesh {
-  const rr = Math.min(r, w * 0.3, h * 0.3, d * 0.3);
-  return add(g, cached(`b${w}|${h}|${d}|${rr}`, () => new RoundedBoxGeometry(w, h, d, 3, rr)), c, x, y, z);
-}
-function ball(g: THREE.Group, x: number, y: number, z: number, sx: number, sy: number, sz: number, c: number): THREE.Mesh {
-  const o = add(g, cached('sphere', () => new THREE.SphereGeometry(1, 16, 12)), c, x, y, z);
-  o.scale.set(sx, sy, sz);
-  return o;
-}
-function cone(g: THREE.Group, x: number, y: number, z: number, r: number, h: number, c: number, rot = 0): THREE.Mesh {
-  const o = add(g, cached(`c${r}|${h}`, () => new THREE.ConeGeometry(r, h, 5)), c, x, y, z);
-  o.rotation.z = rot;
-  return o;
-}
-function eyes(g: THREE.Group, y: number, z: number, sep = 0.24, scale = 1): void {
-  for (const s of [-1, 1]) {
-    ball(g, s * sep, y, z, 0.17 * scale, 0.205 * scale, 0.12 * scale, 0xffffff);
-    ball(g, s * sep + 0.045, y - 0.02, z + 0.085 * scale, 0.088 * scale, 0.112 * scale, 0.07 * scale, 0x242333);
-    ball(g, s * sep + 0.075, y + 0.045, z + 0.125 * scale, 0.03 * scale, 0.03 * scale, 0.02 * scale, 0xffffff);
+const WHITE = 0xfffcfa;
+const PUPIL = 0x33231e;
+/** Eyes lie flat on the face (reference 01): a big white disc, a big dark-brown pupil, a small highlight. */
+function eyes(g: THREE.Group, fz: number, y: number, spread = 0.23, s = 1): void {
+  for (const sx of [-1, 1]) {
+    oval(g, sx * spread, y, fz + 0.006, 0.19 * s, 0.22 * s, 0.022, WHITE);
+    oval(g, sx * spread, y - 0.012, fz + 0.02, 0.13 * s, 0.155 * s, 0.02, PUPIL);
+    oval(g, sx * spread + 0.045 * s, y + 0.05 * s, fz + 0.034, 0.04 * s, 0.045 * s, 0.012, 0xffffff);
   }
 }
-function feet(g: THREE.Group, length: number, color: number, offset = 0.31): void {
-  for (const z of [length / 2 - 0.22, -length / 2 + 0.22]) for (const x of [-offset, offset]) box(g, x, LEG_TOP / 2, z, 0.25, LEG_TOP, 0.28, color, 0.05).userData.leg = true;
-}
-function ear(g: THREE.Group, x: number, y: number, z: number, c: number, inner?: number): void {
-  box(g, x, y, z, 0.24, 0.31, 0.2, c, 0.07);
-  if (inner) box(g, x, y, z + 0.11, 0.13, 0.19, 0.035, inner, 0.03);
-}
-function tail(g: THREE.Group, z: number, c: number): void {
-  box(g, 0, 0.61, z, 0.23, 0.24, 0.35, c, 0.08);
+/** Short, thick legs (reference 09): they stand from the floor into the body. */
+const B0 = 0.26;
+function leg(g: THREE.Group, x: number, z: number, c: number, h = 0.32, w = 0.3): void {
+  cube(g, x, h / 2, z, w, h, w, c, 0.09);
 }
 
-interface Dim { w: number; h: number }
-/** The whole animal is built on the old layout (body base 0.09) and then lifted so the legs show, as in the reference. */
-const LIFT = 0.12;
-const LEG_TOP = 0.09 + LIFT + 0.1;
-const FLAT: Dim = { w: 1.0, h: 0.96 };
-/** Multi-cell flat animals: a head a little bigger than the body, so the face has volume. */
-const HEAD_FLAT: Dim = { w: 1.02, h: 0.98 };
-const BODY_FLAT: Dim = { w: 0.99, h: 0.95 };
-const BODY_BASE = 0.09;
+interface Frame { W: number; H: number; D: number; zc: number; fz: number; bz: number; top: number }
 
-/**
- * The spine: one rounded block per cell, close to a cube like in the reference. Neighbours overlap by `join` so a straight
- * animal has no gap; with join >= the corner radius the groove disappears (one continuous body), with less a shallow groove
- * remains, as between the cubes of the snake in the reference. The face end of the head and the rump of the tail stay put.
- */
-function spine(g: THREE.Group, n: number, color: (i: number) => number, head: Dim, bodyDim: Dim, r = 0.15, join = 0.16, y = BODY_BASE): void {
-  const zh = (n - 1) / 2;
-  for (let i = 0; i < n; i++) {
-    const d = i === 0 ? head : bodyDim;
-    const first = i === 0;
-    const last = i === n - 1;
-    const depth = n === 1 ? 0.98 : first || last ? 0.98 + join : 0.98 + join * 2;
-    const shift = n === 1 ? 0 : first ? -join / 2 : last ? join / 2 : 0;
-    // later segments are a hair smaller so equal side faces never overlap exactly (no z-fighting line at the joint)
-    const inset = 0.006 * i;
-    box(g, 0, y + d.h / 2, zh - i + shift, d.w - inset, d.h - inset, depth, color(i), r);
-  }
+function frame(i: number, n: number, headDim: [number, number], bodyDim: [number, number]): Frame {
+  const one = n === 1;
+  const head = i === 0;
+  const [W, H] = one ? [1.0, 0.98] : head ? headDim : bodyDim;
+  // Multi-cell parts reach a little past their cell so straight bodies show no gap; the head's face stays at z=.53.
+  const D = one ? 0.98 : head ? 1.13 : 1.12;
+  const zc = one || !head ? 0 : -0.035;
+  return { W, H, D, zc, fz: one ? 0.49 : 0.53, bz: one ? -0.49 : -0.56, top: B0 + H };
 }
-const topOf = (d: Dim): number => BODY_BASE + d.h;
 
-function build(type: AnimalType, n: 1 | 2 | 3): THREE.Group {
+function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
   const g = new THREE.Group();
-  const len = 0.98 + (n - 1);
-  const zh = (n - 1) / 2;
-  const front = len / 2;
-  const f = front + 0.02;
-  const flat = (c: number): void => (n === 1 ? spine(g, 1, () => c, FLAT, FLAT) : spine(g, n, () => c, HEAD_FLAT, BODY_FLAT, 0.17, 0.18));
+  const head = i === 0;
+  const last = i === n - 1;
+  const long = type === 'snake' || type === 'caterpillar' || type === 'dachshund' || type === 'crocodile';
+  const f = frame(i, n,
+    type === 'crocodile' ? [1.0, 0.8] : long ? [1.04, 1.0] : [1.04, 1.0],
+    type === 'crocodile' ? [0.94, 0.74] : long ? [0.94, 0.88] : [0.94, 0.9]);
+  const { W, H, D, zc, fz, bz, top } = f;
+  const yE = B0 + H * 0.55; // eye line
+  const block = (c: number, r = 0.18): THREE.Mesh => cube(g, 0, B0 + H / 2, zc, W, H, D, c, r);
+  /** Legs: one pair at the front of the head and one at the back of the tail; every segment for crawlers. */
+  const legsAt = (c: number, every = false, x = 0.3, h = 0.32): void => {
+    const zs = n === 1 || every ? [0.24, -0.24] : [head ? 0.24 : -0.24];
+    if (!every && n > 1 && !head && !last) return;
+    for (const sx of [-x, x]) for (const z of zs) leg(g, sx, z + zc, c, h);
+  };
 
   switch (type) {
-    case 'penguin':
-      flat(0x45414b);
-      box(g, 0, 0.55, f - 0.002, 0.78, 0.72, 0.055, 0xf5f1f6, 0.24);
-      eyes(g, 0.73, f + 0.04, 0.23);
-      ball(g, 0, 0.46, f + 0.17, 0.16, 0.13, 0.17, 0xffa22d);
-      ear(g, -0.53, 0.58, 0.05, 0x45414b);
-      ear(g, 0.53, 0.58, 0.05, 0x45414b);
-      feet(g, len, 0xffa229);
-      for (const x of [-0.12, 0, 0.12]) box(g, x, 1.13, -0.05, 0.15, 0.27, 0.17, 0x37323e, 0.07);
-      ball(g, 0, 0.42, -len / 2 - 0.1, 0.14, 0.13, 0.13, 0xcfd8e6); // back view: pale puff, like the reference
-      break;
-    case 'chick':
-      flat(0xffca49);
-      eyes(g, 0.55, f, 0.23);
-      ball(g, 0, 0.39, f + 0.16, 0.15, 0.13, 0.15, 0xf48728);
-      ear(g, -0.53, 0.54, 0, 0xffca44);
-      ear(g, 0.53, 0.54, 0, 0xffca44);
-      feet(g, len, 0xd98929);
-      for (const x of [-0.1, 0.08]) box(g, x, 1.13, -0.05, 0.18, 0.24, 0.2, 0xffd75b, 0.08);
-      box(g, 0, 0.5, -len / 2 - 0.07, 0.17, 0.16, 0.14, 0xf2b52e, 0.06); // back view: a tiny tail tuft
-      break;
-    case 'parrot':
-      flat(0xe95d3e);
-      eyes(g, 0.6, f, 0.25);
-      ball(g, 0, 0.43, f + 0.2, 0.18, 0.2, 0.22, 0x3d414a);
-      for (const x of [-0.54, 0.54]) {
-        box(g, x, 0.52, 0.05, 0.16, 0.46, 0.49, 0x1888c7, 0.06);
-        box(g, x, 0.65, 0.05, 0.17, 0.15, 0.45, 0xf6d54e, 0.04);
+    case 'penguin': {
+      const dark = 0x4b5263;
+      block(dark);
+      legsAt(0xf4a12c, false, 0.26, 0.24);
+      if (head) {
+        cube(g, 0, B0 + 0.42, fz - 0.005, 0.8, 0.68, 0.06, 0xf7f5f2, 0.22); // white face and chest
+        eyes(g, fz + 0.025, yE, 0.21);
+        cube(g, 0, B0 + 0.33, fz + 0.09, 0.22, 0.13, 0.16, 0xf5a128, 0.05); // beak
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.04), B0 + 0.42, zc - 0.02, 0.11, 0.42, 0.38, 0x3e4453, 0.06).rotation.z = sx * 0.18; // flippers
+        for (const [x, hh] of [[-0.1, 0.16], [0, 0.24], [0.1, 0.16]] as const) cube(g, x, top + hh / 2 - 0.02, zc - 0.08, 0.1, hh, 0.11, 0x3e4453, 0.04); // tuft
       }
-      feet(g, len, 0x823b2d);
-      for (const x of [-0.14, 0, 0.14]) box(g, x, 1.15, -0.04, 0.15, 0.3, 0.17, 0xee5638, 0.07);
-      for (const [x, c] of [[-0.1, 0x1888c7], [0.1, 0xf6d54e]] as const) box(g, x, 0.42, -len / 2 - 0.2, 0.12, 0.09, 0.46, c, 0.04).rotation.x = 0.25; // long tail feathers
+      if (last) oval(g, 0, B0 + 0.22, bz - 0.06, 0.14, 0.13, 0.12, 0xbfcbdd); // pale tail puff (02)
       break;
-    case 'cow':
-      flat(0xf4f0ee);
-      for (const [x, z, w, d] of [[-0.31, 0.2, 0.33, 0.43], [0.35, -0.34, 0.32, 0.48], [-0.05, -0.45, 0.37, 0.28]] as const) box(g, x, 1.04, z, w, 0.028, d, 0x46434b, 0.04);
-      for (const x of [-0.51, 0.51]) box(g, x, 0.7, -0.18, 0.05, 0.45, 0.55, 0x48434b, 0.02);
-      eyes(g, 0.55, f, 0.23);
-      box(g, 0, 0.38, f + 0.15, 0.51, 0.32, 0.18, 0xf6a2a3, 0.13);
-      for (const x of [-0.13, 0.13]) ball(g, x, 0.4, f + 0.255, 0.045, 0.055, 0.025, 0xb36d77);
-      for (const x of [-0.3, 0.3]) {
-        ear(g, x, 1.12, 0.44 + zh, 0x4d4950);
-        box(g, x, 1.21, 0.46 + zh, 0.14, 0.24, 0.17, 0xffddbe, 0.04);
+    }
+    case 'chick': {
+      const yellow = 0xffcf3f;
+      block(yellow);
+      legsAt(0xf0952a, false, 0.25, 0.24);
+      if (head) {
+        eyes(g, fz, yE, 0.23);
+        cube(g, 0, B0 + 0.4, fz + 0.07, 0.2, 0.14, 0.14, 0xf28c25, 0.05); // beak
+        for (const sx of [-1, 1]) oval(g, sx * 0.36, B0 + 0.36, fz + 0.01, 0.1, 0.06, 0.02, 0xf6a39c); // blush
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.04), B0 + 0.42, zc - 0.04, 0.12, 0.34, 0.36, 0xf7bc2a, 0.08); // wings
+        cube(g, -0.05, top + 0.1, zc, 0.12, 0.22, 0.14, yellow, 0.05);
+        cube(g, 0.08, top + 0.06, zc - 0.02, 0.12, 0.14, 0.14, yellow, 0.05); // head tuft
       }
-      feet(g, len, 0x4e4a4d);
-      tail(g, -len / 2 - 0.14, 0x4d4a4d);
+      if (last) cube(g, 0, B0 + 0.5, bz - 0.06, 0.18, 0.16, 0.14, 0xf7bc2a, 0.06);
       break;
-    case 'pig':
-      flat(0xf795a9);
-      eyes(g, 0.54, f, 0.23);
-      box(g, 0, 0.38, f + 0.14, 0.38, 0.28, 0.2, 0xe87990, 0.12);
-      for (const x of [-0.1, 0.1]) ball(g, x, 0.39, f + 0.25, 0.037, 0.048, 0.022, 0xaf4e65);
-      for (const x of [-0.31, 0.31]) ear(g, x, 1.11, 0.41 + zh, 0xf47f98, 0xe66884);
-      feet(g, len, 0x754447);
-      for (const x of [-0.5, 0.5]) ball(g, x, 0.63, -0.33, 0.015, 0.13, 0.19, 0xe76e88);
-      tail(g, -len / 2 - 0.13, 0xe97891);
-      break;
-    case 'fox':
-      flat(0xee8b3e);
-      box(g, 0, 0.34, f + 0.01, 0.83, 0.33, 0.07, 0xf9f4eb, 0.13);
-      eyes(g, 0.55, f, 0.22);
-      ball(g, 0, 0.39, f + 0.16, 0.12, 0.1, 0.14, 0x2b2930);
-      for (const x of [-0.34, 0.34]) {
-        cone(g, x, 1.34, zh + 0.3, 0.21, 0.5, 0xee8b3e, x < 0 ? 0.1 : -0.1);
-        cone(g, x, 1.3, zh + 0.34, 0.11, 0.3, 0x6a3a1e, x < 0 ? 0.1 : -0.1);
+    }
+    case 'parrot': {
+      const red = 0xe5452d;
+      block(red);
+      legsAt(0x6a3a2a, false, 0.25, 0.24);
+      if (head) {
+        eyes(g, fz, yE + 0.04, 0.25);
+        cube(g, 0, B0 + 0.42, fz + 0.1, 0.28, 0.26, 0.22, 0x50555f, 0.1); // hooked beak
+        cube(g, 0, B0 + 0.3, fz + 0.12, 0.16, 0.12, 0.14, 0x50555f, 0.05);
+        for (const sx of [-1, 1]) {
+          cube(g, sx * (W / 2 + 0.04), B0 + 0.42, zc - 0.02, 0.12, 0.44, 0.44, 0x2a7fd1, 0.07); // wings
+          cube(g, sx * (W / 2 + 0.06), B0 + 0.3, zc - 0.02, 0.1, 0.14, 0.42, 0xf5cf3e, 0.04);
+        }
+        for (const [x, hh] of [[-0.11, 0.2], [0, 0.32], [0.11, 0.2]] as const) cube(g, x, top + hh / 2 - 0.02, zc - 0.06, 0.11, hh, 0.12, 0xef5a3a, 0.05); // crest
       }
-      feet(g, len, 0x603e36);
-      box(g, 0, 0.78, -len / 2 - 0.25, 0.4, 0.4, 0.7, 0xf3a55b, 0.14).rotation.x = 0.55;
-      box(g, 0, 1.0, -len / 2 - 0.62, 0.42, 0.4, 0.26, 0xfaf7ee, 0.1).rotation.x = 0.55;
+      if (last) for (const [x, c] of [[-0.08, 0x2a7fd1], [0.08, 0xf5cf3e]] as const) cube(g, x, B0 + 0.2, bz - 0.2, 0.12, 0.08, 0.44, c, 0.03).rotation.x = 0.35;
       break;
-    case 'tiger':
-      flat(0xf5b935);
-      eyes(g, 0.55, f, 0.22);
-      box(g, 0, 0.34, f + 0.025, 0.63, 0.32, 0.075, 0xffe1a0, 0.11);
-      ball(g, 0, 0.39, f + 0.16, 0.11, 0.1, 0.12, 0x543a29);
-      for (const x of [-0.36, 0.36]) {
-        ball(g, x, 1.12, zh + 0.3, 0.19, 0.17, 0.12, 0xa76a29);
-        ball(g, x, 1.12, zh + 0.38, 0.1, 0.09, 0.05, 0xf5d27a);
+    }
+    case 'cow': {
+      const white = 0xf6f3f1;
+      const black = 0x37343b;
+      block(white);
+      legsAt(white);
+      if (head || last) for (const sx of [-0.3, 0.3]) for (const z of n === 1 ? [0.24, -0.24] : [head ? 0.24 : -0.24]) cube(g, sx, 0.05, z + zc, 0.31, 0.1, 0.31, black, 0.04); // hooves
+      // irregular black patches: overlapping rounded plates on the top and the sides (09)
+      const patch = (x: number, z: number, w: number, d: number, rot: number): void => { cube(g, x, top + 0.006, z + zc, w, 0.03, d, black, 0.06).rotation.y = rot; };
+      const side = (sx: number, y: number, z: number, h: number, d: number): void => { cube(g, sx * (W / 2 + 0.006), y, z + zc, 0.03, h, d, black, 0.06); };
+      if (head) {
+        patch(0.24, -0.12, 0.34, 0.4, 0.3); patch(0.32, 0.08, 0.2, 0.22, -0.4);
+        side(1, B0 + 0.62, -0.05, 0.36, 0.42);
+        cube(g, 0.24, B0 + 0.7, fz - 0.002, 0.34, 0.4, 0.04, black, 0.1); // patch around one eye
+        cube(g, 0, B0 + 0.24, fz + 0.05, 0.62, 0.32, 0.14, 0xf4a6a8, 0.12); // muzzle
+        for (const sx of [-1, 1]) oval(g, sx * 0.13, B0 + 0.26, fz + 0.125, 0.05, 0.06, 0.02, 0xc06d77);
+        eyes(g, fz + 0.03, yE + 0.04, 0.24);
+        for (const sx of [-1, 1]) {
+          cube(g, sx * (W / 2 + 0.1), top - 0.2, zc + 0.12, 0.22, 0.13, 0.17, black, 0.05); // ears
+          cube(g, sx * 0.26, top + 0.1, zc + 0.14, 0.12, 0.22, 0.12, 0xe8c9a0, 0.04).rotation.z = -sx * 0.25; // horns
+        }
+      } else {
+        patch(-0.2, 0.15, 0.4, 0.44, 0.4); patch(0.25, -0.2, 0.34, 0.36, -0.3); patch(-0.05, -0.38, 0.24, 0.18, 0.2);
+        side(-1, B0 + 0.5, 0.1, 0.4, 0.5); side(1, B0 + 0.6, -0.15, 0.3, 0.36);
       }
-      for (const z of [-0.53, -0.05, 0.46]) {
-        box(g, -0.26, 1.045, z, 0.13, 0.034, 0.27, 0x86522c, 0.025);
-        box(g, 0.26, 1.045, z, 0.13, 0.034, 0.27, 0x86522c, 0.025);
+      if (n === 1) { patch(-0.2, -0.2, 0.3, 0.3, 0.4); side(-1, B0 + 0.5, -0.1, 0.36, 0.4); }
+      if (last) {
+        cube(g, 0, B0 + 0.55, bz - 0.04, 0.07, 0.42, 0.07, white, 0.03).rotation.x = 0.15;
+        cube(g, 0, B0 + 0.32, bz - 0.08, 0.12, 0.14, 0.12, black, 0.05);
       }
-      for (const x of [-0.5, 0.5]) for (const z of [-0.4, 0.22]) box(g, x, 0.76, z, 0.028, 0.15, 0.2, 0x8b542b, 0.02);
-      feet(g, len, 0xb27c2c);
-      box(g, 0, 0.82, -len / 2 - 0.12, 0.16, 0.16, 0.7, 0xb87b26, 0.06).rotation.x = 0.8;
-      box(g, 0, 1.1, -len / 2 - 0.4, 0.17, 0.17, 0.2, 0x6b4423, 0.06).rotation.x = 0.8;
       break;
-    case 'husky':
-      flat(0x69656f);
-      box(g, 0, 0.36, f + 0.02, 0.79, 0.38, 0.07, 0xf4f2f3, 0.13);
-      eyes(g, 0.57, f, 0.23);
-      ball(g, 0, 0.39, f + 0.16, 0.11, 0.09, 0.12, 0x29252b);
-      for (const x of [-0.33, 0.33]) {
-        cone(g, x, 1.34, zh + 0.3, 0.21, 0.5, 0x66616c, x < 0 ? 0.1 : -0.1);
-        cone(g, x, 1.3, zh + 0.34, 0.11, 0.3, 0xcac3ca, x < 0 ? 0.1 : -0.1);
+    }
+    case 'pig': {
+      const pink = 0xf6a5b9;
+      block(pink);
+      legsAt(0x8c4a5c);
+      if (head) {
+        cube(g, 0, B0 + 0.3, fz + 0.06, 0.42, 0.28, 0.16, 0xf28aa4, 0.11); // snout
+        for (const sx of [-1, 1]) oval(g, sx * 0.09, B0 + 0.3, fz + 0.14, 0.04, 0.055, 0.02, 0xb85a72);
+        eyes(g, fz, yE + 0.04, 0.24);
+        for (const sx of [-1, 1]) cube(g, sx * 0.32, top + 0.03, zc + 0.3, 0.28, 0.08, 0.28, 0xf08aa2, 0.04).rotation.set(0.55, 0, -sx * 0.25); // ears folded forward
+      } else {
+        oval(g, W / 2 + 0.004, B0 + 0.55, 0.05, 0.02, 0.16, 0.2, 0xef93aa); // darker side spot
       }
-      feet(g, len, 0x4a464f);
-      box(g, 0, 0.26, f - 0.06, 0.88, 0.1, 0.13, 0xc3454c, 0.035);
-      ball(g, 0, 0.19, f + 0.12, 0.105, 0.105, 0.05, 0xe7ad3e);
-      box(g, 0, 0.82, -len / 2 - 0.1, 0.22, 0.22, 0.55, 0xdfe1e6, 0.08).rotation.x = 0.9;
-      box(g, 0, 1.04, -len / 2 - 0.28, 0.24, 0.24, 0.22, 0xffffff, 0.09).rotation.x = 0.9;
+      if (last) ring(g, 0, top - 0.1, bz - 0.14, 0.17, 0.055, 0xf08aa2).rotation.y = Math.PI / 3; // big curly tail loop
       break;
+    }
+    case 'fox': {
+      const orange = 0xf08b37;
+      const cream = 0xfaf3e6;
+      block(orange);
+      legsAt(0x5b3527);
+      for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.004), B0 + 0.12, zc, 0.03, 0.18, D - 0.3, cream, 0.06); // white belly line
+      if (head) {
+        for (const sx of [-1, 1]) cube(g, sx * 0.25, B0 + 0.24, fz - 0.003, 0.46, 0.38, 0.06, cream, 0.14); // cheeks
+        cube(g, 0, B0 + 0.24, fz + 0.06, 0.28, 0.2, 0.14, cream, 0.07); // muzzle
+        oval(g, 0, B0 + 0.33, fz + 0.14, 0.08, 0.06, 0.06, 0x2a2228);
+        eyes(g, fz + 0.03, yE + 0.04, 0.24);
+        for (const sx of [-1, 1]) {
+          pyramid(g, sx * 0.29, top + 0.28, zc - 0.02, 0.37, 0.64, orange, -sx * 0.1); // big triangle ears
+          pyramid(g, sx * 0.29, top + 0.22, zc + 0.13, 0.2, 0.42, cream, -sx * 0.1);
+          pyramid(g, sx * 0.32, top + 0.54, zc - 0.02, 0.12, 0.17, 0x5b3527, -sx * 0.1); // dark tips
+        }
+      }
+      if (last) {
+        cube(g, 0, top - 0.08, bz - 0.22, 0.48, 0.48, 0.72, orange, 0.2).rotation.x = 0.8; // bushy tail, up and back
+        cube(g, 0, top + 0.26, bz - 0.52, 0.44, 0.44, 0.3, cream, 0.16).rotation.x = 0.8; // white tip
+      }
+      break;
+    }
+    case 'tiger': {
+      const yellow = 0xf6b93a;
+      const stripe = 0x8b572a;
+      block(yellow);
+      legsAt(yellow);
+      // stripes run over the back and down both sides as one band
+      const bands = head ? (n === 1 ? [-0.25] : [-0.32]) : [0.28, 0, -0.28];
+      for (const z of bands) {
+        cube(g, 0, top + 0.006, z + zc, W * 0.62, 0.03, 0.1, stripe, 0.02);
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.006), top - 0.2, z + zc + 0.03, 0.03, 0.34, 0.1, stripe, 0.02);
+      }
+      if (head) {
+        cube(g, 0, top + 0.006, zc + 0.12, 0.09, 0.03, 0.4, stripe, 0.02); // forehead mark (01)
+        for (const z of [0.05, 0.2]) cube(g, 0, top + 0.006, zc + z, 0.34, 0.03, 0.07, stripe, 0.02);
+        cube(g, 0, B0 + 0.26, fz + 0.03, 0.5, 0.3, 0.1, 0xfff0c8, 0.12); // muzzle
+        oval(g, 0, B0 + 0.37, fz + 0.1, 0.1, 0.075, 0.06, 0x4a2d1c); // dark nose
+        eyes(g, fz + 0.02, yE + 0.05, 0.24);
+        for (const sx of [-1, 1]) {
+          oval(g, sx * 0.34, top + 0.06, zc + 0.12, 0.17, 0.15, 0.1, stripe); // round ears
+          oval(g, sx * 0.34, top + 0.05, zc + 0.2, 0.09, 0.08, 0.04, 0xfff0c8);
+        }
+      }
+      if (last) {
+        cube(g, 0, top - 0.12, bz - 0.12, 0.15, 0.15, 0.56, yellow, 0.06).rotation.x = 1.0; // tail up
+        cube(g, 0, top - 0.02, bz - 0.19, 0.17, 0.17, 0.07, stripe, 0.03).rotation.x = 1.0;
+        cube(g, 0, top + 0.16, bz - 0.3, 0.17, 0.17, 0.16, stripe, 0.06).rotation.x = 1.0;
+      }
+      break;
+    }
+    case 'husky': {
+      const gray = 0x6d6c78;
+      const white = 0xf6f6f6;
+      block(gray);
+      cube(g, 0, B0 + 0.19, zc, W + 0.008, 0.38, D - 0.03, white, 0.16); // white belly and flanks
+      legsAt(white);
+      if (head) {
+        cube(g, 0, B0 + 0.4, fz - 0.004, 0.86, 0.6, 0.06, white, 0.2); // wide white face
+        cube(g, 0, B0 + 0.78, fz - 0.003, 0.18, 0.3, 0.06, white, 0.06); // centre blaze
+        cube(g, 0, B0 + 0.27, fz + 0.05, 0.3, 0.2, 0.12, white, 0.07);
+        oval(g, 0, B0 + 0.35, fz + 0.12, 0.08, 0.06, 0.06, 0x24212a);
+        eyes(g, fz + 0.03, yE + 0.04, 0.24);
+        for (const sx of [-1, 1]) {
+          pyramid(g, sx * 0.29, top + 0.26, zc - 0.02, 0.35, 0.6, gray, -sx * 0.1); // big pointed ears
+          pyramid(g, sx * 0.29, top + 0.2, zc + 0.12, 0.19, 0.4, 0xd8d4dc, -sx * 0.1);
+        }
+        cube(g, 0, B0 + 0.08, fz - 0.02, W * 0.86, 0.09, 0.08, 0xd2403f, 0.03); // red collar
+        oval(g, 0, B0 + 0.02, fz + 0.04, 0.07, 0.07, 0.06, 0xe9b33f); // bell
+      }
+      if (last) {
+        cube(g, 0, top - 0.08, bz - 0.12, 0.26, 0.26, 0.5, gray, 0.1).rotation.x = 1.0; // curled tail
+        cube(g, 0, top + 0.16, bz - 0.24, 0.28, 0.26, 0.24, white, 0.1).rotation.x = 1.4;
+      }
+      break;
+    }
     case 'snake': {
-      const head: Dim = { w: 1.04, h: 1.0 };
-      const bodyDim: Dim = { w: 0.94, h: 0.88 };
-      spine(g, n, (i) => (i === 0 ? 0x52a85a : 0x469953), head, bodyDim, 0.16, 0.12);
-      for (let i = 0; i < n; i++) {
-        const d = i === 0 ? head : bodyDim;
-        box(g, 0, BODY_BASE + 0.1, zh - i, d.w + 0.004, 0.2, 0.96, 0xcfd85c, 0.08); // pale lower band, like the reference
-        if (i > 0) box(g, 0.0, topOf(d) + 0.005, zh - i, 0.22, 0.03, 0.22, 0xc6d64b, 0.02).rotation.y = Math.PI / 4;
+      block(head ? 0x56b65a : 0x4cae50, 0.17);
+      cube(g, 0, B0 + 0.1, zc, W + 0.008, 0.2, D - 0.04, 0xcbd85c, 0.08); // pale belly band
+      if (!head) for (const z of [0.2, -0.2]) cube(g, 0, top + 0.006, z, 0.2, 0.03, 0.2, 0xd9e05a, 0.02).rotation.y = Math.PI / 4; // back diamonds
+      if (head) {
+        cube(g, 0, B0 + 0.24, fz + 0.03, 0.9, 0.3, 0.12, 0xcbd85c, 0.1); // light chin
+        eyes(g, fz, yE + 0.12, 0.25, 1.05);
+        for (const sx of [-1, 1]) oval(g, sx * 0.07, B0 + 0.48, fz + 0.02, 0.03, 0.025, 0.02, 0x2a2a2a);
+        cube(g, 0, B0 + 0.2, fz + 0.28, 0.09, 0.04, 0.38, 0xe23d4c, 0.02); // tongue
+        for (const sx of [-1, 1]) cube(g, sx * 0.05, B0 + 0.2, fz + 0.5, 0.05, 0.04, 0.12, 0xe23d4c, 0.015).rotation.y = sx * 0.4;
       }
-      eyes(g, 0.78, front + 0.02, 0.27, 1.2);
-      box(g, 0, 0.25, front + 0.1, 0.96, 0.22, 0.26, 0xcfd85c, 0.1); // chin
-      ball(g, 0, 0.66, front + 0.08, 0.09, 0.07, 0.07, 0x39343e); // nose
-      box(g, 0, 0.27, front + 0.4, 0.12, 0.05, 0.5, 0xe9454f, 0.025); // tongue
-      for (const x of [-0.06, 0.06]) box(g, x, 0.27, front + 0.68, 0.06, 0.05, 0.14, 0xe9454f, 0.02);
       break;
     }
     case 'caterpillar': {
-      const head: Dim = { w: 1.04, h: 1.02 };
-      const bodyDim: Dim = { w: 0.94, h: 0.9 };
-      spine(g, n, (i) => (i === 0 ? 0xf58fa7 : 0xf6a1b4), head, bodyDim, 0.24, 0.12);
-      for (let i = 1; i < n; i++) {
-        for (const [x, z] of [[-0.25, 0.2], [0.25, -0.15], [0, -0.32]] as const) ball(g, x, topOf(bodyDim) + 0.005, zh - i + z, 0.1, 0.03, 0.1, 0xffc4cf);
-        for (const x of [-0.5, 0.5]) ball(g, x, 0.5, zh - i + 0.1, 0.03, 0.1, 0.1, 0xffc4cf);
+      block(head ? 0xf5899f : 0xf7a6ba, 0.22);
+      legsAt(0xb85570, true, 0.28, 0.26);
+      if (!head) {
+        for (const [x, z] of [[-0.22, 0.2], [0.24, -0.1], [-0.05, -0.3]] as const) oval(g, x, top + 0.004, z, 0.1, 0.02, 0.1, 0xffd3de);
+        for (const sx of [-1, 1]) oval(g, sx * (W / 2 + 0.004), B0 + 0.5, sx * 0.12, 0.02, 0.09, 0.09, 0xffd3de);
       }
-      eyes(g, 0.62, front + 0.02, 0.25, 1.15);
-      ball(g, 0, 0.36, front + 0.1, 0.16, 0.13, 0.14, 0xe5384e);
-      for (const x of [-0.22, 0.22]) {
-        box(g, x, topOf(head) + 0.12, zh - 0.07, 0.1, 0.34, 0.1, 0xe96e89, 0.04).rotation.z = x < 0 ? 0.2 : -0.2;
-        ball(g, x * 1.25, topOf(head) + 0.27, zh - 0.07, 0.09, 0.09, 0.09, 0xe5384e);
+      if (head) {
+        eyes(g, fz, yE + 0.02, 0.24);
+        oval(g, 0, B0 + 0.3, fz + 0.06, 0.12, 0.1, 0.1, 0xe33a52); // round nose
+        for (const sx of [-1, 1]) {
+          cube(g, sx * 0.2, top + 0.14, zc + 0.05, 0.08, 0.3, 0.08, 0xf07c95, 0.03).rotation.z = -sx * 0.2; // antennae
+          oval(g, sx * 0.24, top + 0.3, zc + 0.05, 0.09, 0.09, 0.09, 0xe33a52);
+        }
       }
-      feet(g, len, 0x9b4b61);
       break;
     }
     case 'dachshund': {
-      const head: Dim = { w: 1.04, h: 1.0 };
-      const bodyDim: Dim = { w: 0.94, h: 0.88 };
-      spine(g, n, () => 0xb66c43, head, bodyDim, 0.16, 0.12);
-      box(g, 0, 0.3, f + 0.1, 0.56, 0.36, 0.34, 0xf4bd65, 0.14); // muzzle
-      ball(g, 0, 0.46, f + 0.27, 0.13, 0.1, 0.1, 0x2b2930); // nose
-      eyes(g, 0.66, f, 0.23, 1.15);
-      for (const s of [-1, 1]) {
-        const e = box(g, s * 0.6, 0.36, f - 0.3, 0.22, 0.72, 0.5, 0x694536, 0.1); // long floppy ears hanging down the sides
-        e.rotation.z = s * 0.2;
+      const brown = 0xa9663b;
+      block(brown);
+      legsAt(0x6b3f25, false, 0.3, 0.26);
+      if (head) {
+        cube(g, 0, B0 + 0.3, fz + 0.12, 0.52, 0.34, 0.28, 0xe7b06a, 0.13); // muzzle
+        oval(g, 0, B0 + 0.42, fz + 0.27, 0.1, 0.08, 0.07, 0x2a2228);
+        eyes(g, fz, yE + 0.06, 0.24);
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.06), B0 + 0.44, zc + 0.05, 0.14, 0.64, 0.38, 0x6b3f25, 0.07).rotation.z = sx * 0.12; // long floppy ears
+        cube(g, 0, B0 + 0.12, zc - 0.48, W + 0.02, 0.14, 0.14, 0x3466b0, 0.04); // blue collar
       }
-      feet(g, len, 0x7c4d35);
-      box(g, 0, 0.4, f - 0.78, 1.0, 0.16, 0.2, 0x3466a1, 0.04); // collar between head and body
-      tail(g, -len / 2 - 0.18, 0x7c4b34);
+      if (last) cube(g, 0, top - 0.1, bz - 0.12, 0.13, 0.13, 0.5, brown, 0.05).rotation.x = 0.9; // tail up
       break;
     }
     case 'crocodile': {
-      const head: Dim = { w: 1.0, h: 0.8 };
-      const bodyDim: Dim = { w: 0.94, h: 0.74 };
-      spine(g, n, (i) => (i === 0 ? 0x4fa75b : 0x419c52), head, bodyDim, 0.14, 0.12);
-      for (let i = 0; i < n; i++) {
-        const d = i === 0 ? head : bodyDim;
-        box(g, 0, BODY_BASE + 0.09, zh - i, d.w + 0.004, 0.18, 0.96, 0xd2c75e, 0.07);
-        for (const x of [-0.24, 0.24]) cone(g, x, topOf(d) + 0.07, zh - i, 0.13, 0.23, 0x398c46);
+      const green = head ? 0x4caa58 : 0x45a554;
+      block(green, 0.14);
+      cube(g, 0, B0 + 0.09, zc, W + 0.008, 0.18, D - 0.04, 0xd6cf63, 0.07); // yellow belly
+      for (const sx of [-1, 1]) for (const z of [0.2, -0.2]) cube(g, sx * (W / 2 + 0.06), 0.12, z + zc, 0.22, 0.24, 0.26, 0x3b9248, 0.06); // short side legs
+      for (const sx of [-0.22, 0.22]) for (const z of head ? [-0.25] : [0.2, -0.2]) pyramid(g, sx, top + 0.08, z + zc, 0.1, 0.18, 0x2f8a40); // back spikes
+      if (head) {
+        cube(g, 0, B0 + 0.3, fz + 0.32, 0.84, 0.3, 0.7, green, 0.12); // long upper jaw
+        cube(g, 0, B0 + 0.12, fz + 0.32, 0.82, 0.12, 0.68, 0xd6cf63, 0.05); // lower jaw
+        for (const sx of [-1, 1]) for (const z of [0.1, 0.27, 0.44, 0.6]) taper(g, sx * 0.4, B0 + 0.17, fz + z, 0.045, 0.12, 0xf8f1dc, Math.PI); // teeth
+        for (const sx of [-1, 1]) oval(g, sx * 0.14, B0 + 0.46, fz + 0.63, 0.04, 0.03, 0.03, 0x2a6a34); // nostrils
+        for (const sx of [-1, 1]) {
+          oval(g, sx * 0.26, top + 0.06, zc + 0.25, 0.17, 0.16, 0.17, green); // eye bumps
+          oval(g, sx * 0.26, top + 0.1, zc + 0.39, 0.13, 0.13, 0.03, WHITE);
+          oval(g, sx * 0.26, top + 0.09, zc + 0.415, 0.08, 0.09, 0.02, PUPIL);
+        }
       }
-      box(g, 0, 0.4, front + 0.34, 0.82, 0.34, 0.8, 0x4fa75b, 0.13); // long upper jaw
-      box(g, 0, 0.22, front + 0.34, 0.8, 0.14, 0.76, 0xd8ce74, 0.06); // pale lower jaw
-      for (const x of [-0.42, 0.42]) for (const dz of [0.0, 0.17, 0.34, 0.51, 0.68]) cone(g, x, 0.3, front + 0.1 + dz, 0.065, 0.17, 0xf8f1dc, Math.PI);
-      for (const x of [-0.16, 0.16]) ball(g, x, 0.46, front + 0.72, 0.045, 0.04, 0.04, 0x2a6a34); // nostrils
-      for (const x of [-0.27, 0.27]) {
-        ball(g, x, topOf(head) + 0.04, zh + 0.15, 0.19, 0.19, 0.19, 0x4fa75b);
-        ball(g, x, topOf(head) + 0.1, zh + 0.22, 0.14, 0.15, 0.1, 0xffffff);
-        ball(g, x + 0.03 * Math.sign(x), topOf(head) + 0.1, zh + 0.29, 0.08, 0.1, 0.05, 0x242333);
-      }
-      for (const x of [-0.58, 0.58]) for (const z of [-0.76, 0.76]) box(g, x, 0.2, z, 0.22, 0.2, 0.34, 0x398b49, 0.05);
+      if (last) cube(g, 0, B0 + 0.24, bz - 0.25, 0.4, 0.3, 0.5, green, 0.1); // tail stub
       break;
     }
   }
-  for (const m of g.children) if (!m.userData.leg) m.position.y += LIFT;
   return g;
 }
 
-export const BLOCK_SPECIES: AnimalType[] = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'husky', 'snake', 'caterpillar', 'dachshund', 'crocodile'];
-
-/**
- * One segment per cell, head first. Each segment is a Group whose single child holds the meshes, so bob and nod never
- * fight the path placement. A part belongs to the segment whose cell contains its z; parts in front of the head or
- * behind the tail go to the first and last segment.
- */
+/** One segment per occupied cell, head first; each root has exactly one animated child. */
 export function buildAnimal(species: string, cells: number): THREE.Group[] {
-  const type = (BLOCK_SPECIES as string[]).includes(species) ? (species as AnimalType) : 'cow';
-  const n = Math.max(1, Math.min(3, cells)) as 1 | 2 | 3;
-  const whole = build(type, n);
-  const zh = (n - 1) / 2;
-  const segments: THREE.Group[] = [];
-  const parts: THREE.Group[] = [];
-  for (let i = 0; i < n; i++) {
+  const type: AnimalType = BLOCK_SPECIES.includes(species as AnimalType) ? (species as AnimalType) : 'cow';
+  const n = Math.max(1, Math.min(3, Math.floor(Number.isFinite(cells) ? cells : 1)));
+  return Array.from({ length: n }, (_, i) => {
     const root = new THREE.Group();
-    const part = new THREE.Group();
-    root.add(part);
-    segments.push(root);
-    parts.push(part);
-  }
-  for (const m of [...whole.children]) {
-    const idx = Math.max(0, Math.min(n - 1, Math.round(zh - m.position.z)));
-    m.position.z -= zh - idx;
-    parts[idx].add(m);
-  }
-  return segments;
+    const animated = new THREE.Group();
+    animated.add(buildPart(type, i, n));
+    root.add(animated);
+    return root;
+  });
 }
