@@ -1,11 +1,11 @@
 import { createRng } from '../src/core/rng';
 import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
-import { demoLevel } from './demo';
+import { demoLevel, turnLevel } from './demo';
 import { generateLevelFor, levelSpec } from '../src/curve/curve';
 import { generateMatching } from '../src/generator/generate';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
-import type { Level } from '../src/core/types';
+import type { Direction, Level } from '../src/core/types';
 import { PieceView, loadSpecies, speciesFor } from './animals';
 import { Stage } from './stage';
 import * as THREE from 'three';
@@ -22,9 +22,14 @@ const PROGRESS_KEY = 'animal-rescue-progress';
 const readProgress = (): number => { try { return Math.max(1, Number(localStorage.getItem(PROGRESS_KEY) ?? 1)); } catch { return 1; } };
 const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS_KEY, String(n)); } catch { /* ignore */ } };
 
-const DEMO = new URLSearchParams(location.search).has('demo');
+const params = new URLSearchParams(location.search);
+const DEMO = params.has('demo');
 
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
+  if (params.get('demo') === 'turn') {
+    const dir = (k: string, d: Direction): Direction => (params.get(k) as Direction | null) ?? d;
+    return { level: turnLevel(dir('from', 'up'), dir('to', 'right'), Number(params.get('len') ?? 2), Number(params.get('id') ?? 2)), hearts: 3 };
+  }
   if (DEMO) return { level: demoLevel(), hearts: 3 };
   for (let seed = 1; seed <= 5; seed++) {
     const r = generateLevelFor(n, seed);
@@ -185,6 +190,7 @@ void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgres
 (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   free: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id) && canExit(state!.level, p.id, state!.alive)).map((p) => p.id) : []),
+  views: () => views,
   ids: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id)).map((p) => p.id) : []),
   screenOf: (id: number) => {
     const p = state?.level.pieces.find((q) => q.id === id);

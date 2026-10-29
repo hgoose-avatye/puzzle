@@ -28,6 +28,8 @@ export function loadSpecies(name: string): Promise<GLTF> {
 
 const MODEL_SCALE = 0.7;
 const RUN_SPEED = 7.5;
+/** Corner radius (cells) of the rounded exit path. Tighter looks like an L but pinches a body wider than 2x radius. */
+const CORNER_RADIUS = 0.3;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
 
@@ -61,6 +63,8 @@ function makeAnimal(gltf: GLTF, cells: number, species: string): Stretched {
       if ((o as THREE.Mesh).isMesh) body = o as THREE.Mesh;
       return;
     }
+    // Only real parts (legs, tail, wings, snout) follow the path; the containers around the model must stay put.
+    if (!(o as THREE.Mesh).isMesh) return;
     const z = o.position.z;
     const by = z <= -0.1 ? extra : Math.abs(z) < 0.1 ? extra / 2 : 0;
     if (by > 0) shifted.push({ node: o, shift: by * MODEL_SCALE });
@@ -188,7 +192,7 @@ export class PieceView {
   constructor(private readonly level: Level, piece: Piece, gltf: GLTF, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
     this.bodyLen = piece.cells.length;
-    this.track = smoothPath(exitPath(level, piece));
+    this.track = smoothPath(exitPath(level, piece), CORNER_RADIUS);
     this.headStart = this.track.vertexU[this.bodyLen - 1];
     const color = pieceColor(piece.id);
 
@@ -314,7 +318,8 @@ export class PieceView {
     for (const t of st.tracked) {
       const d = -t.z0 * MODEL_SCALE + t.shift;
       const l = toLocal(d, 0);
-      t.holder.position.set(l.x, 0, l.z - t.z0);
+      // the node keeps its own z offset inside the holder, which is rotated by `rel`, so take it off along that heading
+      t.holder.position.set(l.x - t.z0 * Math.sin(l.rel), 0, l.z - t.z0 * Math.cos(l.rel));
       t.holder.rotation.y = l.rel;
     }
   }

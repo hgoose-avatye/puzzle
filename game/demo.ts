@@ -1,4 +1,4 @@
-import type { Level } from '../src/core/types';
+import type { Direction, Level } from '../src/core/types';
 
 /**
  * Hand-made scene for eyeballing every body type: ids pick the species (see speciesFor).
@@ -18,5 +18,20 @@ export function demoLevel(): Level {
       { id: 5, cells: [{ x: 7, y: 6 }, { x: 7, y: 7 }, { x: 7, y: 8 }] },
     ],
     arrows: [{ x: 1, y: 3, dir: 'right' }, { x: 6, y: 9, dir: 'up' }],
+  };
+}
+
+const V = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } } as const;
+
+/** One animal heading `from`, bent onto `to` by an arrow tile two cells ahead. Species follows from id and `len`. */
+export function turnLevel(from: Direction, to: Direction, len: number, id: number): Level {
+  const v = V[from];
+  const head = { x: 4, y: 4 };
+  const cells = Array.from({ length: len }, (_, k) => ({ x: head.x - v.x * k, y: head.y - v.y * k }));
+  return {
+    width: 9,
+    height: 9,
+    pieces: [{ id, cells }],
+    arrows: [{ x: head.x + v.x * 2, y: head.y + v.y * 2, dir: to }],
   };
 }
