@@ -20,6 +20,11 @@ let views = new Map<number, PieceView>();
 let levelNumber = 1;
 let loadToken = 0;
 let pressed: number | null = null;
+/** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
+/** Animals that were sent out and have not crossed their gate yet. */
+const pendingExits = new Set<number>();
+let clearPlayed = false;
+let failPlayed = false;
 const PROGRESS_KEY = 'animal-rescue-progress';
 
 const readProgress = (): number => { try { return Math.max(1, Number(localStorage.getItem(PROGRESS_KEY) ?? 1)); } catch { return 1; } };
@@ -75,7 +80,10 @@ async function loadLevel(n: number): Promise<void> {
   $('popup').hidden = true;
   $('msg').textContent = '';
   fx.clear();
-  sound.resetCombo();
+  sound.stopAll();
+  clearPlayed = false;
+  failPlayed = false;
+  pendingExits.clear();
   const built = buildLevel(n);
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
@@ -116,15 +124,17 @@ function onTap(id: number): void {
   const ev = result.event;
   const view = views.get(id);
   if (ev.type === 'exited' && view) {
-    sound.run();
+    sound.play('move');
+    pendingExits.add(id);
     view.runOut(() => { if (state && isCleared(state) && !anyRunning()) showEnd(true); }, () => {
-      sound.rescued();
+      pendingExits.delete(id);
+      // the last animal's exit is covered by the clear sound
+      if (!(state && isCleared(state) && pendingExits.size === 0)) sound.play('rescued');
       fx.burst(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
   } else if (ev.type === 'blocked' && view) {
     view.bump();
-    sound.bump();
     fx.stars(view.headWorld());
     for (const b of ev.blockers) views.get(b)?.pulse();
     if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
@@ -132,8 +142,7 @@ function onTap(id: number): void {
   }
   refreshHud();
   if (isFailed(state)) {
-    if (state.exploded) sound.boom();
-    sound.fail();
+    if (!failPlayed) { failPlayed = true; sound.play('gameover'); }
     showEnd(false);
   }
 }
@@ -176,7 +185,7 @@ function showIntro(level: Level, hearts: boolean): void {
 function showEnd(won: boolean): void {
   if (!state) return;
   if (won) {
-    sound.clear();
+    if (!clearPlayed) { clearPlayed = true; sound.play('clear'); }
     fx.confetti(new THREE.Vector3(0, 0, 0), 8);
   }
   $('popup').hidden = false;
@@ -190,7 +199,7 @@ const canvas = stage.renderer.domElement;
 canvas.addEventListener('pointerdown', (e) => {
   sound.unlock();
   pressed = pick(e.clientX, e.clientY);
-  if (pressed !== null) views.get(pressed)?.showPath(true);
+  if (pressed !== null) { views.get(pressed)?.showPath(true); sound.play('select'); }
 });
 canvas.addEventListener('pointerup', (e) => {
   const id = pick(e.clientX, e.clientY);
@@ -235,6 +244,7 @@ void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgres
   free: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id) && canExit(state!.level, p.id, state!.alive)).map((p) => p.id) : []),
   views: () => views,
   scene: () => stage.scene,
+  sound,
   ids: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id)).map((p) => p.id) : []),
   screenOf: (id: number) => {
     const p = state?.level.pieces.find((q) => q.id === id);

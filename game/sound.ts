@@ -1,108 +1,141 @@
 /**
- * Sound effects synthesized with Web Audio: no asset files. The context is created on the first user gesture
- * (browser autoplay rules), and a mute flag is persisted. Every method is safe to call before that and when muted.
+ * Sound-effect system. Game code only uses event names (`SoundName`); file paths, volumes and anti-overlap
+ * rules live here. A name whose `file` is null (not obtained yet) plays nothing: no substitute sound is used.
+ * Loading failures are swallowed so the game never depends on audio. The AudioContext is created on the first
+ * user gesture (autoplay rules) and the mute flag is persisted.
  */
+export type SoundName = 'select' | 'move' | 'arrive' | 'rescued' | 'clear' | 'gameover';
+
+interface Entry {
+  /** file under /assets/sounds, or null when the source file has not been obtained */
+  file: string | null;
+  /** initial volume (0-1), tune by ear */
+  volume: number;
+  /** ignore a repeat of the same sound within this many ms */
+  cooldown: number;
+}
+
+export const MANIFEST: Record<SoundName, Entry> = {
+  select: { file: null, volume: 0.3, cooldown: 80 }, // Pixabay "Pop Cartoon": not downloadable here (see docs/sound-credits.md)
+  move: { file: 'move.mp3', volume: 0.18, cooldown: 60 },
+  arrive: { file: 'arrive.mp3', volume: 0.22, cooldown: 120 },
+  rescued: { file: 'rescued.mp3', volume: 0.3, cooldown: 90 },
+  clear: { file: 'clear.mp3', volume: 0.45, cooldown: 1000 },
+  gameover: { file: 'gameover.mp3', volume: 0.3, cooldown: 1000 },
+};
+
+/** Sounds that must not play while a higher-priority one is still sounding. */
+const SUPPRESSED_BY: Partial<Record<SoundName, SoundName[]>> = {
+  arrive: ['rescued', 'clear', 'gameover'],
+  rescued: ['clear', 'gameover'],
+  move: ['clear', 'gameover'],
+};
+
 const MUTE_KEY = 'animal-rescue-muted';
 
-class Sound {
+export interface SoundDeps {
+  createContext: () => AudioContext | null;
+  /** fetch the raw bytes of a sound file */
+  load: (url: string) => Promise<ArrayBuffer>;
+  now: () => number;
+  storage?: Pick<Storage, 'getItem' | 'setItem'>;
+  baseUrl?: string;
+}
+
+export class Sound {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
-  muted = ((): boolean => { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; } })();
-  /** Successive rescues without a blocked tap raise the pitch, like a combo. */
-  private combo = 0;
+  private readonly buffers = new Map<SoundName, AudioBuffer>();
+  private readonly lastAt = new Map<SoundName, number>();
+  private readonly playingUntil = new Map<SoundName, number>();
+  private readonly active = new Set<AudioBufferSourceNode>();
+  private readonly volumes = new Map<SoundName, number>();
+  muted: boolean;
 
-  /** Call from a pointer/click handler. */
+  constructor(private readonly deps: SoundDeps) {
+    let m = false;
+    try { m = deps.storage?.getItem(MUTE_KEY) === '1'; } catch { /* ignore */ }
+    this.muted = m;
+  }
+
+  /** Call from a pointer/click handler: creates the context and starts loading once. */
   unlock(): void {
     if (this.ctx) { void this.ctx.resume(); return; }
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return;
-    this.ctx = new AC();
+    this.ctx = this.deps.createContext();
+    if (!this.ctx) return;
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.5;
+    this.master.gain.value = 1;
     this.master.connect(this.ctx.destination);
+    void this.ctx.resume();
+    void this.preload();
+  }
+
+  /** Decode every available file; a failure only leaves that sound silent. */
+  async preload(): Promise<void> {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const base = this.deps.baseUrl ?? '/assets/sounds/';
+    await Promise.all((Object.keys(MANIFEST) as SoundName[]).map(async (name) => {
+      const file = MANIFEST[name].file;
+      if (!file) return;
+      try {
+        this.buffers.set(name, await ctx.decodeAudioData(await this.deps.load(base + file)));
+      } catch { /* missing or undecodable file: stay silent */ }
+    }));
   }
 
   setMuted(m: boolean): void {
     this.muted = m;
-    try { localStorage.setItem(MUTE_KEY, m ? '1' : '0'); } catch { /* ignore */ }
+    try { this.deps.storage?.setItem(MUTE_KEY, m ? '1' : '0'); } catch { /* ignore */ }
+    if (m) this.stopAll();
   }
 
-  private tone(freq: number, dur: number, type: OscillatorType, vol: number, delay = 0, slideTo?: number): void {
-    if (this.muted || !this.ctx || !this.master) return;
-    const t = this.ctx.currentTime + delay;
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g).connect(this.master);
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
+  /** Adjust one sound's volume while listening (0-1). */
+  setVolume(name: SoundName, v: number): void {
+    this.volumes.set(name, Math.max(0, Math.min(1, v)));
   }
 
-  private noise(dur: number, vol: number, from: number, to: number): void {
-    if (this.muted || !this.ctx || !this.master) return;
-    const n = Math.floor(this.ctx.sampleRate * dur);
-    const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  /** True when this sound has a decoded buffer and would be heard. */
+  isReady(name: SoundName): boolean { return this.buffers.has(name); }
+
+  play(name: SoundName): boolean {
+    if (this.muted || !this.ctx || !this.master) return false;
+    const buf = this.buffers.get(name);
+    if (!buf) return false;
+    const now = this.deps.now();
+    if (now - (this.lastAt.get(name) ?? -Infinity) < MANIFEST[name].cooldown) return false;
+    for (const higher of SUPPRESSED_BY[name] ?? []) if ((this.playingUntil.get(higher) ?? 0) > now) return false;
+    this.lastAt.set(name, now);
+    this.playingUntil.set(name, now + buf.duration * 1000);
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
-    const f = this.ctx.createBiquadFilter();
-    f.type = 'bandpass';
-    const t = this.ctx.currentTime;
-    f.frequency.setValueAtTime(from, t);
-    f.frequency.exponentialRampToValueAtTime(to, t + dur);
     const g = this.ctx.createGain();
-    g.gain.value = vol;
-    src.connect(f).connect(g).connect(this.master);
-    src.start(t);
+    g.gain.value = this.volumes.get(name) ?? MANIFEST[name].volume;
+    src.connect(g).connect(this.master);
+    this.active.add(src);
+    src.onended = () => this.active.delete(src);
+    src.start();
+    return true;
   }
 
-  /** An animal starts running out. */
-  run(): void {
-    this.tone(520, 0.09, 'triangle', 0.18, 0, 880);
-    this.noise(0.28, 0.22, 500, 2200);
+  /** Stop everything that is sounding (restart, mute). */
+  stopAll(): void {
+    for (const s of this.active) { try { s.stop(); } catch { /* already stopped */ } }
+    this.active.clear();
+    this.playingUntil.clear();
   }
-
-  /** The animal passed its gate: a pop that climbs with the combo. */
-  rescued(): void {
-    const f = 660 * 2 ** (Math.min(this.combo, 8) / 12 * 2);
-    this.combo++;
-    this.tone(f, 0.16, 'sine', 0.3);
-    this.tone(f * 1.5, 0.2, 'triangle', 0.16, 0.05);
-    this.tone(f * 2, 0.22, 'sine', 0.1, 0.1);
-  }
-
-  /** A blocked tap. */
-  bump(): void {
-    this.combo = 0;
-    this.tone(220, 0.22, 'square', 0.14, 0, 110);
-    this.tone(160, 0.2, 'sine', 0.22, 0.02, 80);
-  }
-
-  heartLost(): void {
-    this.tone(392, 0.18, 'triangle', 0.2, 0.12, 262);
-  }
-
-  boom(): void {
-    this.noise(0.5, 0.5, 900, 80);
-    this.tone(90, 0.45, 'sawtooth', 0.25, 0, 40);
-  }
-
-  clear(): void {
-    [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.32, 'triangle', 0.24, i * 0.1));
-    this.tone(1047, 0.7, 'sine', 0.14, 0.5);
-  }
-
-  fail(): void {
-    [392, 349, 294, 220].forEach((f, i) => this.tone(f, 0.3, 'triangle', 0.22, i * 0.16));
-  }
-
-  resetCombo(): void { this.combo = 0; }
 }
 
-export const sound = new Sound();
+export const sound = new Sound({
+  createContext: () => {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    return AC ? new AC() : null;
+  },
+  load: async (url) => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`sound ${url}: ${r.status}`);
+    return r.arrayBuffer();
+  },
+  now: () => performance.now(),
+  storage: typeof localStorage === 'undefined' ? undefined : localStorage,
+});
