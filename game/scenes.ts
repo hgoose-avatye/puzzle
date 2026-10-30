@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Rng } from '../src/core/rng';
 import type { Theme } from '../src/curve/curve';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { box, cone, cyl, geo, LIB, part, pyramid } from './scenery';
 
 /**
@@ -18,6 +19,9 @@ export interface SceneFrame {
 }
 
 const sphere = (): THREE.BufferGeometry => geo('sphere', () => new THREE.SphereGeometry(0.5, 14, 10));
+/** Coarse shapes for the many small bits in a merged strip (sprouts, stems, slabs): a few hundred of them add up. */
+const lowSphere = (): THREE.BufferGeometry => geo('sphere-low', () => new THREE.SphereGeometry(0.5, 7, 5));
+const plainBox = (): THREE.BufferGeometry => geo('box-plain', () => new THREE.BoxGeometry(1, 1, 1));
 
 /** Soft round tree from a few overlapping balls, as in the reference trees. */
 function fluffyTree(rng: Rng, s = 1, tint = 0x79c654): THREE.Group {
@@ -180,52 +184,6 @@ function flowerPatch(rng: Rng): THREE.Group {
 }
 
 /** The village plaza by the flower field (reference 03). */
-function village(f: SceneFrame, rng: Rng): THREE.Group {
-  const g = new THREE.Group();
-  const { hw, hz } = f;
-  const nearGate = (p: THREE.Vector3, r = 1.3): boolean => f.gates.some((gt) => {
-    const d = p.clone().sub(gt.p);
-    const along = d.dot(gt.v);
-    const side = Math.abs(d.x * gt.v.z - d.z * gt.v.x);
-    return along > -0.6 && along < 1.6 && side < r;
-  });
-  const put = (o: THREE.Object3D, x: number, z: number, rot = 0): void => {
-    if (nearGate(new THREE.Vector3(x, 0, z))) return;
-    o.position.set(x, 0, z);
-    o.rotation.y = rot;
-    g.add(o);
-  };
-
-  // top band, kept close to the board so it shows on a tall phone: path, cottage, market stall, lamps, river and bridge
-  g.add(cobblePath(rng, -hw - 4, hw + 1.0, -hz - 1.75, -hz - 0.85));
-  put(cottage(), -hw + 0.9, -hz - 3.3);
-  put(marketStall(rng), 1.3, -hz - 2.55);
-  put(barrel(), 2.45, -hz - 2.2);
-  put(lampPost(), -0.5, -hz - 1.95);
-  g.add(water(hw + 3.6, -hz - 3, 4.4, 8));
-  put(bridge(), hw + 2.0, -hz - 1.3);
-  for (const [x, z, s] of [[-hw - 2.4, -hz - 2.0, 1.1], [-hw - 1.0, -hz - 4.8, 1.2], [3.0, -hz - 4.2, 1.1], [0.2, -hz - 4.6, 1.0]] as const) put(fluffyTree(rng, s), x, z);
-  for (const [x, z] of [[-hw - 0.7, -hz - 1.4], [2.3, -hz - 1.3]] as const) put(bushClump(rng), x, z);
-
-  // left and right edges: hedges and flowers along the grass, off the gates
-  for (let z = -hz + 0.5; z < hz; z += 1.6) {
-    put(bushClump(rng, rng.next() < 0.6), -hw - 1.0, z + (rng.next() - 0.5) * 0.4);
-    put(bushClump(rng, rng.next() < 0.6), hw + 1.0, z + (rng.next() - 0.5) * 0.4);
-  }
-
-  // bottom band: fence, bench and lamp, dog house, garden trees, dock and boat on the water
-  g.add(fenceRun(new THREE.Vector3(-hw - 0.6, 0, hz + 0.95), new THREE.Vector3(hw - 1.2, 0, hz + 0.95), (p) => nearGate(p, 0.9)));
-  put(bench(), -hw + 1.4, hz + 1.8);
-  put(lampPost(), -hw + 0.2, hz + 1.7);
-  put(dogHouse(), 0.7, hz + 2.2, -0.3);
-  for (const [x, z, s] of [[-hw - 1.2, hz + 2.8, 1.1], [-hw + 0.6, hz + 3.6, 1.2], [-0.9, hz + 3.8, 1.0]] as const) put(fluffyTree(rng, s), x, z);
-  for (const [x, z] of [[-1.3, hz + 1.9], [1.9, hz + 1.7], [-hw - 0.5, hz + 1.6]] as const) put(flowerPatch(rng), x, z);
-  g.add(water(hw + 1.8, hz + 3.6, 5, 5));
-  put(dock(), hw - 0.1, hz + 1.9);
-  put(boat(), hw + 1.6, hz + 3.0, 0.4);
-  return g;
-}
-
 // ---------- more set pieces for the other stages ----------
 
 function barn(): THREE.Group {
@@ -388,80 +346,69 @@ function sides(put: Put, f: SceneFrame, make: () => THREE.Object3D, step = 1.6, 
 
 type Scene = (f: SceneFrame, rng: Rng) => THREE.Group;
 
+/** Village stage 2: a working farm. Barn, silo and hay behind crop rows; no fences by the board (the pen is this stage's obstacle). */
 const farm: Scene = (f, rng) => {
   const { g, put, nearGate } = sceneKit(f);
   const { hw, hz } = f;
-  put(barn(), -hw + 1.0, -hz - 3.0);
-  put(silo(), 1.4, -hz - 3.2);
-  for (const [x, z] of [[2.6, -hz - 1.8], [3.2, -hz - 2.5], [-0.4, -hz - 1.7]] as const) put(LIB.hay(rng), x, z, rng.next());
-  g.add(fenceRun(new THREE.Vector3(-hw - 2, 0, -hz - 1.1), new THREE.Vector3(hw + 2, 0, -hz - 1.1), (p) => nearGate(p, 0.9)));
-  for (const [x, z, s] of [[-hw - 2.2, -hz - 2.4, 1.1], [hw + 2.0, -hz - 4.2, 1.2]] as const) put(fluffyTree(rng, s), x, z);
-  sides(put, f, () => (rng.next() < 0.5 ? LIB.hay(rng) : bushClump(rng, false)), 2.2);
-  g.add(fenceRun(new THREE.Vector3(-hw - 2, 0, hz + 1.0), new THREE.Vector3(hw + 2, 0, hz + 1.0), (p) => nearGate(p, 0.9)));
-  for (let x = -hw; x < hw; x += 1.1) put(LIB.flowers(rng), x, hz + 2.4 + (rng.next() - 0.5) * 0.4);
-  put(fluffyTree(rng, 1.2), -hw + 0.4, hz + 3.6);
-  put(fluffyTree(rng, 1.0), hw - 0.6, hz + 3.4);
+  put(barn(), -hw + 1.0, -hz - 3.2);
+  put(silo(), 1.4, -hz - 3.4);
+  for (const [x, z] of [[2.6, -hz - 2.2], [3.2, -hz - 2.8], [-0.4, -hz - 2.2]] as const) put(LIB.hay(rng), x, z, rng.next());
+  g.add(cropRows(rng, -hw - 2, hw + 2, -hz - 1.6, 2, (p) => !nearGate(p, 0.9)));
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 2.0) for (const x of [-hw - 1.1, hw + 1.1]) put(k++ % 2 ? LIB.hay(rng) : flowerPot(rng), x, z, rng.next());
+  g.add(cropRows(rng, -hw - 2, hw + 2, hz + 1.3, 2, (p) => !nearGate(p, 0.9)));
+  put(dogHouse(), -hw + 0.6, hz + 3.2, 0.3);
+  for (const x of [-hw - 1.6, hw + 1.8]) put(fluffyTree(rng, 1.1), x, hz + 3.8);
   return g;
 };
 
+/** Village stage 3: the town square. A shop at the top centre between houses with the fountain on the paving in front, benches and pots; no crates (this stage's obstacle). */
 const square: Scene = (f, rng) => {
   const { g, put } = sceneKit(f);
   const { hw, hz } = f;
-  g.add(cobblePath(rng, -hw - 4, hw + 4, -hz - 2.2, -hz - 0.9));
-  put(cottage(), -hw + 0.9, -hz - 3.6);
-  const shop = cottage();
-  put(shop, hw - 0.9, -hz - 3.6);
-  put(fountain(), 0.2, -hz - 2.4);
+  g.add(cobblePath(rng, -hw - 4, hw + 4, -hz - 2.4, -hz - 0.9));
+  put(shopFront(0x5aa35a), 0.2, -hz - 3.4);
+  put(cottage(), -hw - 1.4, -hz - 3.4);
+  put(cottage(), hw + 1.8, -hz - 3.6);
+  put(fountain(), 0.2, -hz - 1.9);
+  for (const x of [-2.0, 2.4]) put(flowerPot(rng), x, -hz - 1.3);
   for (const x of [-hw - 0.3, hw + 0.3]) put(lampPost(), x, -hz - 1.4);
-  sides(put, f, () => bushClump(rng), 1.8);
-  g.add(cobblePath(rng, -hw - 4, hw + 4, hz + 0.9, hz + 2.0));
-  for (const [x, rot] of [[-hw + 1.2, 0], [hw - 1.2, 0]] as const) put(bench(), x, hz + 2.6, rot);
-  put(lampPost(), 0, hz + 2.4);
-  for (const [x, z] of [[-1.4, hz + 2.6], [1.6, hz + 2.7]] as const) put(LIB.crate(rng), x, z, rng.next());
-  for (const [x, s] of [[-hw - 0.8, 1.2], [hw + 0.6, 1.1], [0.4, 1.0]] as const) put(fluffyTree(rng, s), x, hz + 3.9);
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 1.9) for (const x of [-hw - 1.0, hw + 1.0]) put(k++ % 2 ? bench() : flowerPot(rng), x, z, Math.PI / 2);
+  g.add(cobblePath(rng, -hw - 4, hw + 4, hz + 0.9, hz + 3.0));
+  for (const x of [-hw + 1.0, hw - 1.0]) put(bench(), x, hz + 2.4);
+  for (const x of [-1.6, 0.2, 2.0]) put(flowerPot(rng), x, hz + 1.4);
   return g;
 };
 
-const campsite: Scene = (f, rng) => {
-  const { g, put } = sceneKit(f);
-  const { hw, hz } = f;
-  put(LIB.tent(rng), -hw + 1.0, -hz - 2.4, 0.3);
-  put(LIB.tent(rng), 1.6, -hz - 2.8, -0.4);
-  put(LIB.campfire(rng), -0.6, -hz - 1.8);
-  for (const [x, z, r] of [[-1.5, -hz - 1.6, 0.4], [0.3, -hz - 1.5, -0.3]] as const) put(LIB.log(rng), x, z, r);
-  put(lampPost(), hw + 0.3, -hz - 1.4);
-  for (const [x, z] of [[-hw - 2.0, -hz - 2.0], [-hw - 0.4, -hz - 4.6], [hw + 1.8, -hz - 3.4], [0.4, -hz - 4.8]] as const) put(LIB.pine(false)(rng), x, z, rng.next() * 6);
-  sides(put, f, () => (rng.next() < 0.6 ? LIB.pine(false)(rng) : LIB.mushroom(rng)), 1.7, 1.3);
-  for (const [x, z] of [[-hw + 0.6, hz + 1.8], [hw - 1.0, hz + 2.0]] as const) put(LIB.stump(rng), x, z);
-  put(LIB.log(rng), 0.2, hz + 1.7, 0.2);
-  for (const [x, z] of [[-hw - 1.0, hz + 3.0], [-0.8, hz + 3.6], [1.8, hz + 3.2], [hw + 1.2, hz + 3.0]] as const) put(LIB.pine(false)(rng), x, z);
-  return g;
-};
-
+/** Forest stage 2: the river. Water and a bridge behind reeds, a pond with a dock below; no rocks by the board (this stage's obstacle). */
 const riverside: Scene = (f, rng) => {
-  const { g, put } = sceneKit(f);
+  const { g, put, nearGate } = sceneKit(f);
   const { hw, hz } = f;
   g.add(water(0, -hz - 3.0, 2 * hw + 10, 2.4));
   put(bridge(), 0.6, -hz - 3.0, Math.PI / 2);
-  for (let x = -hw - 3; x < hw + 3; x += 1.3) put(LIB.rock(rng), x + (rng.next() - 0.5) * 0.5, -hz - 1.7 - rng.next() * 0.2);
+  g.add(reeds(rng, -hw - 3, hw + 3, -hz - 1.75, (p) => !nearGate(p, 0.9)));
   for (let x = -hw - 3; x < hw + 3; x += 1.8) put(LIB.pine(false)(rng), x, -hz - 5.0 + (rng.next() - 0.5) * 0.6);
-  sides(put, f, () => (rng.next() < 0.5 ? LIB.rock(rng) : bushClump(rng, false)), 1.8);
+  for (let z = -hz + 0.5; z < hz; z += 1.8) for (const x of [-hw - 1.2, hw + 1.2]) put(LIB.pine(false)(rng), x, z + (rng.next() - 0.5) * 0.4);
   g.add(water(hw + 2.0, hz + 3.2, 6, 4));
   put(dock(), hw - 0.2, hz + 1.6);
   put(boat(), hw + 1.6, hz + 2.8, 0.5);
-  for (const [x, z] of [[-hw - 0.8, hz + 2.2], [-hw + 1.2, hz + 3.4], [-0.6, hz + 2.6]] as const) put(LIB.pine(false)(rng), x, z);
-  for (const [x, z] of [[0.8, hz + 1.6], [-hw + 2.4, hz + 1.7]] as const) put(LIB.rock(rng), x, z);
+  g.add(reeds(rng, hw - 2.4, hw + 1.0, hz + 1.1, (p) => !nearGate(p, 0.9)));
+  for (const [x, z] of [[-hw - 0.8, hz + 2.2], [-hw + 1.2, hz + 3.4], [-0.6, hz + 2.8]] as const) put(LIB.pine(false)(rng), x, z);
+  put(needles(rng), -hw + 0.6, hz + 1.8, rng.next() * 3);
   return g;
 };
 
+/** Forest stage 3: deep in the woods. A cabin with its woodpile, pines on every side, needles and mushroom clusters; no stumps (this stage's obstacle). */
 const deepWoods: Scene = (f, rng) => {
   const { g, put } = sceneKit(f);
   const { hw, hz } = f;
+  for (let i = 0; i < 8; i++) put(needles(rng), -hw - 2 + (i % 4) * ((2 * hw + 4) / 3), i < 4 ? -hz - 1.9 : hz + 2.0, rng.next() * 3);
   put(LIB.house(0x9e6a3e, 0x3b6f43)(rng), -hw + 1.2, -hz - 2.8, 0.2);
-  for (let x = -hw - 3; x < hw + 3; x += 1.2) put(LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.4, -hz - (x < -hw + 2.5 ? 4.6 : 1.8 + rng.next() * 2.6));
-  sides(put, f, () => LIB.pine(false)(rng), 1.3, 1.2);
-  for (let x = -hw - 3; x < hw + 3; x += 1.1) put(rng.next() < 0.3 ? LIB.mushroom(rng) : LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.4, hz + 1.8 + rng.next() * 2.2);
-  put(LIB.stump(rng), -0.4, hz + 1.5);
+  put(woodpile(), -hw + 2.7, -hz - 2.4, -0.2);
+  for (let x = -hw - 3; x < hw + 3; x += 1.2) if (x > -hw + 3.4 || x < -hw - 0.4) put(LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.4, -hz - 1.9 - rng.next() * 2.6);
+  for (let z = -hz + 0.5; z < hz; z += 1.3) for (const x of [-hw - 1.2, hw + 1.2]) put(LIB.pine(false)(rng), x, z + (rng.next() - 0.5) * 0.3);
+  for (let x = -hw - 3; x < hw + 3; x += 1.1) put(rng.next() < 0.35 ? mushrooms(rng) : LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.4, hz + 2.0 + rng.next() * 2.0);
   return g;
 };
 
@@ -510,39 +457,34 @@ const treasureCave: Scene = (f, rng) => {
   return g;
 };
 
-const jungleEntrance: Scene = (f, rng) => {
-  const { g, put } = sceneKit(f);
-  const { hw, hz } = f;
-  for (let x = -hw - 3; x < hw + 3; x += 1.5) put(LIB.jungleTree(rng), x + (rng.next() - 0.5) * 0.5, -hz - 2.4 - rng.next() * 1.5);
-  for (let x = -hw - 1; x < hw + 1; x += 1.2) put(rng.next() < 0.5 ? bigLeaf(rng) : LIB.bush(rng), x, -hz - 1.2);
-  sides(put, f, () => (rng.next() < 0.5 ? bigLeaf(rng) : LIB.bush(rng)), 1.5, 1.1);
-  for (let x = -hw - 2; x < hw + 2; x += 1.3) put(rng.next() < 0.4 ? LIB.flowers(rng) : bigLeaf(rng), x, hz + 1.4 + rng.next() * 0.5);
-  for (const x of [-hw, 0.6, hw + 0.5]) put(LIB.jungleTree(rng), x, hz + 3.2);
-  return g;
-};
-
+/** Jungle stage 2: the waterfall. Cliff and falls behind vine trees, a lily pool below, undergrowth all round; no rocks (this stage's obstacle). */
 const waterfall: Scene = (f, rng) => {
-  const { g, put } = sceneKit(f);
+  const { g, put, nearGate } = sceneKit(f);
   const { hw, hz } = f;
   put(cliffFalls(), 0.4, -hz - 3.4);
-  for (const x of [-hw - 1.2, hw + 1.6]) put(LIB.jungleTree(rng), x, -hz - 2.6);
-  for (const x of [-2.0, 2.8]) put(LIB.rock(rng), x, -hz - 1.4);
-  sides(put, f, () => (rng.next() < 0.5 ? LIB.rock(rng) : bigLeaf(rng)), 1.7, 1.1);
-  g.add(water(hw + 2.2, hz + 3.0, 6, 4));
-  for (const x of [-hw - 0.4, -0.8]) put(LIB.jungleTree(rng), x, hz + 2.8);
-  for (const [x, z] of [[1.2, hz + 1.5], [hw - 0.4, hz + 1.4]] as const) put(LIB.rock(rng), x, z);
+  g.add(vineTrees(rng, [-hw - 1.2, -hw + 0.2, hw + 1.6, hw + 0.4].filter((x) => !nearGate(new THREE.Vector3(x, 0, -hz - 2.4))), () => -hz - 2.4));
+  g.add(undergrowth(rng, -hw - 1.5, hw + 1.5, -hz - 1.5, (p) => !nearGate(p) && Math.abs(p.x - 0.6) > 1.4));
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 1.5) for (const x of [-hw - 0.9, hw + 0.9]) put(k++ % 2 ? LIB.flowers(rng) : bigLeaf(rng), x, z);
+  g.add(water(hw + 0.4, hz + 2.6, 4.4, 3));
+  g.add(lilyPads(rng, hw - 1.4, hw + 2.0, hz + 1.6, hz + 3.6));
+  g.add(undergrowth(rng, -hw - 1.5, hw - 2.2, hz + 1.4, (p) => !nearGate(p)));
+  g.add(vineTrees(rng, [-hw - 0.4, -0.8].filter((x) => !nearGate(new THREE.Vector3(x, 0, hz + 3.0))), () => hz + 3.0, false));
   return g;
 };
 
+/** Jungle stage 3: the old temple. Step pyramid on a stone terrace, vine trees around; no pillars or ruin stacks by the board (this stage's obstacle). */
 const ruins: Scene = (f, rng) => {
-  const { g, put } = sceneKit(f);
+  const { g, put, nearGate } = sceneKit(f);
   const { hw, hz } = f;
   put(stepPyramid(), 0.4, -hz - 3.4);
-  for (const x of [-hw + 0.2, -1.8, 2.4, hw + 0.4]) put(LIB.pillar(rng), x, -hz - 1.4);
-  for (const x of [-hw - 1.6, hw + 2.0]) put(LIB.jungleTree(rng), x, -hz - 2.8);
-  sides(put, f, () => (rng.next() < 0.5 ? LIB.ruin(rng) : LIB.bush(rng)), 1.9, 1.2);
-  for (let x = -hw; x < hw; x += 1.6) put(rng.next() < 0.5 ? LIB.ruin(rng) : bigLeaf(rng), x, hz + 1.6);
-  for (const x of [-hw - 1.0, 0.4, hw + 1.0]) put(LIB.jungleTree(rng), x, hz + 3.2);
+  g.add(stoneTerrace(-hw - 1.5, hw + 1.5, -hz - 2.2, (p) => !nearGate(p, 0.9)));
+  g.add(vineTrees(rng, [-hw - 1.6, -hw - 0.2, hw + 0.8, hw + 2.0].filter((x) => !nearGate(new THREE.Vector3(x, 0, -hz - 2.8))), () => -hz - 2.8));
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 1.6) for (const x of [-hw - 0.9, hw + 0.9]) put(k++ % 2 ? LIB.flowers(rng) : bigLeaf(rng), x, z);
+  g.add(stoneTerrace(-hw - 1.5, hw + 1.5, hz + 1.5, (p) => !nearGate(p, 0.9)));
+  g.add(undergrowth(rng, -hw - 1.5, hw + 1.5, hz + 2.6, (p) => !nearGate(p)));
+  g.add(vineTrees(rng, [-hw - 1.0, 0.4, hw + 1.0].filter((x) => !nearGate(new THREE.Vector3(x, 0, hz + 3.6))), () => hz + 3.6, false));
   return g;
 };
 
@@ -629,8 +571,249 @@ const xmasSquare: Scene = (f, rng) => {
   return g;
 };
 
+
+// ---------- theme pieces: each region's own props, shared by its three stage scenes ----------
+// Rule for every scene: the props right beside the board (the side columns and the strips along its edges) never use
+// the model of a board obstacle (OBSTACLES in scenery.ts) and nothing there looks like an exit gate.
+
+/**
+ * One mesh per material for a prop built from many small parts (leaves, vines): far fewer draw calls. The merged
+ * geometry belongs to this mesh (freed with the board); the materials stay the shared, cached ones.
+ */
+function mergeProp(g: THREE.Group): THREE.Group {
+  g.updateMatrixWorld(true);
+  const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
+  const inverse = new THREE.Matrix4().copy(g.matrixWorld).invert();
+  g.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const geom = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, m.matrixWorld));
+    for (const name of Object.keys(geom.attributes)) if (!['position', 'normal', 'uv'].includes(name)) geom.deleteAttribute(name);
+    const mat = m.material as THREE.Material;
+    byMaterial.set(mat, [...(byMaterial.get(mat) ?? []), geom]);
+  });
+  const out = new THREE.Group();
+  for (const [mat, list] of byMaterial) {
+    const mesh = new THREE.Mesh(mergeGeometries(list), mat);
+    for (const gg of list) gg.dispose();
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.ownGeometry = true;
+    out.add(mesh);
+  }
+  return out;
+}
+
+/** Village: a shop front with a striped awning (a cottage with a canopy), so the top band reads as a street. */
+function shopFront(awning: number): THREE.Group {
+  const g = cottage();
+  for (let i = 0; i < 5; i++) part(g, box(), i % 2 ? 0xffffff : awning, -1.0 + i * 0.5, 1.55, 1.25, 0.5, 0.08, 0.6).rotation.x = 0.35;
+  return g;
+}
+/** Village: a round terracotta pot of flowers for the plaza edges (unlike the square planter the village uses as an obstacle). */
+function flowerPot(rng: Rng): THREE.Group {
+  const g = new THREE.Group();
+  part(g, cyl(), 0xc8653a, 0, 0.16, 0, 0.36, 0.32, 0.36);
+  for (let i = 0; i < 3; i++) part(g, sphere(), [0xff8fab, 0xffd166, 0xffffff][rng.int(0, 2)], (i - 1) * 0.1, 0.38, (rng.next() - 0.5) * 0.12, 0.16, 0.16, 0.16);
+  return g;
+}
+/** Forest: a low split-rail fence of dark wood (thin rails, not the round log the forest uses as an obstacle). */
+function railFence(from: THREE.Vector3, to: THREE.Vector3, skip: (p: THREE.Vector3) => boolean): THREE.Group {
+  const g = new THREE.Group();
+  const len = from.distanceTo(to);
+  const n = Math.max(1, Math.round(len / 1.2));
+  const dir = to.clone().sub(from).normalize();
+  const angle = Math.atan2(dir.x, dir.z);
+  for (let i = 0; i < n; i++) {
+    const a = from.clone().addScaledVector(dir, (i / n) * len);
+    const b = from.clone().addScaledVector(dir, ((i + 1) / n) * len);
+    const mid = a.clone().add(b).multiplyScalar(0.5);
+    if (skip(mid)) continue;
+    part(g, cyl(), 0x6a4426, a.x, 0.25, a.z, 0.12, 0.5, 0.12);
+    for (const y of [0.18, 0.38]) part(g, cyl(), 0x8a5a33, mid.x, y, mid.z, 0.09, len / n, 0.09).rotation.set(Math.PI / 2, angle, 0, 'YXZ');
+  }
+  return mergeProp(g);
+}
+/** Forest: a pyramid of cut logs, kept well away from the board (a single log is the forest's obstacle). */
+function woodpile(): THREE.Group {
+  const g = new THREE.Group();
+  for (const [x, y] of [[-0.2, 0.12], [0.05, 0.12], [0.3, 0.12], [-0.08, 0.33], [0.18, 0.33]] as const) {
+    part(g, cyl(), 0x8a5a33, x, y, 0, 0.22, 0.8, 0.22).rotation.x = Math.PI / 2;
+    part(g, cyl(), 0xe2c08e, x, y, 0.41, 0.18, 0.02, 0.18).rotation.x = Math.PI / 2;
+  }
+  return mergeProp(g);
+}
+/** Forest: a flat patch of fallen needles on the grass. */
+function needles(rng: Rng): THREE.Group {
+  const g = new THREE.Group();
+  part(g, cyl(), 0xa8763f, 0, 0.005, 0, 1.2 + rng.next() * 0.6, 0.01, 0.9 + rng.next() * 0.5).castShadow = false;
+  return g;
+}
+/** Jungle: a moss-covered stone head, the ruin people come to find (a block, not an arch: arches read as exits). */
+function stoneHead(): THREE.Group {
+  const g = new THREE.Group();
+  part(g, box(), 0xa9a48f, 0, 0.75, 0, 1.2, 1.5, 0.9);
+  part(g, box(), 0x8d8873, 0, 0.95, 0.46, 0.8, 0.12, 0.05);
+  part(g, box(), 0x8d8873, 0, 0.45, 0.46, 0.5, 0.1, 0.05);
+  for (const x of [-0.25, 0.25]) part(g, box(), 0x6f6a58, x, 0.95, 0.47, 0.18, 0.1, 0.04);
+  part(g, sphere(), 0x3f9a46, -0.3, 1.5, 0.1, 0.6, 0.25, 0.5);
+  part(g, sphere(), 0x3f9a46, 0.4, 1.2, 0.35, 0.3, 0.2, 0.25);
+  return mergeProp(g);
+}
+/** Jungle: a row of jungle trees hung with vines, merged into a handful of meshes. */
+function vineTrees(rng: Rng, xs: number[], z: (x: number) => number, vines = true): THREE.Group {
+  const g = new THREE.Group();
+  for (const x of xs) {
+    const t = LIB.jungleTree(rng);
+    t.position.set(x, 0, z(x));
+    g.add(t);
+    if (!vines) continue;
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + rng.next();
+      part(g, box(), 0x4fae4a, x + Math.cos(a) * 0.7, 0.95, z(x) + Math.sin(a) * 0.7, 0.09, 1.1 + rng.next() * 0.3, 0.09);
+    }
+  }
+  return mergeProp(g);
+}
+/** Jungle: dense low undergrowth of big leaves along a strip (under 0.5 high, so it hides nothing on the board). */
+function undergrowth(rng: Rng, x0: number, x1: number, z: number, keep: (p: THREE.Vector3) => boolean): THREE.Group {
+  const g = new THREE.Group();
+  const leaf = (x: number, zz: number): void => {
+    if (!keep(new THREE.Vector3(x, 0, zz))) return;
+    const l = bigLeaf(rng);
+    l.position.set(x, 0, zz);
+    l.rotation.y = rng.next() * 6;
+    g.add(l);
+  };
+  for (let x = x0; x < x1; x += 0.8) leaf(x + (rng.next() - 0.5) * 0.3, z + (rng.next() - 0.5) * 0.5);
+  for (let x = x0 + 0.4; x < x1; x += 1.1) leaf(x, z + 0.9);
+  return mergeProp(g);
+}
+
+/**
+ * Village stage 1: a street. Paved square with a shop in the middle of the top band (the HUD covers both top corners
+ * on short phones), market stalls either side, lamps and flower pots.
+ */
+const villageStreet: Scene = (f, rng) => {
+  const { g, put } = sceneKit(f);
+  const { hw, hz } = f;
+  g.add(cobblePath(rng, -hw - 4, hw + 4, -hz - 2.2, -hz - 0.85));
+  put(shopFront(0xd9634c), 0.2, -hz - 2.7);
+  for (const x of [-hw + 0.9, hw - 0.5]) put(marketStall(rng), x, -hz - 2.1);
+  put(shopFront(0x4f8fc6), -hw - 2.6, -hz - 2.9);
+  for (const x of [-hw - 0.4, hw + 0.4]) put(lampPost(), x, -hz - 1.3);
+  for (const x of [-1.7, 1.9]) put(flowerPot(rng), x, -hz - 1.25);
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 1.8) for (const x of [-hw - 1.0, hw + 1.0]) put(k++ % 2 ? flowerPot(rng) : lampPost(), x, z);
+  g.add(cobblePath(rng, -hw - 4, hw + 4, hz + 0.9, hz + 2.6));
+  for (const x of [-hw + 1.2, hw - 1.2]) put(bench(), x, hz + 1.9);
+  for (const x of [-hw - 0.4, 0.4, hw + 0.6]) put(flowerPot(rng), x, hz + 2.1);
+  return g;
+};
+
+/** Forest stage 1: a camp in the pines. Tents and fire behind a rail fence, a dark wall of pines, woodpiles off to the side. */
+const campsite: Scene = (f, rng) => {
+  const { g, put, nearGate } = sceneKit(f);
+  const { hw, hz } = f;
+  for (let i = 0; i < 6; i++) put(needles(rng), -hw - 1.5 + i * ((2 * hw + 3) / 5), i % 2 ? -hz - 2.0 : hz + 2.2, rng.next() * 3);
+  put(LIB.tent(rng), -hw + 1.0, -hz - 2.6, 0.3);
+  put(LIB.tent(rng), 1.6, -hz - 2.9, -0.4);
+  put(LIB.campfire(rng), -0.6, -hz - 2.2);
+  put(woodpile(), hw + 1.0, -hz - 2.4, -0.4);
+  for (let x = -hw - 3; x < hw + 3; x += 1.1) put(LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.3, -hz - 4.2 - rng.next() * 0.8);
+  g.add(railFence(new THREE.Vector3(-hw - 1.0, 0, -hz - 0.95), new THREE.Vector3(hw + 1.0, 0, -hz - 0.95), (p) => nearGate(p, 0.9)));
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 1.6) for (const x of [-hw - 1.2, hw + 1.2]) put(k++ % 3 ? LIB.pine(false)(rng) : LIB.mushroom(rng), x, z + (rng.next() - 0.5) * 0.4);
+  g.add(railFence(new THREE.Vector3(-hw - 1.0, 0, hz + 0.95), new THREE.Vector3(hw + 1.0, 0, hz + 0.95), (p) => nearGate(p, 0.9)));
+  put(woodpile(), -hw + 0.8, hz + 2.4, 0.2);
+  put(LIB.mushroom(rng), 0.6, hz + 2.3);
+  for (const x of [-hw - 2.0, hw + 2.2]) put(LIB.pine(false)(rng), x, hz + 3.2);
+  return g;
+};
+
+/** Jungle stage 1: into the jungle. A stone head before vine-hung canopy, leaves and flowers at the sides, dense undergrowth below. */
+const jungleEntrance: Scene = (f, rng) => {
+  const { g, put, nearGate } = sceneKit(f);
+  const { hw, hz } = f;
+  const head = stoneHead();
+  head.scale.setScalar(1.35);
+  put(head, 0.3, -hz - 1.9);
+  for (const x of [-1.5, 2.1]) put(LIB.ruin(rng), x, -hz - 2.2);
+  const front: number[] = [];
+  for (let x = -hw - 3; x < hw + 3; x += 1.2) if (Math.abs(x - 0.3) > 1.2 && !nearGate(new THREE.Vector3(x, 0, -hz - 2.9))) front.push(x + (rng.next() - 0.5) * 0.4);
+  g.add(vineTrees(rng, front, () => -hz - 2.9 - rng.next() * 0.5));
+  const back: number[] = [];
+  for (let x = -hw - 2.4; x < hw + 3; x += 1.5) back.push(x);
+  g.add(vineTrees(rng, back, () => -hz - 4.4, false));
+  let k = 0;
+  for (let z = -hz + 0.5; z < hz; z += 1.5) for (const x of [-hw - 0.9, hw + 0.9]) put(k++ % 2 ? LIB.flowers(rng) : bigLeaf(rng), x, z);
+  g.add(undergrowth(rng, -hw - 1.5, hw + 1.5, hz + 1.4, (p) => !nearGate(p)));
+  g.add(vineTrees(rng, [-hw, 0.6, hw + 0.5].filter((x) => !nearGate(new THREE.Vector3(x, 0, hz + 3.4))), () => hz + 3.4));
+  return g;
+};
+
+/** Village: rows of tilled soil with sprouts, low (one merged mesh per material). */
+function cropRows(rng: Rng, x0: number, x1: number, z: number, rows: number, keep: (p: THREE.Vector3) => boolean): THREE.Group {
+  const g = new THREE.Group();
+  for (let r = 0; r < rows; r++) for (let x = x0; x < x1; x += 0.9) {
+    const zz = z + r * 0.55;
+    if (!keep(new THREE.Vector3(x + 0.45, 0, zz))) continue;
+    part(g, plainBox(), 0x9a6a43, x + 0.45, 0.04, zz, 0.85, 0.08, 0.32).castShadow = false;
+    for (const dx of [0.2, 0.45, 0.7]) part(g, lowSphere(), 0x6cc04a, x + dx, 0.13, zz + (rng.next() - 0.5) * 0.06, 0.16, 0.14, 0.16);
+  }
+  return mergeProp(g);
+}
+/** Forest: a strip of reeds along a bank (thin stems, one merged mesh). */
+function reeds(rng: Rng, x0: number, x1: number, z: number, keep: (p: THREE.Vector3) => boolean): THREE.Group {
+  const g = new THREE.Group();
+  for (let x = x0; x < x1; x += 0.35) {
+    const zz = z + (rng.next() - 0.5) * 0.4;
+    if (!keep(new THREE.Vector3(x, 0, zz))) continue;
+    const h = 0.35 + rng.next() * 0.3;
+    part(g, plainBox(), 0x6d9a3e, x, h / 2, zz, 0.04, h, 0.04).rotation.z = (rng.next() - 0.5) * 0.4;
+    if (rng.next() < 0.4) part(g, cyl(), 0x7a4d2b, x, h + 0.05, zz, 0.07, 0.14, 0.07);
+  }
+  return mergeProp(g);
+}
+/** Forest: a cluster of three mushrooms (not a stump, the deep woods' obstacle). */
+function mushrooms(rng: Rng): THREE.Group {
+  const g = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const m = LIB.mushroom(rng);
+    m.position.set((i - 1) * 0.28, 0, (rng.next() - 0.5) * 0.3);
+    m.scale.setScalar(0.7 + rng.next() * 0.5);
+    g.add(m);
+  }
+  return mergeProp(g);
+}
+/** Jungle: lily pads on a pool (flat discs, one merged mesh). */
+function lilyPads(rng: Rng, x0: number, x1: number, z0: number, z1: number): THREE.Group {
+  const g = new THREE.Group();
+  for (let i = 0; i < 9; i++) {
+    const x = x0 + rng.next() * (x1 - x0), z = z0 + rng.next() * (z1 - z0);
+    part(g, cyl(), 0x3f9a46, x, -0.03, z, 0.45, 0.02, 0.45).castShadow = false;
+    if (rng.next() < 0.35) part(g, lowSphere(), 0xff9fc0, x + 0.08, 0.02, z, 0.14, 0.1, 0.14);
+  }
+  return mergeProp(g);
+}
+/**
+ * Jungle: a strip of worn stone paving, two courses of staggered slabs almost flush with the grass. It reads as one
+ * floor, never as single blocks: the jungle's third obstacle is a stone pillar (0.6 wide, 0.9 high), these are 0.04 high.
+ */
+function stoneTerrace(x0: number, x1: number, z: number, keep: (p: THREE.Vector3) => boolean): THREE.Group {
+  const g = new THREE.Group();
+  for (let row = 0; row < 2; row++) {
+    const zz = z + row * 0.52;
+    for (let x = x0 + row * 0.5, i = 0; x < x1; x += 1.0, i++) {
+      if (!keep(new THREE.Vector3(x + 0.5, 0, zz))) continue;
+      part(g, plainBox(), (i + row) % 2 ? 0xb3ad98 : 0xa49f8a, x + 0.5, 0.02, zz, 0.98, 0.04, 0.5).castShadow = false;
+    }
+  }
+  return mergeProp(g);
+}
+
 const SCENES: Record<Theme, [Scene, Scene, Scene]> = {
-  village: [village, farm, square],
+  village: [villageStreet, farm, square],
   forest: [campsite, riverside, deepWoods],
   pirate: [beach, harbour, treasureCave],
   jungle: [jungleEntrance, waterfall, ruins],

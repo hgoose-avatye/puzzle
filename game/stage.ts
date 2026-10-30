@@ -76,6 +76,8 @@ function disposeOwned(root: THREE.Object3D): void {
     if (sp.isSprite) { sp.material.map?.dispose(); sp.material.dispose(); return; }
     const m = o as THREE.Mesh;
     if (!m.isMesh || m.userData.shared) return;
+    // merged scenery (scenes.ts mergeProp): its own geometry, the shared cached materials
+    if (m.userData.ownGeometry) { m.geometry.dispose(); return; }
     if (!m.userData.sharedGeometry) m.geometry.dispose();
     for (const mt of Array.isArray(m.material) ? m.material : [m.material]) {
       (mt as THREE.MeshStandardMaterial).map?.dispose();
