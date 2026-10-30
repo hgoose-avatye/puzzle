@@ -108,10 +108,10 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         cube(g, 0, B0 + 0.42, fz - 0.005, 0.8, 0.68, 0.06, 0xf7f5f2, 0.22); // white face and chest
         eyes(g, fz + 0.025, yE, 0.21);
         cube(g, 0, B0 + 0.33, fz + 0.09, 0.22, 0.13, 0.16, 0xf5a128, 0.05); // beak
-        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.04), B0 + 0.42, zc - 0.02, 0.11, 0.42, 0.38, 0x3e4453, 0.06).rotation.z = sx * 0.18; // flippers
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 - 0.02), B0 + 0.42, zc - 0.02, 0.11, 0.42, 0.38, 0x3e4453, 0.06).rotation.z = sx * 0.18; // flippers, against the body
         for (const [x, hh] of [[-0.1, 0.16], [0, 0.24], [0.1, 0.16]] as const) cube(g, x, top + hh / 2 - 0.02, zc - 0.08, 0.1, hh, 0.11, 0x3e4453, 0.04); // tuft
       }
-      if (last) oval(g, 0, B0 + 0.22, bz - 0.06, 0.14, 0.13, 0.12, 0xbfcbdd); // pale tail puff (02)
+      if (last) oval(g, 0, B0 + 0.22, bz + 0.05, 0.14, 0.13, 0.12, 0xbfcbdd); // pale tail puff (02)
       break;
     }
     case 'chick': {
@@ -122,11 +122,11 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         eyes(g, fz, yE, 0.23);
         cube(g, 0, B0 + 0.4, fz + 0.07, 0.2, 0.14, 0.14, 0xf28c25, 0.05); // beak
         for (const sx of [-1, 1]) oval(g, sx * 0.36, B0 + 0.36, fz + 0.01, 0.1, 0.06, 0.02, 0xf6a39c); // blush
-        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.04), B0 + 0.42, zc - 0.04, 0.12, 0.34, 0.36, 0xf7bc2a, 0.08); // wings
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 - 0.02), B0 + 0.42, zc - 0.04, 0.12, 0.34, 0.36, 0xf7bc2a, 0.08); // wings
         cube(g, -0.05, top + 0.1, zc, 0.12, 0.22, 0.14, yellow, 0.05);
         cube(g, 0.08, top + 0.06, zc - 0.02, 0.12, 0.14, 0.14, yellow, 0.05); // head tuft
       }
-      if (last) cube(g, 0, B0 + 0.5, bz - 0.06, 0.18, 0.16, 0.14, 0xf7bc2a, 0.06);
+      if (last) cube(g, 0, B0 + 0.5, bz + 0.04, 0.18, 0.16, 0.14, 0xf7bc2a, 0.06);
       break;
     }
     case 'parrot': {
@@ -138,12 +138,12 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         cube(g, 0, B0 + 0.42, fz + 0.1, 0.28, 0.26, 0.22, 0x50555f, 0.1); // hooked beak
         cube(g, 0, B0 + 0.3, fz + 0.12, 0.16, 0.12, 0.14, 0x50555f, 0.05);
         for (const sx of [-1, 1]) {
-          cube(g, sx * (W / 2 + 0.04), B0 + 0.42, zc - 0.02, 0.12, 0.44, 0.44, 0x2a7fd1, 0.07); // wings
-          cube(g, sx * (W / 2 + 0.06), B0 + 0.3, zc - 0.02, 0.1, 0.14, 0.42, 0xf5cf3e, 0.04);
+          cube(g, sx * (W / 2 - 0.02), B0 + 0.42, zc - 0.02, 0.12, 0.44, 0.44, 0x2a7fd1, 0.07); // wings
+          cube(g, sx * (W / 2 + 0.0), B0 + 0.3, zc - 0.02, 0.1, 0.14, 0.42, 0xf5cf3e, 0.04);
         }
         for (const [x, hh] of [[-0.11, 0.2], [0, 0.32], [0.11, 0.2]] as const) cube(g, x, top + hh / 2 - 0.02, zc - 0.06, 0.11, hh, 0.12, 0xef5a3a, 0.05); // crest
       }
-      if (last) for (const [x, c] of [[-0.08, 0x2a7fd1], [0.08, 0xf5cf3e]] as const) cube(g, x, B0 + 0.2, bz - 0.2, 0.12, 0.08, 0.44, c, 0.03).rotation.x = 0.35;
+      if (last) for (const [x, c] of [[-0.08, 0x2a7fd1], [0.08, 0xf5cf3e]] as const) cube(g, x, B0 + 0.4, bz + 0.02, 0.12, 0.08, 0.44, c, 0.03).rotation.x = 1.15; // tail feathers raised
       break;
     }
     case 'cow': {
@@ -163,7 +163,7 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         for (const sx of [-1, 1]) oval(g, sx * 0.13, B0 + 0.26, fz + 0.125, 0.05, 0.06, 0.02, 0xc06d77);
         eyes(g, fz + 0.03, yE + 0.04, 0.24);
         for (const sx of [-1, 1]) {
-          cube(g, sx * (W / 2 + 0.1), top - 0.2, zc + 0.12, 0.22, 0.13, 0.17, black, 0.05); // ears
+          cube(g, sx * (W / 2 - 0.04), top - 0.12, zc + 0.12, 0.22, 0.13, 0.17, black, 0.05); // ears
           cube(g, sx * 0.26, top + 0.1, zc + 0.14, 0.12, 0.22, 0.12, 0xe8c9a0, 0.04).rotation.z = -sx * 0.25; // horns
         }
       } else {
@@ -185,11 +185,11 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         cube(g, 0, B0 + 0.3, fz + 0.06, 0.42, 0.28, 0.16, 0xf28aa4, 0.11); // snout
         for (const sx of [-1, 1]) oval(g, sx * 0.09, B0 + 0.3, fz + 0.14, 0.04, 0.055, 0.02, 0xb85a72);
         eyes(g, fz, yE + 0.04, 0.24);
-        for (const sx of [-1, 1]) cube(g, sx * 0.32, top + 0.03, zc + 0.3, 0.28, 0.08, 0.28, 0xf08aa2, 0.04).rotation.set(0.55, 0, -sx * 0.25); // ears folded forward
+        for (const sx of [-1, 1]) cube(g, sx * 0.32, top + 0.03, zc + 0.18, 0.28, 0.08, 0.28, 0xf08aa2, 0.04).rotation.set(0.55, 0, -sx * 0.25); // ears folded forward
       } else {
         oval(g, W / 2 + 0.004, B0 + 0.55, 0.05, 0.02, 0.16, 0.2, 0xef93aa); // darker side spot
       }
-      if (last) ring(g, 0, top - 0.1, bz - 0.14, 0.17, 0.055, 0xf08aa2).rotation.y = Math.PI / 3; // big curly tail loop
+      if (last) ring(g, 0, top - 0.06, bz + 0.06, 0.17, 0.055, 0xf08aa2).rotation.y = Math.PI / 3; // big curly tail loop
       break;
     }
     case 'fox': {
@@ -210,8 +210,8 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         }
       }
       if (last) {
-        cube(g, 0, top - 0.08, bz - 0.22, 0.48, 0.48, 0.72, orange, 0.2).rotation.x = 0.8; // bushy tail, up and back
-        cube(g, 0, top + 0.26, bz - 0.52, 0.44, 0.44, 0.3, cream, 0.16).rotation.x = 0.8; // white tip
+        cube(g, 0, top + 0.08, bz + 0.22, 0.46, 0.62, 0.4, orange, 0.2).rotation.x = 0.25; // bushy tail, standing up over the back
+        cube(g, 0, top + 0.44, bz + 0.15, 0.42, 0.24, 0.36, cream, 0.16).rotation.x = 0.25; // white tip
       }
       break;
     }
@@ -238,9 +238,9 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         }
       }
       if (last) {
-        cube(g, 0, top - 0.12, bz - 0.12, 0.15, 0.15, 0.56, yellow, 0.06).rotation.x = 1.0; // tail up
-        cube(g, 0, top - 0.02, bz - 0.19, 0.17, 0.17, 0.07, stripe, 0.03).rotation.x = 1.0;
-        cube(g, 0, top + 0.16, bz - 0.3, 0.17, 0.17, 0.16, stripe, 0.06).rotation.x = 1.0;
+        cube(g, 0, top - 0.04, bz + 0.16, 0.15, 0.15, 0.56, yellow, 0.06).rotation.x = 1.3; // tail up
+        cube(g, 0, top + 0.06, bz + 0.13, 0.17, 0.17, 0.07, stripe, 0.03).rotation.x = 1.3;
+        cube(g, 0, top + 0.24, bz + 0.09, 0.17, 0.17, 0.16, stripe, 0.06).rotation.x = 1.3;
       }
       break;
     }
@@ -264,8 +264,8 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         oval(g, 0, B0 + 0.02, fz + 0.04, 0.07, 0.07, 0.06, 0xe9b33f); // bell
       }
       if (last) {
-        cube(g, 0, top - 0.08, bz - 0.12, 0.26, 0.26, 0.5, gray, 0.1).rotation.x = 1.0; // curled tail
-        cube(g, 0, top + 0.16, bz - 0.24, 0.28, 0.26, 0.24, white, 0.1).rotation.x = 1.4;
+        cube(g, 0, top - 0.02, bz + 0.16, 0.26, 0.26, 0.5, gray, 0.1).rotation.x = 1.3; // curled tail
+        cube(g, 0, top + 0.22, bz + 0.1, 0.28, 0.26, 0.24, white, 0.1).rotation.x = 1.5;
       }
       break;
     }
@@ -277,8 +277,8 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
         cube(g, 0, B0 + 0.24, fz + 0.03, 0.9, 0.3, 0.12, 0xcbd85c, 0.1); // light chin
         eyes(g, fz, yE + 0.12, 0.25, 1.05);
         for (const sx of [-1, 1]) oval(g, sx * 0.07, B0 + 0.48, fz + 0.02, 0.03, 0.025, 0.02, 0x2a2a2a);
-        cube(g, 0, B0 + 0.2, fz + 0.28, 0.09, 0.04, 0.38, 0xe23d4c, 0.02); // tongue
-        for (const sx of [-1, 1]) cube(g, sx * 0.05, B0 + 0.2, fz + 0.5, 0.05, 0.04, 0.12, 0xe23d4c, 0.015).rotation.y = sx * 0.4;
+        cube(g, 0, B0 + 0.2, fz + 0.04, 0.09, 0.04, 0.14, 0xe23d4c, 0.02); // tongue
+        for (const sx of [-1, 1]) cube(g, sx * 0.05, B0 + 0.2, fz + 0.12, 0.05, 0.04, 0.08, 0xe23d4c, 0.015).rotation.y = sx * 0.4;
       }
       break;
     }
@@ -304,13 +304,13 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
       block(brown);
       legsAt(0x6b3f25, false, 0.3, 0.26);
       if (head) {
-        cube(g, 0, B0 + 0.3, fz + 0.12, 0.52, 0.34, 0.28, 0xe7b06a, 0.13); // muzzle
-        oval(g, 0, B0 + 0.42, fz + 0.27, 0.1, 0.08, 0.07, 0x2a2228);
+        cube(g, 0, B0 + 0.3, fz - 0.06, 0.52, 0.34, 0.28, 0xe7b06a, 0.13); // muzzle
+        oval(g, 0, B0 + 0.42, fz + 0.09, 0.1, 0.08, 0.07, 0x2a2228);
         eyes(g, fz, yE + 0.06, 0.24);
-        for (const sx of [-1, 1]) cube(g, sx * (W / 2 + 0.06), B0 + 0.44, zc + 0.05, 0.14, 0.64, 0.38, 0x6b3f25, 0.07).rotation.z = sx * 0.12; // long floppy ears
+        for (const sx of [-1, 1]) cube(g, sx * (W / 2 - 0.02), B0 + 0.44, zc + 0.05, 0.14, 0.64, 0.38, 0x6b3f25, 0.07).rotation.z = sx * 0.08; // long floppy ears
         cube(g, 0, B0 + 0.12, zc - 0.48, W + 0.02, 0.14, 0.14, 0x3466b0, 0.04); // blue collar
       }
-      if (last) cube(g, 0, top - 0.1, bz - 0.12, 0.13, 0.13, 0.5, brown, 0.05).rotation.x = 0.9; // tail up
+      if (last) cube(g, 0, top - 0.04, bz + 0.16, 0.13, 0.13, 0.5, brown, 0.05).rotation.x = 1.25; // tail up
       break;
     }
     case 'crocodile': {
@@ -319,20 +319,20 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
       cube(g, 0, B0 + 0.09, zc, W + 0.008, 0.18, D - 0.04, 0xd6cf63, 0.07); // yellow belly
       // four short side legs in all: front pair at the back of the head block, hind pair at the front of the tail block
       const legZ = n === 1 ? [0.2, -0.2] : head ? [-0.2] : last ? [0.2] : [];
-      for (const sx of [-1, 1]) for (const z of legZ) cube(g, sx * (W / 2 + 0.06), 0.12, z + zc, 0.22, 0.24, 0.26, 0x3b9248, 0.06);
+      for (const sx of [-1, 1]) for (const z of legZ) cube(g, sx * (W / 2 - 0.02), 0.12, z + zc, 0.22, 0.24, 0.26, 0x3b9248, 0.06);
       for (const sx of [-0.22, 0.22]) for (const z of head ? [-0.25] : [0.2, -0.2]) pyramid(g, sx, top + 0.08, z + zc, 0.1, 0.18, 0x2f8a40); // back spikes
       if (head) {
-        cube(g, 0, B0 + 0.3, fz + 0.32, 0.84, 0.3, 0.7, green, 0.12); // long upper jaw
-        cube(g, 0, B0 + 0.12, fz + 0.32, 0.82, 0.12, 0.68, 0xd6cf63, 0.05); // lower jaw
-        for (const sx of [-1, 1]) for (const z of [0.1, 0.27, 0.44, 0.6]) taper(g, sx * 0.4, B0 + 0.17, fz + z, 0.045, 0.12, 0xf8f1dc, Math.PI); // teeth
-        for (const sx of [-1, 1]) oval(g, sx * 0.14, B0 + 0.46, fz + 0.63, 0.04, 0.03, 0.03, 0x2a6a34); // nostrils
+        cube(g, 0, B0 + 0.3, fz - 0.12, 0.84, 0.3, 0.4, green, 0.12); // upper jaw, kept inside its own cell
+        cube(g, 0, B0 + 0.12, fz - 0.12, 0.82, 0.12, 0.38, 0xd6cf63, 0.05); // lower jaw
+        for (const sx of [-1, 1]) for (const z of [-0.26, -0.16, -0.06, 0.04]) taper(g, sx * 0.4, B0 + 0.17, fz + z, 0.045, 0.12, 0xf8f1dc, Math.PI); // teeth
+        for (const sx of [-1, 1]) oval(g, sx * 0.14, B0 + 0.46, fz + 0.07, 0.04, 0.03, 0.03, 0x2a6a34); // nostrils
         for (const sx of [-1, 1]) {
           oval(g, sx * 0.26, top + 0.06, zc + 0.25, 0.17, 0.16, 0.17, green); // eye bumps
           oval(g, sx * 0.26, top + 0.1, zc + 0.39, 0.13, 0.13, 0.03, WHITE);
           oval(g, sx * 0.26, top + 0.09, zc + 0.415, 0.08, 0.09, 0.02, PUPIL);
         }
       }
-      if (last) cube(g, 0, B0 + 0.24, bz - 0.25, 0.4, 0.3, 0.5, green, 0.1); // tail stub
+      if (last) cube(g, 0, B0 + 0.24, bz + 0.06, 0.4, 0.3, 0.26, green, 0.1); // tail stub
       break;
     }
   }
@@ -340,13 +340,19 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
 }
 
 /** One segment per occupied cell, head first; each root has exactly one animated child. */
+/** Scale of every animal block inside its cell: neighbouring animals no longer overlap (eyes, snouts, ears). */
+const FIT = 0.9;
+
 export function buildAnimal(species: string, cells: number): THREE.Group[] {
   const type: AnimalType = BLOCK_SPECIES.includes(species as AnimalType) ? (species as AnimalType) : 'cow';
   const n = Math.max(1, Math.min(3, Math.floor(Number.isFinite(cells) ? cells : 1)));
   return Array.from({ length: n }, (_, i) => {
     const root = new THREE.Group();
     const animated = new THREE.Group();
-    animated.add(buildPart(type, i, n));
+    const part = buildPart(type, i, n);
+    // a touch smaller than the cell so bulging eyes and snouts stay off the neighbouring animals
+    part.scale.setScalar(FIT);
+    animated.add(part);
     root.add(animated);
     return root;
   });
