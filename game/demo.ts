@@ -111,3 +111,23 @@ export function dirsLevel(): { level: Level; species: Map<number, string> } {
   });
   return { level: { width: 9, height: 12, pieces }, species };
 }
+
+/**
+ * Ten animals for the "which way will it go?" test (?demo=quiz): five one-cell, three two-cell, two three-cell, dark
+ * ones (penguin, husky) included, two crowded (a chick facing a penguin, with a dachshund on its camera side). Answers
+ * are in docs/verification/direction-test.md and nowhere on screen: up 3, down 3, left 2, right 2.
+ */
+export function quizLevel(): { level: Level; species: Map<number, string> } {
+  const rows: Array<[number, string, Array<[number, number]>, Direction?]> = [
+    [1, 'penguin', [[1, 1]], 'up'], [2, 'chick', [[4, 1]], 'left'], [3, 'parrot', [[5, 4]], 'left'],
+    [4, 'penguin', [[2, 6]], 'down'], [5, 'chick', [[2, 7]], 'up'],
+    [6, 'husky', [[3, 3], [2, 3]]], [7, 'fox', [[1, 5], [1, 4]]], [8, 'cow', [[4, 6], [4, 5]]],
+    [9, 'snake', [[6, 1], [6, 2], [6, 3]]], [10, 'dachshund', [[3, 8], [2, 8], [1, 8]]],
+  ];
+  const species = new Map<number, string>();
+  const pieces: Level['pieces'] = rows.map(([id, name, cells, dir]) => {
+    species.set(id, name);
+    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(dir ? { dir } : {}) };
+  });
+  return { level: { width: 7, height: 9, pieces }, species };
+}

@@ -1,5 +1,5 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
-import { bombLevel, crossLevel, demoLevel, dirsLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
+import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
@@ -44,8 +44,8 @@ const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS
 const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
 /** ?touchdebug on the dev server: every touch on screen with what it hit and what became of it (game/touchdebug.ts). */
 let touchDebug: import('./touchdebug').TouchDebug | null = null;
-/** ?look=A|D|E on the dev server: direction-reading mockups (game/blocks.ts Look). */
-if (['A', 'D', 'E'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
+/** ?look=A|D|E|AD on the dev server: direction-reading mockups (game/blocks.ts Look). */
+if (['A', 'D', 'E', 'AD'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
 if (import.meta.env.DEV && params.has('touchdebug')) void import('./touchdebug').then((m) => { touchDebug = new m.TouchDebug(); });
 const DEMO = params.has('demo');
 
@@ -64,11 +64,11 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   }
   if (params.get('demo') === 'cross') return { level: crossLevel(), hearts: 3 };
   if (params.get('demo') === 'bomb') return { level: bombLevel(), hearts: 3 };
-  if (params.get('demo') === 'dirs') {
-    const dirs = dirsLevel();
+  if (params.get('demo') === 'dirs' || params.get('demo') === 'quiz') {
+    const board = params.get('demo') === 'dirs' ? dirsLevel() : quizLevel();
     speciesOverride.clear();
-    for (const [id, name] of dirs.species) speciesOverride.set(id, name);
-    return { level: dirs.level };
+    for (const [id, name] of board.species) speciesOverride.set(id, name);
+    return { level: board.level };
   }
   if (DEMO) return { level: demoLevel(), hearts: 3 };
   return buildGameLevel(n);
@@ -489,6 +489,16 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
     }
     return null;
   },
+  /** How far each animal's drawn body reaches past half a cell from its block centres, per animal (look checks). */
+  overhang: () => [...views.entries()].map(([id, v]) => {
+    let worst = 0;
+    for (const seg of v.tapTargets().slice(0, v.bodyLen)) {
+      const box = new THREE.Box3().setFromObject(seg);
+      const c = seg.getWorldPosition(new THREE.Vector3());
+      worst = Math.max(worst, box.max.x - c.x, c.x - box.min.x, box.max.z - c.z, c.z - box.min.z);
+    }
+    return { id, reach: +(worst).toFixed(3) };
+  }),
   /** Touch probe at a screen point: the animal whose model is drawn there, the one pick() chooses, and the element on top. */
   probe: (clientX: number, clientY: number) => {
     const rect = stage.renderer.domElement.getBoundingClientRect();
