@@ -6,87 +6,117 @@
     <title>탈출해 친구들!</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='14' width='80' height='76' rx='20' fill='%23f5a3b5'/%3E%3Ccircle cx='36' cy='48' r='7' fill='%233b3a36'/%3E%3Ccircle cx='64' cy='48' r='7' fill='%233b3a36'/%3E%3Cellipse cx='50' cy='66' rx='10' ry='7' fill='%23e2667f'/%3E%3C/svg%3E" />
     <style>
+      /* one set of tokens for the title, the HUD, the buttons, the pills and the cards */
+      :root { --cream: #fff8e8; --cream-a: rgba(255,248,232,.9); --edge: #dccfb6; --ink: #3b3a36; --ink-soft: #6b6558; --green: #6cc24a; --green-edge: #4c9431;
+        --orange: #f07b3f; --leaf: #4aa542; --brown: #5b3d27; --warn: #f2a33d; --warn-ink: #b9670f; --danger: #d0322a; --heart: #e0564a; --safe-b: max(16px, env(safe-area-inset-bottom)); }
       html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8f3; font-family: system-ui, -apple-system, sans-serif; touch-action: none; user-select: none; }
       #app { position: fixed; inset: 0; }
-      #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 20px; font-weight: 700; color: #3b3a36; pointer-events: none; }
-      #mute { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); min-width: 56px; min-height: 48px; font-size: 24px; padding: 0 12px; }
-      #hearts { font-size: 21px; letter-spacing: 0; }
-      #hud > div { background: rgba(255,255,255,.82); border-radius: 16px; padding: 4px 12px; }
+      button { min-height: 56px; min-width: 120px; padding: 0 18px; font-size: 19px; font-weight: 800; font-family: inherit; border: 0; border-radius: 28px; background: var(--cream); color: var(--ink);
+        box-shadow: 0 4px 0 var(--edge); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+      button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--edge); }
+      button[hidden] { display: none !important; }
+      button svg { flex: none; }
+      .primary { background: var(--green); color: #fff; box-shadow: 0 5px 0 var(--green-edge); }
+      .primary:active { box-shadow: 0 2px 0 var(--green-edge); }
+      /* secondary buttons on a cream card get an edge, so they still read as buttons */
+      .secondary { border: 2px solid var(--edge); color: var(--ink-soft); }
+
+      /* HUD: a quiet level card on the left, hearts and a small sound button on the right */
+      #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 64px 10px 12px; color: var(--ink); pointer-events: none; }
+      #hud > div { background: var(--cream-a); border-radius: 16px; padding: 5px 12px 6px; box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+      #hud > div:first-child { max-width: calc(100% - 132px); }
+      #levelLabel { font-size: 17px; font-weight: 800; line-height: 1.2; }
+      #stageLabel { font-size: 12px; font-weight: 700; line-height: 1.25; color: var(--ink-soft); margin-top: 1px; }
+      #stageDots { display: flex; gap: 3px; margin-top: 3px; }
+      #stageDots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(59,58,54,.18); }
+      #stageDots i.done { background: var(--green); }
+      #stageDots i.now { background: var(--warn); box-shadow: 0 0 0 2px rgba(242,163,61,.35); }
+      #hearts { font-size: 17px; font-weight: 700; color: var(--heart); padding: 7px 12px !important; letter-spacing: 0; }
       #hearts:empty { display: none; }
-      #stageDots { display: flex; gap: 4px; margin-top: 4px; }
-      #stageDots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(59,58,54,.18); }
-      #stageDots i.done { background: #6cc24a; }
-      #stageDots i.now { background: #f2b33d; box-shadow: 0 0 0 2px rgba(242,179,61,.35); }
-      #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; background: rgba(255,248,232,.95); border-radius: 26px; padding: 14px 26px; font-size: 24px; font-weight: 800; color: #3b3a36; box-shadow: 0 6px 0 rgba(0,0,0,.12); pointer-events: none; animation: bannerIn 1.9s ease both; }
+      #mute { position: fixed; top: 10px; right: 12px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 22px; background: var(--cream-a); color: var(--ink-soft); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
+      #mute:active { transform: translateY(2px); box-shadow: none; }
+      #mute .off, #mute.muted .on { display: none; }
+      #mute.muted .off { display: block; }
+      /* the closest bomb's number, under the hearts; red and beating at 1 */
+      #bombChip { position: fixed; top: 62px; right: 12px; padding: 4px 10px; border-radius: 14px; background: var(--cream-a); border: 2px solid var(--warn); color: var(--warn-ink); font-size: 16px; font-weight: 800; box-shadow: 0 2px 0 rgba(0,0,0,.08); pointer-events: none; }
+      #bombChip[hidden] { display: none; }
+      #bombChip.danger { border-color: var(--danger); color: var(--danger); animation: chipBeat .7s ease-in-out infinite; }
+      @keyframes chipBeat { 50% { transform: scale(1.08); } }
+
+      #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; background: rgba(255,248,232,.95); border-radius: 26px; padding: 14px 26px; font-size: 24px; font-weight: 800; color: var(--ink); box-shadow: 0 6px 0 rgba(0,0,0,.12); pointer-events: none; animation: bannerIn 1.9s ease both; }
       #banner[hidden] { display: none; }
       #bannerIcon { font-size: 40px; }
       @keyframes bannerIn { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.9); } 15%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60%) scale(.98); } }
       #interlude { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 5; }
       #interlude[hidden] { display: none; }
-      .ilCard { background: #fff8e8; border-radius: 32px; padding: 30px 32px 26px; width: min(86vw, 360px); text-align: center; box-shadow: 0 10px 0 rgba(0,0,0,.15); animation: ilIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+      .ilCard { background: var(--cream); border-radius: 32px; padding: 30px 32px 26px; width: min(86vw, 360px); text-align: center; box-shadow: 0 10px 0 rgba(0,0,0,.15); animation: ilIn .45s cubic-bezier(.2,1.4,.4,1) both; }
       @keyframes ilIn { from { opacity: 0; transform: translateY(24px) scale(.92); } to { opacity: 1; transform: none; } }
       #ilIcon { font-size: 76px; line-height: 1.1; }
       #ilKicker { font-size: 17px; font-weight: 700; color: #8a7d62; margin-top: 6px; }
-      #ilTitle { font-size: 30px; font-weight: 800; margin: 4px 0 8px; color: #3b3a36; }
-      #ilSub { font-size: 18px; color: #6b6558; margin-bottom: 20px; line-height: 1.45; white-space: pre-line; }
-      #ilBtn { background: #6cc24a; color: #fff; min-width: 180px; }
-      #bombBar { position: fixed; top: 104px; left: 50%; transform: translateX(-50%); background: #fff8e8; border: 3px solid #8a7a5c; border-radius: 20px; padding: 6px 16px; font-size: 17px; font-weight: 800; color: #3b3a36; width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; text-align: center; line-height: 1.3; word-break: keep-all; pointer-events: none; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
-      #bombBar[hidden] { display: none; }
-      #bombBar.warn { border-color: #f2a33d; color: #b9670f; }
-      #bombBar.danger { border-color: #e0453a; color: #d0322a; animation: bombBeat .7s ease-in-out infinite; }
-      @keyframes bombBeat { 50% { transform: translateX(-50%) scale(1.06); } }
-      #hud > div:first-child { max-width: calc(50% - 46px); }
-      #stageLabel { font-size: 13px; line-height: 1.25; font-weight: 600; opacity: .75; margin-top: 2px; }
-      /* why a tap did not go: a pill just above the buttons, the one strip free of the board on every screen size */
-      #msg { position: fixed; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 62px); left: 50%; transform: translateX(-50%); max-width: calc(100vw - 32px); box-sizing: border-box;
-        background: rgba(255,248,232,.95); border-radius: 18px; padding: 5px 16px; box-shadow: 0 3px 0 rgba(0,0,0,.12);
-        text-align: center; font-size: 17px; font-weight: 700; color: #b3402f; word-break: keep-all; pointer-events: none; }
-      #msg:empty { display: none; }
-      #bar { position: fixed; bottom: 16px; left: 0; right: 0; display: flex; justify-content: center; gap: 16px; }
-      button { min-height: 52px; min-width: 120px; font-size: 20px; font-weight: 700; border: 0; border-radius: 26px; background: #fff; color: #3b3a36; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
-      button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.18); }
+      #ilTitle { font-size: 30px; font-weight: 800; margin: 4px 0 8px; color: var(--ink); }
+      #ilSub { font-size: 18px; color: var(--ink-soft); margin-bottom: 20px; line-height: 1.45; white-space: pre-line; }
+      #ilBtn { min-width: 180px; }
+
+      /* notes just above the buttons, the one strip free of the board on every screen size: why a tap did not go, and
+         the bomb warning at 1 (closest to the buttons) */
+      #notes { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 64px); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+      #msg, #bombBar { width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; background: var(--cream-a); border-radius: 16px; padding: 4px 14px; box-shadow: 0 3px 0 rgba(0,0,0,.1);
+        text-align: center; font-size: 16px; font-weight: 800; line-height: 1.3; word-break: keep-all; }
+      #msg { color: #b3402f; }
+      #msg:empty, #bombBar[hidden] { display: none; }
+      #bombBar { border: 2px solid var(--danger); color: var(--danger); }
+
+      #bar { position: fixed; bottom: var(--safe-b); left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
+      #bar button { min-width: 124px; font-size: 18px; }
+      #bar #home { width: 56px; min-width: 56px; padding: 0; }
+      @media (max-width: 340px) { #bar { gap: 8px; } #bar button { min-width: 100px; padding: 0 12px; } }
+
       #popup { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,40,40,.35); }
       #popup[hidden] { display: none; }
-      .card { background: #fff8e8; border-radius: 28px; padding: 28px 32px; text-align: center; box-shadow: 0 8px 0 rgba(0,0,0,.15); width: min(340px, calc(100vw - 32px)); box-sizing: border-box; }
-      #popupTitle { font-size: clamp(26px, 7.4vw, 30px); font-weight: 800; line-height: 1.2; margin-bottom: 8px; word-break: keep-all; }
-      #popupSub { font-size: 18px; color: #6b6558; margin-bottom: 18px; }
-      .tip { text-align: left; font-size: 18px; line-height: 1.45; margin: 0 0 10px; max-width: 300px; color: #3b3a36; }
-      #popupBtn { background: #6cc24a; color: #fff; min-width: 160px; }
-      .popBtns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-      #popupHome { min-height: 46px; font-size: 18px; color: #6b6558; }
-      #home { min-width: 56px; padding: 0 12px; font-size: 22px; }
-      /* narrow phones: the sound button gives way to the level card on its left */
-      @media (max-width: 380px) { #mute { min-width: 44px; padding: 0 8px; } }
+      .card { background: var(--cream); border-radius: 28px; padding: 28px 32px; text-align: center; box-shadow: 0 6px 0 var(--edge); width: min(340px, calc(100vw - 32px)); box-sizing: border-box; }
+      #popupTitle { font-size: clamp(26px, 7.4vw, 30px); font-weight: 800; line-height: 1.2; margin-bottom: 8px; color: var(--ink); word-break: keep-all; }
+      #popupSub { font-size: 18px; color: var(--ink-soft); margin-bottom: 18px; }
+      .tip { text-align: left; font-size: 18px; line-height: 1.45; margin: 0 0 10px; max-width: 300px; color: var(--ink); }
+      .popBtns { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+      #popupBtn { min-width: 180px; }
+      #popupHome { min-height: 48px; min-width: 140px; font-size: 17px; }
+
       /* title screen: an overlay over the 3D board with the game's own animals */
-      #title { position: fixed; inset: 0; z-index: 4; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: max(48px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+      #title { position: fixed; inset: 0; z-index: 4; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: max(40px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
         background: linear-gradient(180deg, rgba(207,232,243,.92) 0%, rgba(207,232,243,0) 36%), linear-gradient(0deg, rgba(255,248,232,.94) 0%, rgba(255,248,232,0) 32%); }
       #title[hidden] { display: none; }
       .tHead { text-align: center; }
-      .tKicker { display: inline-block; background: #fff8e8; color: #8a7a5c; font-size: 15px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
-      /* a round white outline drawn behind the letters (paint-order), instead of stacked offset shadows that stair-step */
-      #tName { margin: 12px 0 6px; font-size: 46px; font-weight: 900; line-height: 1.1; letter-spacing: -.01em; color: #3b3a36; word-break: keep-all;
-        -webkit-text-stroke: 9px #fff; paint-order: stroke fill; stroke-linejoin: round; text-shadow: 0 6px 0 rgba(0,0,0,.08); }
-      #tName .a { color: #e8743b; }
-      #tName .b { color: #4a9b3f; }
-      .tSub { margin: 0; font-size: 17px; font-weight: 700; color: #5a5448; text-shadow: 0 1px 0 #fff; word-break: keep-all; }
+      .tKicker { display: inline-block; background: var(--cream); color: #8a7a5c; font-size: 14px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+      /* a two-line sticker logo: a round white outline behind the letters (paint-order) and a thin brown edge around it */
+      #tName { margin: 10px 0 8px; font-size: clamp(38px, 6.6vh, 52px); font-weight: 900; line-height: 1.04; letter-spacing: -.01em; word-break: keep-all;
+        -webkit-text-stroke: 8px #fff; paint-order: stroke fill;
+        filter: drop-shadow(1.8px 0 0 var(--brown)) drop-shadow(-1.8px 0 0 var(--brown)) drop-shadow(0 1.8px 0 var(--brown)) drop-shadow(0 -1.8px 0 var(--brown)) drop-shadow(0 5px 0 rgba(91,61,39,.3)); }
+      #tName .a, #tName .b { display: block; }
+      #tName .a { color: var(--orange); transform: rotate(-3deg); }
+      #tName .b { color: var(--leaf); transform: rotate(2deg) translateX(10px); }
+      /* the subtitle on a small frosted pill, only as big as its words */
+      .tSub { display: inline-block; margin: 2px 0 0; padding: 5px 14px; border-radius: 16px; background: rgba(255,248,232,.8); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+        font-size: 15px; font-weight: 700; color: #4a4438; box-shadow: 0 2px 0 rgba(0,0,0,.06); word-break: keep-all; }
       .tButtons { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
-      .tButtons button { width: min(300px, 100%); min-height: 64px; font-size: 22px; font-weight: 800; border-radius: 32px; }
-      #tStart, #tContinue { background: #6cc24a; color: #fff; box-shadow: 0 5px 0 #4f9a33; }
-      #tContinue small { display: block; font-size: 14px; font-weight: 700; opacity: .9; margin-top: 2px; }
-      #tRestart { min-height: 52px; font-size: 18px; color: #6b6558; }
-      body.on-title #hud, body.on-title #bar, body.on-title #bombBar, body.on-title #msg, body.on-title #mute, body.on-title #banner { display: none; }
+      .tButtons button { width: min(300px, 100%); min-height: 60px; border-radius: 30px; font-size: 21px; }
+      #tContinue { flex-direction: column; gap: 0; }
+      #tContinue small { display: block; font-size: 13px; font-weight: 700; opacity: .9; margin-top: 1px; }
+      #tRestart { min-height: 52px; font-size: 18px; }
+      /* short screens: the title block gives the board below it some room */
+      @media (max-height: 700px) { #title { padding-top: max(24px, env(safe-area-inset-top)); } #tName { margin: 6px 0 6px; } }
+      body.on-title #hud, body.on-title #bar, body.on-title #notes, body.on-title #mute, body.on-title #bombChip, body.on-title #banner { display: none; }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="hud"><div><div id="levelLabel"></div><div id="stageLabel"></div><div id="stageDots"></div></div><div id="hearts"></div></div>
-    <button id="mute" aria-label="소리 켜기/끄기">🔊</button>
-    <div id="bombBar" hidden></div>
-    <div id="msg"></div>
-    <div id="bar"><button id="home" aria-label="처음 화면으로">🏠</button><button id="retry">다시 ↻</button><button id="hint">💡 힌트</button><button id="next" hidden>다음 ▶</button></div>
+    <button id="mute" aria-label="소리 끄기"><svg class="on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><svg class="off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg></button>
+    <div id="bombChip" hidden></div>
+    <div id="notes"><div id="msg"></div><div id="bombBar" hidden></div></div>
+    <div id="bar"><button id="home" aria-label="처음 화면으로"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg></button><button id="retry"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4.5h4.5"/></svg><span>다시</span></button><button id="hint"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>힌트</span></button><button id="next" hidden>다음 ▶</button></div>
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
-    <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><button id="ilBtn"></button></div></div>
-    <div id="popup" hidden><div class="card"><div id="popupTitle"></div><div id="popupSub"></div><div class="popBtns"><button id="popupBtn"></button><button id="popupHome" hidden>처음으로</button></div></div></div>
+    <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><button id="ilBtn" class="primary"></button></div></div>
+    <div id="popup" hidden><div class="card"><div id="popupTitle"></div><div id="popupSub"></div><div class="popBtns"><button id="popupBtn" class="primary"></button><button id="popupHome" class="secondary" hidden>처음으로</button></div></div></div>
     <div id="title" hidden>
       <div class="tHead">
         <div class="tKicker">동물 구출 퍼즐</div>
@@ -94,9 +124,9 @@
         <p class="tSub">길을 비켜 주면 친구들이 문으로 달려 나가요</p>
       </div>
       <div class="tButtons">
-        <button id="tStart">게임 시작</button>
-        <button id="tContinue" hidden>이어하기<small id="tWhere"></small></button>
-        <button id="tRestart" hidden>처음부터</button>
+        <button id="tStart" class="primary">게임 시작</button>
+        <button id="tContinue" class="primary" hidden>이어하기<small id="tWhere"></small></button>
+        <button id="tRestart" class="secondary" hidden>처음부터</button>
       </div>
     </div>
     <script type="module" src="./main.ts"></script>

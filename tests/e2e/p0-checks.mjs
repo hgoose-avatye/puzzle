@@ -103,7 +103,7 @@ export async function runP0Checks(browser, base, report) {
     await sleep(2500);
     const f3 = await st(p);
     check('R3 bomb level: fuses unchanged while the runner finishes', JSON.stringify(f3.fuses) === JSON.stringify(f2.fuses), JSON.stringify(f3.fuses));
-    report.info(`bomb bar: ${await p.evaluate(() => document.getElementById('bombBar').textContent)}`);
+    report.info(`bomb chip: ${await p.evaluate(() => document.getElementById('bombChip').textContent)}`);
   });
 
   await scenario('R5 two fingers', CROSS, async (p) => {
@@ -194,15 +194,38 @@ export async function runP0Checks(browser, base, report) {
 
   // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1
   const BOMB = url('?demo=bomb');
-  const bar = (p) => p.evaluate(() => { const b = document.getElementById('bombBar'); return b.hidden ? null : { text: b.textContent, cls: b.className }; });
+  /** The bomb chip under the hearts and the warning above the buttons (null when hidden). */
+  const bombUi = (p) => p.evaluate(() => {
+    const read = (id) => { const e = document.getElementById(id); return e.hidden ? null : { text: e.textContent, cls: e.className }; };
+    return { chip: read('bombChip'), warn: read('bombBar') };
+  });
 
   await scenario('bomb warning at 1', BOMB, async (p) => {
-    const before = await bar(p);
+    const before = await bombUi(p);
     await tap(p, 1); await sleep(150);
-    const at1 = await bar(p);
+    const at1 = await bombUi(p);
     if (process.env.E2E_SHOTS) await p.screenshot({ path: `${process.env.E2E_SHOTS}/bomb-bar-at-1.png` });
-    check('bomb bar counts 2 at the start', before?.text.startsWith('💣 2번 남았어요'), JSON.stringify(before));
-    check('bomb bar warns at 1 in the danger style', at1?.text === '💣 다른 친구가 한 번 더 나가면 터져요! 폭탄 친구를 먼저!' && at1.cls === 'danger', JSON.stringify(at1));
+    check('bomb chip shows 2 at the start, no warning yet', before.chip?.text === '💣 2' && before.chip.cls === 'warn' && before.warn === null, JSON.stringify(before));
+    check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 다른 친구가 1번 더 나가면 펑!', JSON.stringify(at1));
+  });
+
+  // two bombs (level 131): the chip follows the closest one as fuses burn, and goes once no bomb is left
+  await scenario('bomb chip with two bombs', url('?level=131'), async (p) => {
+    const read = () => p.evaluate(() => {
+      const s = window.__game.state();
+      const left = Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([, f]) => f);
+      return { chip: document.getElementById('bombChip').hidden ? null : document.getElementById('bombChip').textContent, min: left.length && !s.failed ? Math.min(...left) : null, bombs: left.length };
+    });
+    const seen = [];
+    // play the way the hint button suggests (bombs first), reading the chip after every tap
+    for (let k = 0; k < 60; k++) {
+      seen.push(await read());
+      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (s.cleared || s.failed) return true; const id = g.hint(); if (id === null) return true; g.tap(id); return false; });
+      if (done) break;
+    }
+    const wrong = seen.filter((r) => (r.min === null ? r.chip !== null : r.chip !== `💣 ${r.min}`));
+    const counts = [...new Set(seen.map((r) => r.bombs))];
+    check('two bombs: the chip always shows the smallest fuse left, follows the other bomb once one is out, hides with none left', wrong.length === 0 && counts.includes(2) && counts.includes(1) && counts.includes(0), `${seen.length} states, bombs on board ${counts.join('/')}, mismatches ${JSON.stringify(wrong.slice(0, 3))}`);
   });
 
   await scenario('bomb at 1: bomb first is saved while it waits', BOMB, async (p) => {

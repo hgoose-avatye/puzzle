@@ -4,7 +4,7 @@
 npm run test:e2e
 ```
 
-게임의 Vite 서버를 직접 띄우고, 헤드리스 Chrome으로 [p0-checks.mjs](p0-checks.mjs)(규칙·입력·이동 37개)와 [flow-checks.mjs](flow-checks.mjs)(메인 화면 → 플레이 → 성공·실패 → 다음·다시·처음으로, 마지막 레벨 18개)를 돌린 뒤 서버와 브라우저를 모두 닫습니다.
+게임의 Vite 서버를 직접 띄우고, 헤드리스 Chrome으로 [p0-checks.mjs](p0-checks.mjs)(규칙·입력·이동·폭탄 표시 38개)와 [flow-checks.mjs](flow-checks.mjs)(메인 화면 → 플레이 → 성공·실패 → 다음·다시·처음으로, 마지막 레벨 18개)를 돌린 뒤 서버와 브라우저를 모두 닫습니다.
 `npm test`(vitest)에는 들어 있지 않습니다. 약 45초 걸립니다.
 
 ## 필요한 것
@@ -25,7 +25,7 @@ npm run test:e2e
 
 ## 결과 읽기
 
-- 줄마다 `PASS`, `FAIL`, `SKIP`, `INFO`가 붙고, 끝에 `55 PASS · 0 FAIL · 0 SKIP`처럼 합계와 실패 목록을 출력합니다.
+- 줄마다 `PASS`, `FAIL`, `SKIP`, `INFO`가 붙고, 끝에 `56 PASS · 0 FAIL · 0 SKIP`처럼 합계와 실패 목록을 출력합니다.
 - `SKIP`: 그 실행에서는 판정할 수 없었던 검사입니다. 예를 들어 R1 터치 두 번 탭은 두 탭이 페이지에 400ms 넘게 벌어져 도착하면 SKIP입니다. 실패로 치지 않지만 계속 나오면 원인을 봐야 합니다.
 - 한 장면이 예외로 멈추면 `(scenario crashed)` FAIL 하나로 기록하고 다음 장면으로 넘어갑니다.
 

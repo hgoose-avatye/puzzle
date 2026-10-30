@@ -85,17 +85,23 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   return buildGameLevel(n);
 }
 
-/** While a bomb is on the board, a bar under the HUD says how many taps are left for the closest one. */
+/**
+ * While a bomb is on the board, a chip under the hearts shows the closest bomb's number: other animals may leave that
+ * many more times before it goes off. At 1 the chip turns red and a warning shows just above the buttons.
+ */
 function paintBombBar(): void {
-  const bar = $('bombBar');
+  const chip = $('bombChip');
+  const warn = $('bombBar');
   const state = current();
-  if (!state) { bar.hidden = true; return; }
-  const left = [...state.alive].map((id) => state.fuses[id]).filter((f): f is number => f !== undefined);
-  if (!left.length || isFailed(state)) { bar.hidden = true; return; }
+  const left = state ? [...state.alive].map((id) => state.fuses[id]).filter((f): f is number => f !== undefined) : [];
+  if (!state || !left.length || isFailed(state)) { chip.hidden = true; warn.hidden = true; return; }
   const n = Math.min(...left);
-  bar.hidden = false;
-  bar.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
-  bar.textContent = n <= 1 ? '💣 다른 친구가 한 번 더 나가면 터져요! 폭탄 친구를 먼저!' : `💣 ${n}번 남았어요 · 폭탄 친구를 먼저 구해 주세요`;
+  chip.hidden = false;
+  chip.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
+  chip.textContent = `💣 ${n}`;
+  chip.setAttribute('aria-label', `폭탄: 다른 친구가 ${n}번 더 나가면 터져요`);
+  warn.hidden = n > 1;
+  warn.textContent = '💣 다른 친구가 1번 더 나가면 펑!';
 }
 
 function refreshHud(): void {
@@ -289,7 +295,7 @@ const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolea
   ['hearts', '♥', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
   ['key', '🔑', '🔒 잠긴 친구는 🔑 열쇠를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
   ['sleep', '💤', 'Zzz 자는 친구는 옆 친구가 나가면 깨어나요. 깨어나기 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
-  ['bomb', '💣', '💣 폭탄 친구 머리 위 숫자는 남은 횟수예요. 다른 친구가 나갈 때마다 1씩 줄고, 0이 되면 터져요. 폭탄 친구 앞을 먼저 비워서 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
+  ['bomb', '💣', '💣 폭탄 친구 머리 위와 화면 오른쪽 위의 숫자는 "다른 친구가 몇 번 더 나가면 터지는지"예요. 1이 되면 빨갛게 알려 줘요. 폭탄 친구 앞을 먼저 비워서 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
 ];
 
 function showIntro(level: Level, hearts: boolean): void {
@@ -487,7 +493,10 @@ const clock = new THREE.Clock();
 })();
 
 const muteBtn = $('mute');
-const paintMute = (): void => { muteBtn.textContent = sound.muted ? '🔇' : '🔊'; };
+const paintMute = (): void => {
+  muteBtn.classList.toggle('muted', sound.muted);
+  muteBtn.setAttribute('aria-label', sound.muted ? '소리 켜기' : '소리 끄기');
+};
 paintMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
 
@@ -525,6 +534,8 @@ else goHome();
 /** Test hook used by automated browser checks (tests/e2e); dev server only. */
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
+  /** The animal the hint button would light up (bombs first). */
+  hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) : null; },
   free: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive)).map((p) => p.id) : []; },
   views: () => views,
   runSpeed: () => runSpeed(),
@@ -665,7 +676,7 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
     ray.setFromCamera(new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1)), stage.camera);
     let seen: number | null = null;
     const s = current();
-    const groups = [...views.entries()].filter(([id, v]) => v.group.visible && s?.alive.has(id));
+    const groups = [...views.entries()].filter(([id, v]) => v.group.visible && (!s || s.alive.has(id)));
     // the raycaster also hits hidden objects (path chevrons, badges): only count what is drawn
     const drawn = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
     const hit = ray.intersectObjects(groups.map(([, v]) => v.group), true).find((h) => drawn(h.object));
