@@ -1,12 +1,11 @@
-import { createGame, isCleared, isFailed, tap, type GameState } from '../src/core/game';
+import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
-import { Traffic } from '../src/game/traffic';
-import { TapInput } from '../src/game/input';
+import { PlayFlow } from '../src/game/flow';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -18,16 +17,15 @@ import * as THREE from 'three';
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const stage = new Stage($('app'));
 const fx = new Fx(stage.scene);
-let state: GameState | null = null;
+/** The level in play: rules, animals running out, touch input. Null while a level loads. */
+// the cast keeps TypeScript from narrowing this to null inside the render loop that starts right away
+let flow = null as PlayFlow | null;
+const current = (): GameState | null => flow?.state ?? null;
 let views = new Map<number, PieceView>();
-/** Animals on their way out: who may move how far this frame (first come, first served; later ones wait). */
-const traffic = new Traffic();
 let levelNumber = 1;
 /** Hearts the level started with, for the empty-heart outlines in the HUD. */
 let maxHearts = 0;
 let loadToken = 0;
-/** Fingers on the board, one press each, and the guard against repeat taps on a blocked animal. */
-const input = new TapInput();
 /** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
 /** Animals that were sent out and have not crossed their gate yet. */
 const pendingExits = new Set<number>();
@@ -62,8 +60,9 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
 /** While a bomb is on the board, a bar under the HUD says how many taps are left for the closest one. */
 function paintBombBar(): void {
   const bar = $('bombBar');
+  const state = current();
   if (!state) { bar.hidden = true; return; }
-  const left = [...state.alive].map((id) => state!.fuses[id]).filter((f): f is number => f !== undefined);
+  const left = [...state.alive].map((id) => state.fuses[id]).filter((f): f is number => f !== undefined);
   if (!left.length || isFailed(state)) { bar.hidden = true; return; }
   const n = Math.min(...left);
   bar.hidden = false;
@@ -72,6 +71,7 @@ function paintBombBar(): void {
 }
 
 function refreshHud(): void {
+  const state = current();
   if (!state) return;
   const spec = levelSpec(levelNumber);
   $('levelLabel').textContent = `레벨 ${levelNumber}`;
@@ -101,8 +101,7 @@ async function loadLevel(n: number): Promise<void> {
   failPlayed = false;
   pendingExits.clear();
   lastHit.clear();
-  input.clear();
-  traffic.clear();
+  flow = null;
   window.clearTimeout(hintTimer);
   const built = buildLevel(n);
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
@@ -115,7 +114,7 @@ async function loadLevel(n: number): Promise<void> {
   if (!DEMO && startsStage(n)) showBanner(n);
   if (token !== loadToken) return;
   maxHearts = built.hearts ?? 0;
-  state = createGame(built.level, built.hearts === undefined ? {} : { hearts: built.hearts });
+  flow = new PlayFlow(built.level, built.hearts);
   for (const piece of built.level.pieces) {
     const view = new PieceView(built.level, piece, (x, y) => stage.worldOf(built.level, x, y));
     views.set(piece.id, view);
@@ -127,6 +126,7 @@ async function loadLevel(n: number): Promise<void> {
 }
 
 function pick(clientX: number, clientY: number): number | null {
+  const state = current();
   if (!state) return null;
   const g = stage.screenToGrid(clientX, clientY);
   if (!g) return null;
@@ -160,6 +160,7 @@ function collide(id: number, view: PieceView): void {
 
 /** Crates next to an animal that just left crack; a crate that breaks bursts and opens the way. */
 function crackCrates(): void {
+  const state = current();
   if (!state) return;
   for (const c of stage.updateCrates(state.level, state.alive)) {
     if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); }
@@ -168,25 +169,20 @@ function crackCrates(): void {
 }
 
 function onTap(id: number): void {
-  if (!state || isCleared(state) || isFailed(state)) return;
-  const result = tap(state, id);
-  const ev = result.event;
-  const now = performance.now();
-  // a repeat on an animal still shaking from its blocked tap is the same tap: no second heart
-  if (ev.type === 'blocked' && input.isBlockedRepeat(id, now)) return;
-  if (ev.type === 'blocked') input.noteBlocked(id, now);
+  if (!flow || isCleared(flow.state) || flow.lost) return;
+  // null: a repeat on an animal still shaking from its blocked tap, the same tap (no second heart)
+  const ev = flow.tap(id, performance.now());
+  if (!ev) return;
   const view = views.get(id);
-  state = result.state;
   if (ev.type === 'exited' && view) {
-    // The logic treats it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
-    traffic.add(id, view.track, view.bodyLen, view.headStart);
+    // The rules treat it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
     fx.launch(view.headWorld());
     sound.play('move');
     pendingExits.add(id);
-    view.runOut(() => { if (state && isCleared(state) && !anyRunning()) showEnd(true); }, () => {
+    view.runOut(() => { if (flow?.won && !anyRunning()) showEnd(true); }, () => {
       pendingExits.delete(id);
       // the last animal's exit is covered by the clear sound
-      if (!(state && isCleared(state) && pendingExits.size === 0)) sound.play('rescued');
+      if (!(flow && isCleared(flow.state) && pendingExits.size === 0)) sound.play('rescued');
       fx.burst(view.gateWorld(), view.color);
       fx.sparkle(view.gateWorld(), view.color);
     });
@@ -202,7 +198,7 @@ function onTap(id: number): void {
     $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 옆 친구가 나가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
-  if (isFailed(state)) {
+  if (flow.lost) {
     if (!failPlayed) { failPlayed = true; sound.play('gameover'); }
     showEnd(false);
   }
@@ -310,6 +306,7 @@ async function playInterludes(list: Interlude[]): Promise<void> {
 }
 
 function showEnd(won: boolean): void {
+  const state = current();
   if (!state) return;
   if (won) {
     if (!clearPlayed) { clearPlayed = true; sound.play('clear'); }
@@ -337,19 +334,20 @@ for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) w
 const canvas = stage.renderer.domElement;
 /** Hide the path of an animal once no finger is on it any more. */
 const release = (id: number | null): void => {
-  if (id !== null && !input.isPressed(id)) views.get(id)?.showPath(false);
+  if (id !== null && !flow?.input.isPressed(id)) views.get(id)?.showPath(false);
 };
 canvas.addEventListener('pointerdown', (e) => {
   sound.unlock();
   const id = pick(e.clientX, e.clientY);
-  if (id !== null && input.down(e.pointerId, id)) { views.get(id)?.showPath(true); sound.play('select'); }
+  if (id !== null && flow?.input.down(e.pointerId, id)) { views.get(id)?.showPath(true); sound.play('select'); }
 });
 canvas.addEventListener('pointerup', (e) => {
-  const { released, tap: id } = input.up(e.pointerId, pick(e.clientX, e.clientY));
+  if (!flow) return;
+  const { released, tap: id } = flow.input.up(e.pointerId, pick(e.clientX, e.clientY));
   release(released);
   if (id !== null) onTap(id);
 });
-canvas.addEventListener('pointercancel', (e) => release(input.cancel(e.pointerId)));
+canvas.addEventListener('pointercancel', (e) => release(flow?.input.cancel(e.pointerId) ?? null));
 $('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 // skipping levels without clearing them is a testing aid only
@@ -358,6 +356,7 @@ $('next').hidden = !params.has('dev');
 let hintTimer: number | undefined;
 /** Light up the most helpful animal and its way out for a moment. Free for now; ads may gate it later. */
 function showHint(): void {
+  const state = current();
   if (!state || isCleared(state) || isFailed(state)) return;
   const id = pickHint(state.level, state.alive, state.fuses);
   const view = id === null ? undefined : views.get(id);
@@ -369,7 +368,7 @@ function showHint(): void {
   let n = 0;
   const beat = (): void => {
     if (n++ < 3) { view.pulse(); hintTimer = window.setTimeout(beat, 450); return; }
-    if (!input.isPressed(view.piece.id)) view.showPath(false);
+    if (!flow?.input.isPressed(view.piece.id)) view.showPath(false);
   };
   beat();
 }
@@ -383,13 +382,13 @@ const clock = new THREE.Clock();
   dustT += dt;
   const dust = dustT > 0.07;
   if (dust) dustT = 0;
-  for (const e of traffic.step(dt, runSpeed())) {
+  for (const e of flow?.step(dt, runSpeed()) ?? []) {
     const v = views.get(e.id);
     if (e.type === 'wait' && !e.quiet && v) collide(e.id, v);
   }
-  for (const r of traffic.runners) views.get(r.id)?.setRun(r.s, r.state === 'waiting');
+  for (const r of flow?.traffic.runners ?? []) views.get(r.id)?.setRun(r.s, r.state === 'waiting');
   for (const v of views.values()) {
-    if (v.running && !traffic.get(v.piece.id)) v.setRun(v.track.length, false); // stepped past the end this frame
+    if (v.running && !flow?.traffic.get(v.piece.id)) v.setRun(v.track.length, false); // stepped past the end this frame
     v.update(dt);
     if (dust && v.running && !v.isWaiting) {
       fx.dust(v.headWorld());
@@ -414,16 +413,17 @@ void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgres
 /** Test hook used by automated browser checks. */
 (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
-  free: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id) && canExit(state!.level, p.id, state!.alive)).map((p) => p.id) : []),
+  free: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive)).map((p) => p.id) : []; },
   views: () => views,
   runSpeed: () => runSpeed(),
-  traffic,
+  get traffic() { return flow?.traffic; },
   scene: () => stage.scene,
   sound,
-  ids: () => (state ? state.level.pieces.filter((p) => state!.alive.has(p.id)).map((p) => p.id) : []),
+  ids: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id)).map((p) => p.id) : []; },
   screenOf: (id: number) => {
-    const p = state?.level.pieces.find((q) => q.id === id);
-    return p && state ? stage.gridToScreen(state.level, p.cells[0].x, p.cells[0].y) : null;
+    const s = current();
+    const p = s?.level.pieces.find((q) => q.id === id);
+    return p && s ? stage.gridToScreen(s.level, p.cells[0].x, p.cells[0].y) : null;
   },
-  state: () => state && { taps: state.taps, blocked: state.blockedTaps, hearts: state.hearts, fuses: { ...state.fuses }, alive: [...state.alive], cleared: isCleared(state), failed: isFailed(state) },
+  state: () => { const s = current(); return s && { taps: s.taps, blocked: s.blockedTaps, hearts: s.hearts, fuses: { ...s.fuses }, alive: [...s.alive], cleared: isCleared(s), failed: isFailed(s) }; },
 };

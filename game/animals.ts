@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { directionVector, exitCell, exitDirection, headDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
-import { exitPath } from '../src/game/path';
-import { smoothPath, trackAt, type Track } from '../src/game/smooth';
+import { routeOf } from '../src/game/flow';
+import { trackAt, type Track } from '../src/game/smooth';
 import { buildAnimal } from './blocks';
 
 /** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
@@ -48,8 +48,6 @@ const LAUNCH_TIME = 0.2;
 const GATE_TIME = 0.4;
 /** cells past the gate over which a block shrinks away */
 const GATE_FADE = 0.8;
-/** Corner radius (cells) of the rounded exit path. */
-const CORNER_RADIUS = 0.3;
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
 const BLOCK_SPACING = 1;
 
@@ -201,8 +199,7 @@ export class PieceView {
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
     this.bodyLen = piece.cells.length;
-    this.track = smoothPath(exitPath(level, piece), CORNER_RADIUS);
-    this.headStart = this.track.vertexU[this.bodyLen - 1];
+    ({ track: this.track, headStart: this.headStart } = routeOf(level, piece));
     const color = pieceColor(piece.id);
 
     this.segments = buildAnimal(speciesFor(piece), this.bodyLen);
