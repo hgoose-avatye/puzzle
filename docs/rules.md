@@ -136,7 +136,7 @@ P0-2, P0-3 자동 테스트가 검사할 목록입니다. 1~8은 [flow.test.ts](
 - **결정(2026-10-30)**: 난이도 보정은 하지 않습니다. 생성기 여유 탭 3을 유지하고 폭탄 레벨도 다시 고르지 않습니다. 실제 플레이테스트에서 너무 쉬우면 그때 조정합니다.
 - 바꾼 곳: [`game.ts`](../src/core/game.ts) `tap`(막힘에서 폭탄 숫자를 줄이지 않음), 폭탄 안내 문구와 폭탄 막대 문구.
 - 레벨을 깰 수 있는지는 변하지 않습니다. 해답 탐색(`winnable`)과 생성기(`rescueSchedule`)는 원래 나가는 탭만 셉니다. 폭탄이 있는 모든 레벨을 깰 수 있는지는 [curve.test.ts](../src/curve/curve.test.ts)가 바뀐 규칙으로 다시 확인합니다.
-- [docs/sim/sim-report.json](sim/sim-report.json)은 바뀌기 전 규칙으로 만든 것입니다. 다시 만들 때(`npx tsx scripts/sim-report.ts`) 숫자가 위 표처럼 바뀝니다.
+- [docs/sim/sim-report.json](sim/sim-report.json)은 R3 기준으로 다시 만들었습니다. 바꾸기 전과의 비교와 다른 요인 확인은 [sim/2026-10-30-bomb-rule-r3.md](sim/2026-10-30-bomb-rule-r3.md)에 있습니다. 위 표(300회)와 보고서(200회)는 실행 횟수가 달라 숫자가 조금 다릅니다.
 
 ### R5. 손가락마다 따로 입력
 
