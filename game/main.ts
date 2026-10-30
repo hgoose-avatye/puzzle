@@ -6,6 +6,7 @@ import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
 import { Traffic } from '../src/game/traffic';
+import { TapInput } from '../src/game/input';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -25,7 +26,8 @@ let levelNumber = 1;
 /** Hearts the level started with, for the empty-heart outlines in the HUD. */
 let maxHearts = 0;
 let loadToken = 0;
-let pressed: number | null = null;
+/** Fingers on the board, one press each, and the guard against repeat taps on a blocked animal. */
+const input = new TapInput();
 /** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
 /** Animals that were sent out and have not crossed their gate yet. */
 const pendingExits = new Set<number>();
@@ -99,6 +101,7 @@ async function loadLevel(n: number): Promise<void> {
   failPlayed = false;
   pendingExits.clear();
   lastHit.clear();
+  input.clear();
   traffic.clear();
   window.clearTimeout(hintTimer);
   const built = buildLevel(n);
@@ -168,6 +171,10 @@ function onTap(id: number): void {
   if (!state || isCleared(state) || isFailed(state)) return;
   const result = tap(state, id);
   const ev = result.event;
+  const now = performance.now();
+  // a repeat on an animal still shaking from its blocked tap is the same tap: no second heart or fuse step
+  if (ev.type === 'blocked' && input.isBlockedRepeat(id, now)) return;
+  if (ev.type === 'blocked') input.noteBlocked(id, now);
   const view = views.get(id);
   state = result.state;
   if (ev.type === 'exited' && view) {
@@ -328,21 +335,21 @@ sound.prepare();
 for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, () => sound.unlock(), { capture: true, passive: true });
 
 const canvas = stage.renderer.domElement;
+/** Hide the path of an animal once no finger is on it any more. */
+const release = (id: number | null): void => {
+  if (id !== null && !input.isPressed(id)) views.get(id)?.showPath(false);
+};
 canvas.addEventListener('pointerdown', (e) => {
   sound.unlock();
-  pressed = pick(e.clientX, e.clientY);
-  if (pressed !== null) { views.get(pressed)?.showPath(true); sound.play('select'); }
+  const id = pick(e.clientX, e.clientY);
+  if (id !== null && input.down(e.pointerId, id)) { views.get(id)?.showPath(true); sound.play('select'); }
 });
 canvas.addEventListener('pointerup', (e) => {
-  const id = pick(e.clientX, e.clientY);
-  if (pressed !== null) views.get(pressed)?.showPath(false);
-  if (id !== null && id === pressed) onTap(id);
-  pressed = null;
+  const { released, tap: id } = input.up(e.pointerId, pick(e.clientX, e.clientY));
+  release(released);
+  if (id !== null) onTap(id);
 });
-canvas.addEventListener('pointercancel', () => {
-  if (pressed !== null) views.get(pressed)?.showPath(false);
-  pressed = null;
-});
+canvas.addEventListener('pointercancel', (e) => release(input.cancel(e.pointerId)));
 $('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 // skipping levels without clearing them is a testing aid only
@@ -362,7 +369,7 @@ function showHint(): void {
   let n = 0;
   const beat = (): void => {
     if (n++ < 3) { view.pulse(); hintTimer = window.setTimeout(beat, 450); return; }
-    if (pressed !== id) view.showPath(false);
+    if (!input.isPressed(view.piece.id)) view.showPath(false);
   };
   beat();
 }
@@ -418,5 +425,5 @@ void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgres
     const p = state?.level.pieces.find((q) => q.id === id);
     return p && state ? stage.gridToScreen(state.level, p.cells[0].x, p.cells[0].y) : null;
   },
-  state: () => state && { taps: state.taps, blocked: state.blockedTaps, hearts: state.hearts, cleared: isCleared(state), failed: isFailed(state) },
+  state: () => state && { taps: state.taps, blocked: state.blockedTaps, hearts: state.hearts, fuses: { ...state.fuses }, alive: [...state.alive], cleared: isCleared(state), failed: isFailed(state) },
 };
