@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>Animal Rescue</title>
+    <title>탈출해 친구들!</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='14' width='80' height='76' rx='20' fill='%23f5a3b5'/%3E%3Ccircle cx='36' cy='48' r='7' fill='%233b3a36'/%3E%3Ccircle cx='64' cy='48' r='7' fill='%233b3a36'/%3E%3Cellipse cx='50' cy='66' rx='10' ry='7' fill='%23e2667f'/%3E%3C/svg%3E" />
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8f3; font-family: system-ui, -apple-system, sans-serif; touch-action: none; user-select: none; }
@@ -48,6 +48,26 @@
       #popupSub { font-size: 18px; color: #6b6558; margin-bottom: 18px; }
       .tip { text-align: left; font-size: 18px; line-height: 1.45; margin: 0 0 10px; max-width: 300px; color: #3b3a36; }
       #popupBtn { background: #6cc24a; color: #fff; min-width: 160px; }
+      .popBtns { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      #popupHome { min-height: 46px; font-size: 18px; color: #6b6558; }
+      #home { min-width: 56px; padding: 0 12px; font-size: 22px; }
+      /* title screen: an overlay over the 3D board with the game's own animals */
+      #title { position: fixed; inset: 0; z-index: 4; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: max(48px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, rgba(207,232,243,.92) 0%, rgba(207,232,243,0) 36%), linear-gradient(0deg, rgba(255,248,232,.94) 0%, rgba(255,248,232,0) 32%); }
+      #title[hidden] { display: none; }
+      .tHead { text-align: center; }
+      .tKicker { display: inline-block; background: #fff8e8; color: #8a7a5c; font-size: 15px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+      #tName { margin: 12px 0 6px; font-size: 46px; font-weight: 900; line-height: 1.1; letter-spacing: -.01em; color: #3b3a36; word-break: keep-all;
+        text-shadow: 0 3px 0 #fff, 0 -3px 0 #fff, 3px 0 0 #fff, -3px 0 0 #fff, 2px 2px 0 #fff, -2px 2px 0 #fff, 0 8px 0 rgba(0,0,0,.1); }
+      #tName .a { color: #e8743b; }
+      #tName .b { color: #4a9b3f; }
+      .tSub { margin: 0; font-size: 17px; font-weight: 700; color: #5a5448; text-shadow: 0 1px 0 #fff; word-break: keep-all; }
+      .tButtons { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+      .tButtons button { width: min(300px, 100%); min-height: 64px; font-size: 22px; font-weight: 800; border-radius: 32px; }
+      #tStart, #tContinue { background: #6cc24a; color: #fff; box-shadow: 0 5px 0 #4f9a33; }
+      #tContinue small { display: block; font-size: 14px; font-weight: 700; opacity: .9; margin-top: 2px; }
+      #tRestart { min-height: 52px; font-size: 18px; color: #6b6558; }
+      body.on-title #hud, body.on-title #bar, body.on-title #bombBar, body.on-title #msg, body.on-title #mute, body.on-title #banner { display: none; }
     </style>
   </head>
   <body>
@@ -56,10 +76,22 @@
     <button id="mute" aria-label="소리 켜기/끄기">🔊</button>
     <div id="bombBar" hidden></div>
     <div id="msg"></div>
-    <div id="bar"><button id="retry">다시 ↻</button><button id="hint">💡 힌트</button><button id="next" hidden>다음 ▶</button></div>
+    <div id="bar"><button id="home" aria-label="처음 화면으로">🏠</button><button id="retry">다시 ↻</button><button id="hint">💡 힌트</button><button id="next" hidden>다음 ▶</button></div>
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
     <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><button id="ilBtn"></button></div></div>
-    <div id="popup" hidden><div class="card"><div id="popupTitle"></div><div id="popupSub"></div><button id="popupBtn"></button></div></div>
+    <div id="popup" hidden><div class="card"><div id="popupTitle"></div><div id="popupSub"></div><div class="popBtns"><button id="popupBtn"></button><button id="popupHome" hidden>처음으로</button></div></div></div>
+    <div id="title" hidden>
+      <div class="tHead">
+        <div class="tKicker">동물 구출 퍼즐</div>
+        <h1 id="tName"><span class="a">탈출해</span> <span class="b">친구들!</span></h1>
+        <p class="tSub">길을 비켜 주면 친구들이 문으로 달려 나가요</p>
+      </div>
+      <div class="tButtons">
+        <button id="tStart">게임 시작</button>
+        <button id="tContinue" hidden>이어하기<small id="tWhere"></small></button>
+        <button id="tRestart" hidden>처음부터</button>
+      </div>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

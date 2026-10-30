@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { createServer } from 'vite';
 import puppeteer from 'puppeteer-core';
 import { runP0Checks } from './p0-checks.mjs';
+import { runFlowChecks } from './flow-checks.mjs';
 
 const PORT = Number(process.env.E2E_PORT ?? 5299);
 /** Whole run, in ms: a hung page must not keep the job (or a CI runner) alive. */
@@ -68,6 +69,7 @@ try {
   });
   console.log(`game ${base} · chrome ${await browser.version()}`);
   await runP0Checks(browser, base, report);
+  await runFlowChecks(browser, base, report);
 } catch (e) {
   clearTimeout(timer);
   await finish(2, `run failed: ${e?.stack ?? e}`);

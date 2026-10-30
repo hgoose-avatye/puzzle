@@ -7,6 +7,8 @@ import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, setMarkStyle, speciesOverride, type MarkStyle } from './animals';
 import { setCrown, setLook, setOneCellBase, type Look } from './blocks';
 import { PlayFlow } from '../src/game/flow';
+import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
+import { TitleScreen, titleBoard } from './screens';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -116,10 +118,14 @@ function refreshHud(): void {
   paintBombBar();
 }
 
-async function loadLevel(n: number): Promise<void> {
+/**
+ * Drop whatever is on the board: the level in play, its animals (so no run that is still under way can call back with
+ * a result), popups, timers and sounds. Returns the new load token. Shared by starting a level and going home.
+ */
+function clearBoard(): number {
   const token = ++loadToken;
-  levelNumber = n;
   $('popup').hidden = true;
+  $('banner').hidden = true;
   $('msg').textContent = '';
   fx.clear();
   sound.stopAll();
@@ -129,10 +135,27 @@ async function loadLevel(n: number): Promise<void> {
   lastHit.clear();
   flow = null;
   window.clearTimeout(hintTimer);
-  const built = buildLevel(n);
-  if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
+  return token;
+}
+
+function addViews(level: Level): void {
+  for (const piece of level.pieces) {
+    const view = new PieceView(level, piece, (x, y) => stage.worldOf(level, x, y));
+    views.set(piece.id, view);
+    if (params.has('raw')) view.hideMarkers();
+    stage.scene.add(view.group);
+  }
+}
+
+async function loadLevel(n: number): Promise<void> {
+  const token = clearBoard();
+  levelNumber = n;
+  // the title board pins species to its ids; game levels choose their own
+  speciesOverride.clear();
+  const built = buildLevel(n);
+  if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   const st = stageFor(n);
   stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
   $('stageLabel').textContent = DEMO ? '' : st.name;
@@ -141,12 +164,7 @@ async function loadLevel(n: number): Promise<void> {
   if (token !== loadToken) return;
   maxHearts = built.hearts ?? 0;
   flow = new PlayFlow(built.level, built.hearts);
-  for (const piece of built.level.pieces) {
-    const view = new PieceView(built.level, piece, (x, y) => stage.worldOf(built.level, x, y));
-    views.set(piece.id, view);
-    if (params.has('raw')) view.hideMarkers();
-    stage.scene.add(view.group);
-  }
+  addViews(built.level);
   refreshHud();
   showIntro(built.level, built.hearts !== undefined);
 }
@@ -292,6 +310,7 @@ function showIntro(level: Level, hearts: boolean): void {
   }
   $('popupBtn').textContent = '시작!';
   $('popupBtn').onclick = () => { $('popup').hidden = true; };
+  $('popupHome').hidden = true;
 }
 
 const RESCUED_KEY = 'animal-rescue-rescued';
@@ -370,11 +389,13 @@ function showEnd(won: boolean): void {
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
+  $('popupHome').hidden = false;
+  $('popupHome').onclick = goHome;
+  if (won) writeProgress(progressAfterClear(readProgress(), levelNumber, LAST_LEVEL));
   $('popupBtn').onclick = () => {
     if (!won) { void loadLevel(levelNumber); return; }
     const n = levelNumber;
     const next = n >= LAST_LEVEL ? 1 : n + 1; // after the whole journey, start over
-    writeProgress(next);
     $('popup').hidden = true;
     void playInterludes(interludesAfter(n)).then(() => loadLevel(next));
   };
@@ -469,8 +490,36 @@ const paintMute = (): void => { muteBtn.textContent = sound.muted ? '🔇' : '�
 paintMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
 
+/** Home: the title over a small board of the game's animals facing the camera. Leaves the saved progress alone. */
+function goHome(): void {
+  clearBoard();
+  speciesOverride.clear();
+  const board = titleBoard();
+  for (const [id, name] of board.species) speciesOverride.set(id, name);
+  stage.setBoard(board.level, 'village', 1, 1);
+  addViews(board.level);
+  // the title shows the animals themselves, without the play aids (colour plates, gates)
+  for (const v of views.values()) v.hideMarkers();
+  const saved = readProgress();
+  title.show(hasSavedProgress(saved) ? { level: saved, place: stageFor(saved).name } : null);
+}
+
+function startLevel(n: number): void {
+  title.hide();
+  void loadLevel(n);
+}
+
+const title = new TitleScreen(
+  { start: () => startLevel(1), resume: () => startLevel(readProgress()), restart: () => startLevel(1) },
+  // now and then one animal on the title board gives a little hop
+  () => { const all = [...views.values()]; all[Math.floor(Math.random() * all.length)]?.pulse(); },
+);
+$('home').addEventListener('click', goHome);
+
+// dev entry points (?level, ?demo) go straight into play; a build has no parameters and always opens on the title
 const fromUrl = Number(params.get('level'));
-void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgress());
+if (params.has('demo') || (Number.isInteger(fromUrl) && fromUrl >= 1)) void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgress());
+else goHome();
 
 /** Test hook used by automated browser checks (tests/e2e); dev server only. */
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
