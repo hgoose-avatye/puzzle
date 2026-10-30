@@ -356,6 +356,9 @@ export function setLook(next: Look): void { look = next; }
 /** One-cell comparison (?one=base): one-cell animals keep the shipped model while longer ones take the look. */
 let oneCellBase = false;
 export function setOneCellBase(on: boolean): void { oneCellBase = on; }
+/** Crown comparison (?crown=1, with look AD): head-top features made clearer (crownBoost). */
+let crownOn = false;
+export function setCrown(on: boolean): void { crownOn = on; }
 export const currentLook = (): Look => look;
 
 const bodyColor = (g: THREE.Group): THREE.Color => ((g.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).color;
@@ -369,12 +372,52 @@ function headForward(g: THREE.Group, f: Frame, shade = 0.9): void {
     if (m.userData.eye) continue;
     const p = m.position;
     // on top of the head and not already at the front (the crocodile's eye bumps) or at the back (a one-cell tail)
-    if (p.y > f.top - 0.12 && p.z > f.zc - 0.2 && p.z < 0.2) { p.z += 0.2; m.rotation.x += 0.6; }
+    if (p.y > f.top - 0.12 && p.z > f.zc - 0.2 && p.z < 0.2) { p.z += 0.2; m.rotation.x += 0.6; m.userData.crown = true; }
   }
   const c = bodyColor(g).clone().multiplyScalar(shade).getHex();
   // forelock: three rounded locks rising from the crown and tipping forward over the brow
   for (const [x, w, h] of [[-0.12, 0.16, 0.16], [0, 0.2, 0.22], [0.12, 0.16, 0.16]] as const) {
-    cube(g, x, f.top + h / 2 - 0.03, f.fz - 0.14, w, h, 0.18, c, 0.06).rotation.x = 0.7;
+    const lock = cube(g, x, f.top + h / 2 - 0.03, f.fz - 0.14, w, h, 0.18, c, 0.06);
+    lock.rotation.x = 0.7;
+    lock.userData.crown = true;
+  }
+}
+
+/**
+ * ?crown=1 (dev comparison D2): each head's own top features say more clearly which way is front, seen from above.
+ * Built from what the animal already has; nothing new is lit, outlined or pointed. Stays inside the cell.
+ */
+function crownBoost(g: THREE.Group, type: AnimalType, f: Frame): void {
+  const crown = g.children.filter((m) => m.userData.crown);
+  const grow = (k: number): void => { for (const m of crown) m.scale.multiplyScalar(k); };
+  const mark = (m: THREE.Mesh): void => { m.userData.crown = true; };
+  switch (type) {
+    case 'chick':
+      // the head tuft grows into a sprout curling forward, with a third lock at its front tip
+      grow(1.4);
+      mark(cube(g, 0, f.top + 0.16, f.fz - 0.06, 0.12, 0.16, 0.12, 0xffcf3f, 0.05));
+      break;
+    case 'parrot':
+      // the crest grows and curls further forward
+      grow(1.3);
+      for (const m of crown) m.rotation.x += 0.25;
+      break;
+    case 'pig':
+      // the folded ears grow and droop further over the brow
+      grow(1.3);
+      for (const m of crown) m.rotation.x += 0.2;
+      break;
+    case 'penguin':
+      // its white face carries on over the front of the crown, so the front reads on the dark head; the tuft grows
+      grow(1.25);
+      mark(cube(g, 0, f.top + 0.004, f.fz - 0.15, 0.76, 0.035, 0.28, 0xf7f5f2, 0.04));
+      break;
+    case 'husky':
+      // the white blaze runs on over the crown
+      mark(cube(g, 0, f.top + 0.004, f.fz - 0.13, 0.22, 0.035, 0.26, 0xf6f6f6, 0.04));
+      break;
+    default:
+      break;
   }
 }
 
@@ -423,6 +466,7 @@ export function buildAnimal(species: string, cells: number): THREE.Group[] {
     const look = n === 1 && oneCellBase ? 'base' : currentLook();
     if (look === 'A' && i === 0) headForward(part, f);
     if (look === 'AD' && i === 0) headForward(part, f, 1);
+    if (look === 'AD' && crownOn && i === 0) crownBoost(part, type, f);
     if (look === 'AD' && i === n - 1) biggerTail(part, f, true);
     const shaped = look === 'D' || look === 'E';
     if (shaped && n === 1) frontHeavy(part, f);

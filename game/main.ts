@@ -5,7 +5,7 @@ import { canExit, headDirection, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, setMarkStyle, speciesOverride, type MarkStyle } from './animals';
-import { setLook, setOneCellBase, type Look } from './blocks';
+import { setCrown, setLook, setOneCellBase, type Look } from './blocks';
 import { PlayFlow } from '../src/game/flow';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -48,6 +48,7 @@ let touchDebug: import('./touchdebug').TouchDebug | null = null;
 if (['A', 'D', 'E', 'AD'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
 /** ?one=base keeps the shipped one-cell animals under another look; ?mark=v|v2|edge picks their floor cue (dev server). */
 setOneCellBase(params.get('one') === 'base');
+setCrown(params.get('crown') === '1');
 if (['v', 'v2', 'edge'].includes(params.get('mark') ?? '')) setMarkStyle(params.get('mark') as MarkStyle);
 /** ?cam=<degrees> on the dev server: camera elevation comparisons; &camzoom=keep keeps the 58 degree distance. */
 if (params.has('cam')) {
@@ -574,6 +575,36 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
         else if (i > 0) covered++;
       }
       out.push({ id, dir: headDirection(v.piece), visible, covered });
+    }
+    return out;
+  },
+  /** Head-top features (userData.crown) of each animal's head: screen points where they are drawn on top or covered. */
+  crownStats: (step = 1) => {
+    const targets = new Map<THREE.Object3D, number>();
+    for (const [id, v] of views) if (v.group.visible) for (const t of v.tapTargets()) targets.set(t, id);
+    const owner = (o: THREE.Object3D | null): number | null => { for (; o; o = o.parent) if (targets.has(o)) return targets.get(o)!; return null; };
+    const isCrown = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (o.userData.crown) return true; return false; };
+    const rect = stage.renderer.domElement.getBoundingClientRect();
+    const out: Array<{ id: number; len: number; dir: string; visible: number; covered: number }> = [];
+    for (const [id, v] of views) {
+      const parts: THREE.Object3D[] = [];
+      v.tapTargets()[0].traverse((o) => { if (o.userData.crown) parts.push(o); });
+      if (!parts.length) { out.push({ id, len: v.bodyLen, dir: headDirection(v.piece), visible: 0, covered: 0 }); continue; }
+      const box = new THREE.Box3();
+      for (const m of parts) box.expandByObject(m);
+      const xs: number[] = [], ys: number[] = [];
+      for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+        const p = new THREE.Vector3(x, y, z).project(stage.camera);
+        xs.push(rect.left + ((p.x + 1) / 2) * rect.width); ys.push(rect.top + ((1 - p.y) / 2) * rect.height);
+      }
+      let visible = 0, covered = 0;
+      for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y += step) for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x += step) {
+        const hits = stage.rayAt(x, y).intersectObjects([...targets.keys()], true).filter((h) => drawn(h.object));
+        const i = hits.findIndex((h) => owner(h.object) === id && isCrown(h.object));
+        if (i === 0) visible++;
+        else if (i > 0 && owner(hits[0].object) !== id) covered++;
+      }
+      out.push({ id, len: v.bodyLen, dir: headDirection(v.piece), visible, covered });
     }
     return out;
   },
