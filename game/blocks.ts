@@ -58,9 +58,9 @@ const PUPIL = 0x33231e;
 /** Eyes lie flat on the face (reference 01): a big white disc, a big dark-brown pupil, a small highlight. */
 function eyes(g: THREE.Group, fz: number, y: number, spread = 0.23, s = 1): void {
   for (const sx of [-1, 1]) {
-    oval(g, sx * spread, y, fz + 0.006, 0.19 * s, 0.22 * s, 0.022, WHITE);
-    oval(g, sx * spread, y - 0.012, fz + 0.02, 0.13 * s, 0.155 * s, 0.02, PUPIL);
-    oval(g, sx * spread + 0.045 * s, y + 0.05 * s, fz + 0.034, 0.04 * s, 0.045 * s, 0.012, 0xffffff);
+    oval(g, sx * spread, y, fz + 0.006, 0.19 * s, 0.22 * s, 0.022, WHITE).userData.eye = true;
+    oval(g, sx * spread, y - 0.012, fz + 0.02, 0.13 * s, 0.155 * s, 0.02, PUPIL).userData.eye = true;
+    oval(g, sx * spread + 0.045 * s, y + 0.05 * s, fz + 0.034, 0.04 * s, 0.045 * s, 0.012, 0xffffff).userData.eye = true;
   }
 }
 /** Short, thick legs (reference 09): they stand from the floor into the body. */
@@ -81,14 +81,18 @@ function frame(i: number, n: number, headDim: [number, number], bodyDim: [number
   return { W, H, D, zc, fz: one ? 0.49 : 0.53, bz: one ? -0.49 : -0.56, top: B0 + H };
 }
 
+function frameOf(type: AnimalType, i: number, n: number): Frame {
+  const long = type === 'snake' || type === 'caterpillar' || type === 'dachshund' || type === 'crocodile';
+  return frame(i, n,
+    type === 'crocodile' ? [1.0, 0.8] : long ? [1.04, 1.0] : [1.04, 1.0],
+    type === 'crocodile' ? [0.94, 0.74] : long ? [0.94, 0.88] : [0.94, 0.9]);
+}
+
 function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
   const g = new THREE.Group();
   const head = i === 0;
   const last = i === n - 1;
-  const long = type === 'snake' || type === 'caterpillar' || type === 'dachshund' || type === 'crocodile';
-  const f = frame(i, n,
-    type === 'crocodile' ? [1.0, 0.8] : long ? [1.04, 1.0] : [1.04, 1.0],
-    type === 'crocodile' ? [0.94, 0.74] : long ? [0.94, 0.88] : [0.94, 0.9]);
+  const f = frameOf(type, i, n);
   const { W, H, D, zc, fz, bz, top } = f;
   const yE = B0 + H * 0.55; // eye line
   const block = (c: number, r = 0.18): THREE.Mesh => cube(g, 0, B0 + H / 2, zc, W, H, D, c, r);
@@ -339,9 +343,60 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
   return g;
 }
 
+/**
+ * Direction-reading mockups, chosen on the dev server with ?look= (docs/verification/direction-mockups.md).
+ * base: the shipped animals (with the floor V on one-cell animals). A: head features lean forward, plus a forelock.
+ * D: wide head, narrow low tail. E: D plus a small darker fur mark on the crown pointing forward. A, D, E drop the V.
+ */
+export type Look = 'base' | 'A' | 'D' | 'E';
+let look: Look = 'base';
+export function setLook(next: Look): void { look = next; }
+export const currentLook = (): Look => look;
+
+const bodyColor = (g: THREE.Group): THREE.Color => ((g.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).color;
+
+/**
+ * Look A: what sits on top of the head (ears, tufts, crests, horns, antennae) moves forward and leans well forward, and
+ * every head gets a forelock that sweeps forward over the face, in the body colour. All of it stays inside the cell.
+ */
+function headForward(g: THREE.Group, f: Frame): void {
+  for (const m of g.children.slice(1)) {
+    if (m.userData.eye) continue;
+    const p = m.position;
+    // on top of the head and not already at the front (the crocodile's eye bumps) or at the back (a one-cell tail)
+    if (p.y > f.top - 0.12 && p.z > f.zc - 0.2 && p.z < 0.2) { p.z += 0.2; m.rotation.x += 0.6; }
+  }
+  const c = bodyColor(g).clone().multiplyScalar(0.9).getHex();
+  // forelock: three rounded locks rising from the crown and tipping forward over the brow
+  for (const [x, w, h] of [[-0.12, 0.16, 0.16], [0, 0.2, 0.22], [0.12, 0.16, 0.16]] as const) {
+    cube(g, x, f.top + h / 2 - 0.03, f.fz - 0.14, w, h, 0.18, c, 0.06).rotation.x = 0.7;
+  }
+}
+
+/** Look D, one-cell animals: a full, square head end and a lower, narrower, rounded rump; the tail bigger. */
+function frontHeavy(g: THREE.Group, f: Frame): void {
+  const main = g.children[0] as THREE.Mesh;
+  main.scale.z = 0.62;
+  main.position.z = f.zc + f.D * 0.19;
+  oval(g, 0, B0 + f.H * 0.36, f.zc - f.D * 0.2, f.W * 0.36, f.H * 0.4, f.D * 0.3, bodyColor(g).getHex());
+  biggerTail(g, f);
+}
+
+function biggerTail(g: THREE.Group, f: Frame): void {
+  for (const m of g.children.slice(1)) if (m.position.z < f.bz + 0.3 && m.position.y > B0) m.scale.multiplyScalar(1.4);
+}
+
+/** Look E: a small fur mark on the crown, a shade darker than the body, pointing the way the animal faces. */
+function crownMark(g: THREE.Group, f: Frame): void {
+  const c = bodyColor(g).clone().multiplyScalar(0.72).getHex();
+  for (const sx of [-1, 1]) cube(g, sx * 0.08, f.top + 0.004, f.zc + 0.08, 0.07, 0.025, 0.26, c, 0.02).rotation.y = -sx * 0.6;
+}
+
 /** One segment per occupied cell, head first; each root has exactly one animated child. */
 /** Scale of every animal block inside its cell: neighbouring animals no longer overlap (eyes, snouts, ears). */
 const FIT = 0.9;
+/** Look D: width and height of each segment from head to tail, so the body narrows and lowers towards the tail. */
+const TAPER: Record<number, Array<[number, number]>> = { 2: [[1, 1], [0.76, 0.8]], 3: [[1, 1], [0.88, 0.9], [0.74, 0.78]] };
 
 export function buildAnimal(species: string, cells: number): THREE.Group[] {
   const type: AnimalType = BLOCK_SPECIES.includes(species as AnimalType) ? (species as AnimalType) : 'cow';
@@ -350,8 +405,15 @@ export function buildAnimal(species: string, cells: number): THREE.Group[] {
     const root = new THREE.Group();
     const animated = new THREE.Group();
     const part = buildPart(type, i, n);
+    const f = frameOf(type, i, n);
+    if (look === 'A' && i === 0) headForward(part, f);
+    const shaped = look === 'D' || look === 'E';
+    if (shaped && n === 1) frontHeavy(part, f);
+    if (shaped && n > 1 && i === n - 1) biggerTail(part, f);
+    if (look === 'E' && i === 0) crownMark(part, f);
     // a touch smaller than the cell so bulging eyes and snouts stay off the neighbouring animals
     part.scale.setScalar(FIT);
+    if (shaped && n > 1) part.scale.set(FIT * TAPER[n][i][0], FIT * TAPER[n][i][1], FIT);
     animated.add(part);
     root.add(animated);
     return root;

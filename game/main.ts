@@ -1,10 +1,11 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
-import { bombLevel, crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
+import { bombLevel, crossLevel, demoLevel, dirsLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
+import { setLook, type Look } from './blocks';
 import { PlayFlow } from '../src/game/flow';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -43,6 +44,8 @@ const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS
 const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
 /** ?touchdebug on the dev server: every touch on screen with what it hit and what became of it (game/touchdebug.ts). */
 let touchDebug: import('./touchdebug').TouchDebug | null = null;
+/** ?look=A|D|E on the dev server: direction-reading mockups (game/blocks.ts Look). */
+if (['A', 'D', 'E'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
 if (import.meta.env.DEV && params.has('touchdebug')) void import('./touchdebug').then((m) => { touchDebug = new m.TouchDebug(); });
 const DEMO = params.has('demo');
 
@@ -61,6 +64,12 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   }
   if (params.get('demo') === 'cross') return { level: crossLevel(), hearts: 3 };
   if (params.get('demo') === 'bomb') return { level: bombLevel(), hearts: 3 };
+  if (params.get('demo') === 'dirs') {
+    const dirs = dirsLevel();
+    speciesOverride.clear();
+    for (const [id, name] of dirs.species) speciesOverride.set(id, name);
+    return { level: dirs.level };
+  }
   if (DEMO) return { level: demoLevel(), hearts: 3 };
   return buildGameLevel(n);
 }

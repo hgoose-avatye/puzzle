@@ -4,7 +4,7 @@ import { directionVector, exitCell, exitDirection, headDirection, traceExit } fr
 import type { Level, Piece } from '../src/core/types';
 import { routeOf } from '../src/game/flow';
 import { trackAt, type Track } from '../src/game/smooth';
-import { buildAnimal } from './blocks';
+import { buildAnimal, currentLook } from './blocks';
 
 /** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
@@ -289,7 +289,9 @@ export class PieceView {
    * runs.
    */
   private buildAheadMarks(color: THREE.Color): void {
-    if (this.bodyLen !== 1) return;
+    const look = currentLook();
+    // looks A, D and E test the animal itself (E's cue is a mark on the crown, see blocks.ts)
+    if (look !== 'base' || this.bodyLen !== 1) return;
     const dir = headDirection(this.piece);
     const v = directionVector(dir);
     const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
