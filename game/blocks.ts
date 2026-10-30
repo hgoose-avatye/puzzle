@@ -353,6 +353,9 @@ function buildPart(type: AnimalType, i: number, n: number): THREE.Group {
 export type Look = 'base' | 'A' | 'D' | 'E' | 'AD';
 let look: Look = 'base';
 export function setLook(next: Look): void { look = next; }
+/** One-cell comparison (?one=base): one-cell animals keep the shipped model while longer ones take the look. */
+let oneCellBase = false;
+export function setOneCellBase(on: boolean): void { oneCellBase = on; }
 export const currentLook = (): Look => look;
 
 const bodyColor = (g: THREE.Group): THREE.Color => ((g.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial).color;
@@ -417,6 +420,7 @@ export function buildAnimal(species: string, cells: number): THREE.Group[] {
     const animated = new THREE.Group();
     const part = buildPart(type, i, n);
     const f = frameOf(type, i, n);
+    const look = n === 1 && oneCellBase ? 'base' : currentLook();
     if (look === 'A' && i === 0) headForward(part, f);
     if (look === 'AD' && i === 0) headForward(part, f, 1);
     if (look === 'AD' && i === n - 1) biggerTail(part, f, true);

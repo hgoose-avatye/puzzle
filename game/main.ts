@@ -4,8 +4,8 @@ import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/cu
 import { canExit, headDirection, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
-import { PieceView, runSpeed, speciesOverride } from './animals';
-import { setLook, type Look } from './blocks';
+import { PieceView, runSpeed, setMarkStyle, speciesOverride, type MarkStyle } from './animals';
+import { setLook, setOneCellBase, type Look } from './blocks';
 import { PlayFlow } from '../src/game/flow';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -46,6 +46,9 @@ const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new 
 let touchDebug: import('./touchdebug').TouchDebug | null = null;
 /** ?look=A|D|E|AD on the dev server: direction-reading mockups (game/blocks.ts Look). */
 if (['A', 'D', 'E', 'AD'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
+/** ?one=base keeps the shipped one-cell animals under another look; ?mark=v|v2|edge picks their floor cue (dev server). */
+setOneCellBase(params.get('one') === 'base');
+if (['v', 'v2', 'edge'].includes(params.get('mark') ?? '')) setMarkStyle(params.get('mark') as MarkStyle);
 /** ?cam=<degrees> on the dev server: camera elevation comparisons; &camzoom=keep keeps the 58 degree distance. */
 if (params.has('cam')) {
   stage.elevation = Math.min(85, Math.max(20, Number(params.get('cam')) || 58));
@@ -539,6 +542,40 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
       animals: s.level.pieces.map((p) => ({ id: p.id, len: p.cells.length, dir: headDirection(p), ...per[p.id] })),
       board: { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys), screenW: innerWidth, screenH: innerHeight, barTop: bar, hudBottom: hud },
     };
+  },
+  /**
+   * One-cell floor cues: for each cue, screen points where it is drawn on top and where an animal covers it, sampled every
+   * pixel over the cue's own screen box.
+   */
+  markStats: () => {
+    const targets = new Map<THREE.Object3D, { id: number; mark: boolean }>();
+    for (const [id, v] of views) if (v.group.visible) {
+      for (const t of v.tapTargets()) targets.set(t, { id, mark: false });
+      for (const t of v.markParts()) targets.set(t, { id, mark: true });
+    }
+    const whose = (o: THREE.Object3D | null): { id: number; mark: boolean } | null => { for (; o; o = o.parent) if (targets.has(o)) return targets.get(o)!; return null; };
+    const rect = stage.renderer.domElement.getBoundingClientRect();
+    const out: Array<{ id: number; dir: string; visible: number; covered: number }> = [];
+    for (const [id, v] of views) {
+      const parts = v.markParts();
+      if (!parts.length || !v.group.visible) continue;
+      const box = new THREE.Box3();
+      for (const m of parts) box.expandByObject(m);
+      const xs: number[] = [], ys: number[] = [];
+      for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+        const p = new THREE.Vector3(x, y, z).project(stage.camera);
+        xs.push(rect.left + ((p.x + 1) / 2) * rect.width); ys.push(rect.top + ((1 - p.y) / 2) * rect.height);
+      }
+      let visible = 0, covered = 0;
+      for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) {
+        const hits = stage.rayAt(x, y).intersectObjects([...targets.keys()], true).filter((h) => drawn(h.object));
+        const i = hits.findIndex((h) => { const w = whose(h.object); return w?.mark === true && w.id === id; });
+        if (i === 0) visible++;
+        else if (i > 0) covered++;
+      }
+      out.push({ id, dir: headDirection(v.piece), visible, covered });
+    }
+    return out;
   },
   /** Touch probe at a screen point: the animal whose model is drawn there, the one pick() chooses, and the element on top. */
   probe: (clientX: number, clientY: number) => {

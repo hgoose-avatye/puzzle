@@ -90,3 +90,7 @@
 ## 카메라 각도 실험
 
 캐릭터 대신 카메라 각도(58° → 50°, 45°)를 바꾸는 방법은 [camera-experiment.md](camera-experiment.md)에서 비교했습니다.
+
+## 1칸 동물 방향 표시 비교
+
+1칸 동물에 쓸 바닥 표시 세 가지(지금 V, 진한 V, 앞 가장자리 문턱)는 [one-cell-cues.md](one-cell-cues.md)에서 비교했습니다.
