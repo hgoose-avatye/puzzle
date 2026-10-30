@@ -24,7 +24,7 @@ export function createGame(level: Level, options: { hearts?: number } = {}): Gam
   return { level, alive: new Set(level.pieces.map((p) => p.id)), taps: 0, blockedTaps: 0, hearts: options.hearts, fuses, exploded: false };
 }
 
-/** Every counted tap burns one fuse step; a bomb still on the board at zero explodes. */
+/** Every exit burns one fuse step of each bomb still on the board; one left at zero explodes. Blocked taps burn nothing (docs/rules.md R3). */
 function burnFuses(state: GameState): GameState {
   const fuses: Record<number, number> = {};
   let exploded = state.exploded;
@@ -51,7 +51,7 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
       hearts: state.hearts === undefined ? undefined : state.hearts - 1,
     };
     return {
-      state: burnFuses(counted),
+      state: counted,
       event: { type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}), ...(crates ? { crates } : {}) },
     };
   }
