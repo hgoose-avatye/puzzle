@@ -386,6 +386,7 @@ function showEnd(won: boolean): void {
     fx.confetti(new THREE.Vector3(0, 0, 0), 8);
   }
   $('popup').hidden = false;
+  $('msg').textContent = '';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
@@ -498,8 +499,8 @@ function goHome(): void {
   for (const [id, name] of board.species) speciesOverride.set(id, name);
   stage.setBoard(board.level, 'village', 1, 1);
   addViews(board.level);
-  // the title shows the animals themselves, without the play aids (colour plates, gates)
-  for (const v of views.values()) v.hideMarkers();
+  // the title shows the animals themselves, without the play aids (colour plates, gates, floor V)
+  for (const v of views.values()) { v.hideMarkers(); for (const m of v.markParts()) m.visible = false; }
   const saved = readProgress();
   title.show(hasSavedProgress(saved) ? { level: saved, place: stageFor(saved).name } : null);
 }

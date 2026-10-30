@@ -166,6 +166,24 @@ export async function runFlowChecks(browser, base, report) {
     check('flow: 처음으로 on the fail popup -> title, save still 7', c.title && c.popup === null && c.saved === '7', JSON.stringify(c));
   });
 
+  // the last level: clearing it starts the journey over (the save goes back to 1, as the game always did)
+  await scenario('last level', '180', async (p) => {
+    await p.click('#tContinue');
+    await sleep(500);
+    await closeTips(p);
+    const at = (await ui(p)).label;
+    await clearAll(p);
+    const a = await waitPopup(p, 30000);
+    check('flow: clearing level 180 saves level 1 (journey starts over)', at === '레벨 180' && a.popup === '구출 성공!' && a.saved === '1', `${at}, ${JSON.stringify(a)}`);
+    await p.click('#popupHome');
+    await sleep(400);
+    const b = await ui(p);
+    check('flow: after the last level the title offers only 게임 시작 (level 1), no 이어하기', b.title && b.start && !b.resume, JSON.stringify(b));
+    await p.click('#tStart');
+    await sleep(500);
+    check('flow: 게임 시작 after the last level -> level 1', (await ui(p)).label === '레벨 1');
+  });
+
   await scenario('dev entry', null, async (p) => {
     const a = await ui(p);
     check('flow: dev URL ?level=3 still goes straight into play', !a.title && a.label === '레벨 3' && a.playing, JSON.stringify(a));
