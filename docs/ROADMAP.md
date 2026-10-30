@@ -134,7 +134,7 @@
 | P0-4 | 완료 | R1·R5, [input.test.ts](../src/game/input.test.ts), 헤드리스 검증 |
 | P0-5 | 완료 | `npm run test:e2e`, [tests/e2e/README.md](../tests/e2e/README.md). 결과는 [verification/p0-browser-checks.md](verification/p0-browser-checks.md) |
 | P0-6 | R1·R3·R5 적용 | rules.md 10·11장 |
-| P0-7 | 미완료 | 사람이 직접 해야 함 |
+| P0-7 | 체크리스트 작성, **실기기 테스트 미실행** | [verification/p0-device-checklist.md](verification/p0-device-checklist.md) (iOS Safari, Android Chrome, 16항목). 실기기 결과가 나오기 전까지 P0는 완료가 아님 |
 
 ## P1 작업 계획
 
