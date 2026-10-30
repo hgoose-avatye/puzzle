@@ -132,7 +132,7 @@
 | P0-2 | 완료 | [src/game/flow.ts](../src/game/flow.ts) `PlayFlow`, [flow.test.ts](../src/game/flow.test.ts): 180레벨 × 무작위 플레이 2회 |
 | P0-3 | 불변 조건 1~8 자동 테스트됨 | flow.test.ts. 상자는 별도 단언 없이 무작위 플레이에 포함(금은 남은 동물로 계산되므로 다시 하기에서 함께 초기화) |
 | P0-4 | 완료 | R1·R5, [input.test.ts](../src/game/input.test.ts), 헤드리스 검증 |
-| P0-5 | 미완료. 스크립트와 결과만 보존 | [verification/p0-browser-checks.md](verification/p0-browser-checks.md) |
+| P0-5 | 완료 | `npm run test:e2e`, [tests/e2e/README.md](../tests/e2e/README.md). 결과는 [verification/p0-browser-checks.md](verification/p0-browser-checks.md) |
 | P0-6 | R1·R3·R5 적용 | rules.md 10·11장 |
 | P0-7 | 미완료 | 사람이 직접 해야 함 |
 

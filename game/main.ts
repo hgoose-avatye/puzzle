@@ -1,5 +1,5 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
-import { crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
+import { bombLevel, crossLevel, demoLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
@@ -36,7 +36,11 @@ const PROGRESS_KEY = 'animal-rescue-progress';
 const readProgress = (): number => { try { return Math.max(1, Number(localStorage.getItem(PROGRESS_KEY) ?? 1)); } catch { return 1; } };
 const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS_KEY, String(n)); } catch { /* ignore */ } };
 
-const params = new URLSearchParams(location.search);
+/**
+ * Test and development entry points (?demo, ?level, ?dev, ?raw, ?theme, ?stage and the window.__game hook) work only on the
+ * Vite dev server. A production build sees no parameters, and the bundler drops the code behind import.meta.env.DEV.
+ */
+const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
 const DEMO = params.has('demo');
 
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
@@ -53,6 +57,7 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
     return { level: turnLevel(dir('from', 'up'), dir('to', 'right'), Number(params.get('len') ?? 2), Number(params.get('id') ?? 2)), hearts: 3 };
   }
   if (params.get('demo') === 'cross') return { level: crossLevel(), hearts: 3 };
+  if (params.get('demo') === 'bomb') return { level: bombLevel(), hearts: 3 };
   if (DEMO) return { level: demoLevel(), hearts: 3 };
   return buildGameLevel(n);
 }
@@ -407,11 +412,11 @@ const paintMute = (): void => { muteBtn.textContent = sound.muted ? 'ðŸ”‡' : 'ðŸ
 paintMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
 
-const fromUrl = Number(new URLSearchParams(location.search).get('level'));
+const fromUrl = Number(params.get('level'));
 void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgress());
 
-/** Test hook used by automated browser checks. */
-(window as unknown as { __game: unknown }).__game = {
+/** Test hook used by automated browser checks (tests/e2e); dev server only. */
+if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   free: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive)).map((p) => p.id) : []; },
   views: () => views,

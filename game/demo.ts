@@ -79,3 +79,12 @@ export function crossLevel(): Level {
     ],
   };
 }
+
+/**
+ * crossLevel with a bomb on 2 (fuse 2), for checking bombs by hand: tap 1 and the bar warns at 1; then tapping 2 saves
+ * it even while it waits behind 1, and tapping 3 first sets it off.
+ */
+export function bombLevel(): Level {
+  const level = crossLevel();
+  return { ...level, pieces: level.pieces.map((p) => (p.id === 2 ? { ...p, fuse: 2 } : p)) };
+}

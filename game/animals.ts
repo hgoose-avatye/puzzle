@@ -24,8 +24,8 @@ export function speciesFor(piece: Piece): string {
 }
 
 const RUN_SPEED = 7.5;
-/** Current running speed in cells/s (tests may override it with window.__runSpeed). */
-export const runSpeed = (): number => (typeof window === 'undefined' ? undefined : (window as unknown as { __runSpeed?: number }).__runSpeed) ?? RUN_SPEED;
+/** Current running speed in cells/s (on the dev server, tests may override it with window.__runSpeed). */
+export const runSpeed = (): number => (import.meta.env.DEV && typeof window !== 'undefined' ? (window as unknown as { __runSpeed?: number }).__runSpeed : undefined) ?? RUN_SPEED;
 
 /** Collision "!" bubble: appear, hold, fade out. */
 const ALERT_IN = 0.08;

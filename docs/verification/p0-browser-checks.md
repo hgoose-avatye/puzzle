@@ -1,24 +1,27 @@
 # P0 실제 게임 검증 기록 (헤드리스 Chrome)
 
 [규칙 명세](../rules.md)의 R1, R3, R5와 이동 흐름이 **실제 게임 화면 코드**에서도 지켜지는지 확인한 기록입니다.
-스크립트 [p0check.mjs](p0check.mjs)는 P0-5에서 `tests/e2e/`로 옮겨 실행 명령을 붙이기 전까지 이 폴더에 보존합니다.
-아직 `npm test`에 들어 있지 않으므로, 코드를 바꾸면 아래 방법으로 직접 다시 돌려야 합니다.
 
 ## 재현 방법
 
-1. 게임 개발 서버를 켭니다: `npm run dev:game` (주소 `http://localhost:5200`)
-2. 스크립트 폴더를 저장소 밖 빈 폴더에 준비합니다.
-   ```bash
-   mkdir -p /tmp/p0e2e && cp docs/verification/p0check.mjs /tmp/p0e2e/
-   cd /tmp/p0e2e && npm init -y >/dev/null && npm i puppeteer-core@25.16.0
-   node p0check.mjs
-   ```
-3. Chrome 경로는 스크립트 3행에 macOS 기본 위치로 적혀 있습니다. 다르면 고칩니다.
-4. 결과는 줄마다 `PASS`, `FAIL`, `SKIP`, `INFO`로 나옵니다.
+```bash
+npm run test:e2e
+```
 
-- 화면 크기 390×780, 터치 지원 모바일로 흉내 냅니다.
-- 두 손가락 입력은 Chrome DevTools 프로토콜(`Input.dispatchTouchEvent`)로 보냅니다.
-- `window.__game`(게임의 테스트용 훅, [game/main.ts](../../game/main.ts) 맨 끝)으로 상태를 읽습니다.
+검사는 [tests/e2e/p0-checks.mjs](../../tests/e2e/p0-checks.mjs)에 있습니다. 필요한 환경, 결과 읽는 법, 종료 코드는 [tests/e2e/README.md](../../tests/e2e/README.md)에 있습니다(P0-5).
+아래 결과는 P0-5 이전에 같은 검사를 단독 스크립트로 돌린 기록입니다.
+
+## `npm run test:e2e` 결과 (2026-10-30, P0-5)
+
+| 실행 | 결과 | 종료 코드 |
+|---|---|---|
+| 정상 실행 4회 | 4회 모두 32 PASS · 0 FAIL · 0 SKIP (약 43초) | 0 |
+| `?demo=bomb` 장면 3개(검사 4개) 추가 후 2회 | 2회 모두 36 PASS · 0 FAIL · 0 SKIP | 0 |
+| R1 방지 코드를 일부러 지우고 실행 | 27 PASS · 5 FAIL, 실패 5개와 이유 출력 | 1 |
+| 제한 시간 4초 | `timed out after 4000 ms` | 2 |
+| 실행 중 Ctrl+C(SIGINT) | `stopped by SIGINT` | 2 |
+
+네 경우 모두 끝난 뒤 5299 포트에 남은 서버가 없었고, 테스트가 띄운 Chrome도 남지 않았습니다(`lsof -iTCP:5299`, `pgrep -f puppeteer_dev_chrome_profile`로 확인).
 
 ## 결과 (2026-10-30, `feat/p0-rules`)
 
@@ -48,8 +51,12 @@
 ## 검증하지 못한 것
 
 - **실제 기기**: 모두 데스크톱 Chrome에서 터치를 흉내 낸 결과입니다. iOS Safari, 안드로이드 실기기의 두 손가락 입력과 탭 간격은 확인하지 않았습니다.
-- **폭탄 숫자 1에서 탭 순서**: 폭탄 먼저 → 일반 동물(안전), 일반 동물 먼저 → 폭탄(폭발, 폭탄 탭 무시)은 규칙 테스트와 흐름 테스트로만 확인했고 브라우저에서는 하지 않았습니다.
-- **폭탄 막대의 경고 문구**: 숫자 1일 때 문구("다른 친구가 한 번 더 나가면 터져요!")는 코드로만 확인했고, 화면에 뜬 모습은 보지 않았습니다.
+
+## 나중에 확인한 것
+
+- **폭탄 숫자 1에서 탭 순서**: `?demo=bomb`으로 브라우저에서도 확인했습니다.
+  - 폭탄 먼저 → 일반 동물: 폭탄이 대기 중이어도 안전합니다.
+  - 일반 동물 먼저 → 폭탄: 폭발하고, 폭탄 탭은 무시됩니다.
 
 ## 시간에 따라 흔들렸던 항목
 

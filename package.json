@@ -11,7 +11,8 @@
     "build": "tsc --noEmit && vite build viewer",
     "dev": "vite viewer",
     "dev:game": "vite --config vite.game.config.ts",
-    "build:game": "tsc --noEmit && vite build --config vite.game.config.ts"
+    "build:game": "tsc --noEmit && vite build --config vite.game.config.ts",
+    "test:e2e": "node tests/e2e/run.mjs"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
   "homepage": "https://github.com/hgoose-avatye/puzzle#readme",
   "devDependencies": {
     "@types/three": "^0.186.0",
+    "puppeteer-core": "^25.16.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
