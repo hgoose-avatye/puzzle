@@ -96,7 +96,7 @@ export class Stage {
   private board = new THREE.Group();
   private level: Level | null = null;
   private readonly ray = new THREE.Raycaster();
-  private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.1);
+  private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.05);
   private crates: Array<{ crate: Crate; obj: THREE.Object3D; crack: THREE.Object3D; pips: THREE.Sprite; cracks: number; shakeT: number }> = [];
   /** Miniature look of the reference: the board stays sharp, the scenery above and below softens. */
   private composer!: EffectComposer;
@@ -105,12 +105,15 @@ export class Stage {
   constructor(private readonly container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // neutral tone mapping (applied in the OutputPass) keeps the brighter animal colours from clipping
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
     this.scene.background = new THREE.Color(0xcfe8f3);
     this.scene.add(this.hemi);
-    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.7);
     sun.position.set(4, 10, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -218,11 +221,11 @@ export class Stage {
 
   private arrowTile(level: Level, x: number, y: number, dir: 'up' | 'down' | 'left' | 'right'): THREE.Object3D {
     const g = new THREE.Group();
-    const tile = new THREE.Mesh(new RoundedBoxGeometry(0.92, 0.08, 0.92, 2, 0.03), new THREE.MeshStandardMaterial({ color: 0xece4cf }));
+    const tile = new THREE.Mesh(new RoundedBoxGeometry(0.92, 0.08, 0.92, 2, 0.03), new THREE.MeshStandardMaterial({ color: 0xede4ce }));
     tile.position.y = 0.05;
     tile.receiveShadow = true;
     g.add(tile);
-    const tri = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.55, 3), new THREE.MeshStandardMaterial({ color: 0x8a7a52 }));
+    const tri = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.55, 3), new THREE.MeshStandardMaterial({ color: 0x8c7b4f }));
     tri.rotation.x = Math.PI / 2;
     tri.position.y = 0.11;
     const holder = new THREE.Group();

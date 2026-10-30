@@ -20,9 +20,9 @@ export interface SceneFrame {
 const sphere = (): THREE.BufferGeometry => geo('sphere', () => new THREE.SphereGeometry(0.5, 14, 10));
 
 /** Soft round tree from a few overlapping balls, as in the reference trees. */
-function fluffyTree(rng: Rng, s = 1, tint = 0x7cc35c): THREE.Group {
+function fluffyTree(rng: Rng, s = 1, tint = 0x79c654): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0x8a5a3b, 0, 0.45 * s, 0, 0.26 * s, 0.9 * s, 0.26 * s);
+  part(g, cyl(), 0x8c5835, 0, 0.45 * s, 0, 0.26 * s, 0.9 * s, 0.26 * s);
   const shades = [tint, new THREE.Color(tint).offsetHSL(0, 0, 0.06).getHex(), new THREE.Color(tint).offsetHSL(0.02, 0, -0.06).getHex()];
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2 + rng.next();
@@ -34,40 +34,40 @@ function fluffyTree(rng: Rng, s = 1, tint = 0x7cc35c): THREE.Group {
 
 function bushClump(rng: Rng, flowers = true): THREE.Group {
   const g = new THREE.Group();
-  for (let i = 0; i < 3; i++) part(g, sphere(), i ? 0x6cb850 : 0x79c45a, (i - 1) * 0.32, 0.25 + rng.next() * 0.08, (rng.next() - 0.5) * 0.25, 0.62, 0.52, 0.6);
+  for (let i = 0; i < 3; i++) part(g, sphere(), i ? 0x68bb48 : 0x76c752, (i - 1) * 0.32, 0.25 + rng.next() * 0.08, (rng.next() - 0.5) * 0.25, 0.62, 0.52, 0.6);
   if (flowers) for (let i = 0; i < 4; i++) part(g, sphere(), [0xffffff, 0xfff3a8, 0xffb3c7][rng.int(0, 2)], (rng.next() - 0.5) * 0.8, 0.5 + rng.next() * 0.12, (rng.next() - 0.5) * 0.35, 0.12, 0.12, 0.12);
   return g;
 }
 
 function cottage(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0xbdb4a4, 0, 0.12, 0, 2.9, 0.24, 2.3); // stone footing
-  part(g, box(), 0xf7ead2, 0, 1.0, 0, 2.7, 1.6, 2.1);
-  for (const x of [-1.33, 1.33]) part(g, box(), 0xa7774c, x, 1.0, 1.06, 0.1, 1.6, 0.06); // timber corners
-  part(g, box(), 0xa7774c, 0, 1.78, 1.06, 2.7, 0.1, 0.06);
-  for (const sz of [-1, 1]) part(g, box(), 0xd9694a, 0, 2.25, sz * 0.62, 3.1, 0.16, 1.5).rotation.x = sz * 0.62; // gable roof
-  part(g, box(), 0xb9533a, 0, 2.7, 0, 3.15, 0.14, 0.18);
-  part(g, box(), 0xa9a196, 0.8, 2.75, -0.35, 0.36, 0.9, 0.36); // chimney
-  part(g, box(), 0x8a5636, -0.55, 0.62, 1.07, 0.56, 0.95, 0.06); // door, arch and step
-  part(g, cyl(), 0x8a5636, -0.55, 1.08, 1.07, 0.56, 0.06, 0.56).rotation.x = Math.PI / 2;
-  part(g, box(), 0xc9c1b4, -0.55, 0.08, 1.35, 0.9, 0.16, 0.5);
-  part(g, box(), 0x4f8fc6, 0.6, 1.05, 1.07, 0.7, 0.62, 0.05); // window, awning, flower box
-  part(g, box(), 0xcfe8f5, 0.6, 1.05, 1.1, 0.54, 0.46, 0.03, 0x3a5a70);
-  for (let i = 0; i < 4; i++) part(g, box(), i % 2 ? 0xffffff : 0x4f8fc6, 0.33 + i * 0.18, 1.5, 1.24, 0.18, 0.04, 0.42).rotation.x = 0.45;
-  part(g, box(), 0x9c6236, 0.6, 0.7, 1.16, 0.74, 0.14, 0.16);
+  part(g, box(), 0xbeb4a3, 0, 0.12, 0, 2.9, 0.24, 2.3); // stone footing
+  part(g, box(), 0xf8ead0, 0, 1.0, 0, 2.7, 1.6, 2.1);
+  for (const x of [-1.33, 1.33]) part(g, box(), 0xa97645, x, 1.0, 1.06, 0.1, 1.6, 0.06); // timber corners
+  part(g, box(), 0xa97645, 0, 1.78, 1.06, 2.7, 0.1, 0.06);
+  for (const sz of [-1, 1]) part(g, box(), 0xdc623b, 0, 2.25, sz * 0.62, 3.1, 0.16, 1.5).rotation.x = sz * 0.62; // gable roof
+  part(g, box(), 0xbc4c2b, 0, 2.7, 0, 3.15, 0.14, 0.18);
+  part(g, box(), 0xaaa195, 0.8, 2.75, -0.35, 0.36, 0.9, 0.36); // chimney
+  part(g, box(), 0x8c542f, -0.55, 0.62, 1.07, 0.56, 0.95, 0.06); // door, arch and step
+  part(g, cyl(), 0x8c542f, -0.55, 1.08, 1.07, 0.56, 0.06, 0.56).rotation.x = Math.PI / 2;
+  part(g, box(), 0xcac1b3, -0.55, 0.08, 1.35, 0.9, 0.16, 0.5);
+  part(g, box(), 0x458ec9, 0.6, 1.05, 1.07, 0.7, 0.62, 0.05); // window, awning, flower box
+  part(g, box(), 0xcde8f6, 0.6, 1.05, 1.1, 0.54, 0.46, 0.03, 0x3a5a70);
+  for (let i = 0; i < 4; i++) part(g, box(), i % 2 ? 0xffffff : 0x458ec9, 0.33 + i * 0.18, 1.5, 1.24, 0.18, 0.04, 0.42).rotation.x = 0.45;
+  part(g, box(), 0x9e602c, 0.6, 0.7, 1.16, 0.74, 0.14, 0.16);
   for (let i = 0; i < 4; i++) part(g, sphere(), [0xff8fab, 0xffffff, 0xffd166][i % 3], 0.36 + i * 0.16, 0.82, 1.17, 0.13, 0.13, 0.13);
   return g;
 }
 
 function marketStall(rng: Rng): THREE.Group {
   const g = new THREE.Group();
-  for (const x of [-0.8, 0.8]) for (const z of [-0.4, 0.4]) part(g, box(), 0x9c6b45, x, 0.75, z, 0.1, 1.5, 0.1);
-  part(g, box(), 0xb57a4c, 0, 0.62, 0.05, 1.75, 0.12, 0.9);
-  for (let i = 0; i < 8; i++) part(g, box(), i % 2 ? 0xffffff : 0x5b8fd6, -0.79 + i * 0.226, 1.55, 0.05, 0.226, 0.06, 1.2).rotation.x = -0.18;
+  for (const x of [-0.8, 0.8]) for (const z of [-0.4, 0.4]) part(g, box(), 0x9e6a3e, x, 0.75, z, 0.1, 1.5, 0.1);
+  part(g, box(), 0xb87843, 0, 0.62, 0.05, 1.75, 0.12, 0.9);
+  for (let i = 0; i < 8; i++) part(g, box(), i % 2 ? 0xffffff : 0x518dd9, -0.79 + i * 0.226, 1.55, 0.05, 0.226, 0.06, 1.2).rotation.x = -0.18;
   for (let c = 0; c < 3; c++) {
     const cx = -0.55 + c * 0.55;
-    part(g, box(), 0xc08a52, cx, 0.78, 0.15, 0.46, 0.2, 0.4);
-    for (let i = 0; i < 5; i++) part(g, sphere(), [0xf28c25, 0xe2453c, 0x8ccf4a][c], cx + (rng.next() - 0.5) * 0.3, 0.92, 0.15 + (rng.next() - 0.5) * 0.25, 0.14, 0.14, 0.14);
+    part(g, box(), 0xc38949, cx, 0.78, 0.15, 0.46, 0.2, 0.4);
+    for (let i = 0; i < 5; i++) part(g, sphere(), [0xf48a00, 0xe63223, 0x8ad23d][c], cx + (rng.next() - 0.5) * 0.3, 0.92, 0.15 + (rng.next() - 0.5) * 0.25, 0.14, 0.14, 0.14);
   }
   part(g, box(), 0x3d3a36, 1.1, 0.4, 0.55, 0.42, 0.55, 0.05).rotation.x = -0.2; // chalkboard
   return g;
@@ -84,24 +84,24 @@ function lampPost(): THREE.Group {
 
 function barrel(): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0xa8703f, 0, 0.3, 0, 0.5, 0.6, 0.5);
-  for (const y of [0.12, 0.48]) part(g, cyl(), 0x5b4a3a, 0, y, 0, 0.52, 0.05, 0.52);
+  part(g, cyl(), 0xab6e35, 0, 0.3, 0, 0.5, 0.6, 0.5);
+  for (const y of [0.12, 0.48]) part(g, cyl(), 0x5c4a38, 0, y, 0, 0.52, 0.05, 0.52);
   return g;
 }
 
 function bench(): THREE.Group {
   const g = new THREE.Group();
-  for (const z of [-0.1, 0.1]) part(g, box(), 0xb57a4c, 0, 0.4, z, 1.4, 0.06, 0.16);
-  part(g, box(), 0xb57a4c, 0, 0.7, -0.24, 1.4, 0.3, 0.06).rotation.x = -0.15;
-  for (const x of [-0.6, 0.6]) part(g, box(), 0x3d4a52, x, 0.22, 0, 0.08, 0.44, 0.5);
+  for (const z of [-0.1, 0.1]) part(g, box(), 0xb87843, 0, 0.4, z, 1.4, 0.06, 0.16);
+  part(g, box(), 0xb87843, 0, 0.7, -0.24, 1.4, 0.3, 0.06).rotation.x = -0.15;
+  for (const x of [-0.6, 0.6]) part(g, box(), 0x3c4a53, x, 0.22, 0, 0.08, 0.44, 0.5);
   return g;
 }
 
 function dogHouse(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0xc8935f, 0, 0.42, 0, 1.0, 0.84, 1.0);
-  part(g, pyramid(), 0x4f7fc6, 0, 1.08, 0, 1.6, 0.6, 1.5).rotation.y = Math.PI / 4;
-  part(g, box(), 0x3d2a20, 0, 0.32, 0.5, 0.42, 0.5, 0.04);
+  part(g, box(), 0xcb9257, 0, 0.42, 0, 1.0, 0.84, 1.0);
+  part(g, pyramid(), 0x457dc9, 0, 1.08, 0, 1.6, 0.6, 1.5).rotation.y = Math.PI / 4;
+  part(g, box(), 0x3e291e, 0, 0.32, 0.5, 0.42, 0.5, 0.04);
   return g;
 }
 
@@ -116,8 +116,8 @@ function fenceRun(from: THREE.Vector3, to: THREE.Vector3, skip: (p: THREE.Vector
     const b = from.clone().addScaledVector(dir, ((i + 1) / n) * len);
     const mid = a.clone().add(b).multiplyScalar(0.5);
     if (skip(mid)) continue;
-    for (const p of [a, b]) part(g, box(), 0xa7774c, p.x, 0.32, p.z, 0.12, 0.64, 0.12);
-    for (const y of [0.22, 0.46]) part(g, box(), 0xc89b6d, mid.x, y, mid.z, 0.06, 0.08, len / n).rotation.y = angle;
+    for (const p of [a, b]) part(g, box(), 0xa97645, p.x, 0.32, p.z, 0.12, 0.64, 0.12);
+    for (const y of [0.22, 0.46]) part(g, box(), 0xcb9a67, mid.x, y, mid.z, 0.06, 0.08, len / n).rotation.y = angle;
   }
   return g;
 }
@@ -126,7 +126,7 @@ function cobblePath(rng: Rng, x0: number, x1: number, z0: number, z1: number): T
   const g = new THREE.Group();
   for (let x = x0; x < x1; x += 0.42) {
     for (let z = z0; z < z1; z += 0.42) {
-      const c = new THREE.Color(0xcfc4b0).offsetHSL(0, 0, (rng.next() - 0.5) * 0.08).getHex();
+      const c = new THREE.Color(0xd0c4af).offsetHSL(0, 0, (rng.next() - 0.5) * 0.08).getHex();
       part(g, box(), c, x + (rng.next() - 0.5) * 0.06, 0.02, z + (rng.next() - 0.5) * 0.06, 0.38, 0.06, 0.38).castShadow = false;
     }
   }
@@ -135,8 +135,8 @@ function cobblePath(rng: Rng, x0: number, x1: number, z0: number, z1: number): T
 
 function water(x: number, z: number, w: number, d: number): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0x5ec8e8, x, -0.12, z, w, 0.08, d).castShadow = false;
-  part(g, box(), 0x8edcf2, x, -0.1, z, w * 0.8, 0.06, d * 0.6).castShadow = false;
+  part(g, box(), 0x52c9eb, x, -0.12, z, w, 0.08, d).castShadow = false;
+  part(g, box(), 0x88ddf5, x, -0.1, z, w * 0.8, 0.06, d * 0.6).castShadow = false;
   return g;
 }
 
@@ -147,29 +147,29 @@ function bridge(): THREE.Group {
     const t = i / (n - 1);
     const x = -1.6 + t * 3.2;
     const y = 0.15 + Math.sin(t * Math.PI) * 0.55;
-    part(g, box(), 0xb5844f, x, y, 0, 0.36, 0.1, 1.2).rotation.z = Math.cos(t * Math.PI) * -0.5;
-    for (const z of [-0.6, 0.6]) part(g, box(), 0x8a5a3b, x, y + 0.3, z, 0.1, 0.5, 0.08);
+    part(g, box(), 0xb88347, x, y, 0, 0.36, 0.1, 1.2).rotation.z = Math.cos(t * Math.PI) * -0.5;
+    for (const z of [-0.6, 0.6]) part(g, box(), 0x8c5835, x, y + 0.3, z, 0.1, 0.5, 0.08);
   }
   for (const z of [-0.6, 0.6]) for (let i = 0; i < n - 1; i++) {
     const t = (i + 0.5) / (n - 1);
-    part(g, box(), 0xa7774c, -1.6 + t * 3.2, 0.62 + Math.sin(t * Math.PI) * 0.55, z, 0.42, 0.06, 0.06).rotation.z = Math.cos(t * Math.PI) * -0.5;
+    part(g, box(), 0xa97645, -1.6 + t * 3.2, 0.62 + Math.sin(t * Math.PI) * 0.55, z, 0.42, 0.06, 0.06).rotation.z = Math.cos(t * Math.PI) * -0.5;
   }
-  for (const x of [-1.8, 1.8]) part(g, box(), 0xbdb4a4, x, 0.25, 0, 0.5, 0.5, 1.4);
+  for (const x of [-1.8, 1.8]) part(g, box(), 0xbeb4a3, x, 0.25, 0, 0.5, 0.5, 1.4);
   return g;
 }
 
 function dock(): THREE.Group {
   const g = new THREE.Group();
-  for (let i = 0; i < 6; i++) part(g, box(), 0xb5844f, 0, 0.12, i * 0.36, 1.1, 0.08, 0.32);
-  for (const x of [-0.55, 0.55]) for (const z of [0, 1.8]) part(g, cyl(), 0x8a5a3b, x, 0.1, z, 0.16, 0.6, 0.16);
+  for (let i = 0; i < 6; i++) part(g, box(), 0xb88347, 0, 0.12, i * 0.36, 1.1, 0.08, 0.32);
+  for (const x of [-0.55, 0.55]) for (const z of [0, 1.8]) part(g, cyl(), 0x8c5835, x, 0.1, z, 0.16, 0.6, 0.16);
   return g;
 }
 
 function boat(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0x9c6236, 0, 0.08, 0, 0.9, 0.36, 1.9);
-  part(g, box(), 0xc08a52, 0, 0.22, 0, 0.72, 0.1, 1.7);
-  part(g, box(), 0xb57a4c, 0, 0.3, 0.2, 0.74, 0.06, 0.18);
+  part(g, box(), 0x9e602c, 0, 0.08, 0, 0.9, 0.36, 1.9);
+  part(g, box(), 0xc38949, 0, 0.22, 0, 0.72, 0.1, 1.7);
+  part(g, box(), 0xb87843, 0, 0.3, 0.2, 0.74, 0.06, 0.18);
   return g;
 }
 
@@ -230,44 +230,44 @@ function village(f: SceneFrame, rng: Rng): THREE.Group {
 
 function barn(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0xc4473c, 0, 0.95, 0, 2.4, 1.9, 2.0);
-  for (const sz of [-1, 1]) part(g, box(), 0x6b4a3a, 0, 2.15, sz * 0.58, 2.6, 0.14, 1.4).rotation.x = sz * 0.7;
-  part(g, box(), 0xf4ede0, 0, 0.75, 1.01, 1.0, 1.3, 0.04);
-  for (const s of [-1, 1]) part(g, box(), 0xf4ede0, 0, 0.75, 1.03, 1.3, 0.08, 0.03).rotation.z = s * 0.9;
+  part(g, box(), 0xc73b2c, 0, 0.95, 0, 2.4, 1.9, 2.0);
+  for (const sz of [-1, 1]) part(g, box(), 0x6c4937, 0, 2.15, sz * 0.58, 2.6, 0.14, 1.4).rotation.x = sz * 0.7;
+  part(g, box(), 0xf5eddf, 0, 0.75, 1.01, 1.0, 1.3, 0.04);
+  for (const s of [-1, 1]) part(g, box(), 0xf5eddf, 0, 0.75, 1.03, 1.3, 0.08, 0.03).rotation.z = s * 0.9;
   return g;
 }
 function silo(): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0xd9d2c3, 0, 1.3, 0, 1.1, 2.6, 1.1);
-  part(g, geo('dome', () => new THREE.SphereGeometry(0.5, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2)), 0x8a8f96, 0, 2.6, 0, 1.12, 0.9, 1.12);
+  part(g, cyl(), 0xdad2c2, 0, 1.3, 0, 1.1, 2.6, 1.1);
+  part(g, geo('dome', () => new THREE.SphereGeometry(0.5, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2)), 0x898f96, 0, 2.6, 0, 1.12, 0.9, 1.12);
   return g;
 }
 function fountain(): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0xcfc4b0, 0, 0.2, 0, 2.0, 0.4, 2.0);
-  part(g, cyl(), 0x6fd0ef, 0, 0.36, 0, 1.7, 0.08, 1.7, 0x1a5a70).castShadow = false;
-  part(g, cyl(), 0xcfc4b0, 0, 0.75, 0, 0.3, 1.0, 0.3);
-  part(g, cyl(), 0xcfc4b0, 0, 1.25, 0, 0.9, 0.14, 0.9);
-  part(g, sphere(), 0x9fe3f7, 0, 1.45, 0, 0.3, 0.4, 0.3, 0x2a7090);
+  part(g, cyl(), 0xd0c4af, 0, 0.2, 0, 2.0, 0.4, 2.0);
+  part(g, cyl(), 0x65d1f2, 0, 0.36, 0, 1.7, 0.08, 1.7, 0x1a5a70).castShadow = false;
+  part(g, cyl(), 0xd0c4af, 0, 0.75, 0, 0.3, 1.0, 0.3);
+  part(g, cyl(), 0xd0c4af, 0, 1.25, 0, 0.9, 0.14, 0.9);
+  part(g, sphere(), 0x9ae4fa, 0, 1.45, 0, 0.3, 0.4, 0.3, 0x2a7090);
   return g;
 }
 function snowHouse(): THREE.Group {
-  const g = LIB.house(0xe9d7bf, 0xffffff)(rngConst);
+  const g = LIB.house(0xead7bd, 0xffffff)(rngConst);
   part(g, box(), 0xffd27a, 0.35, 0.55, 0.51, 0.3, 0.3, 0.04, 0xffa53a);
   return g;
 }
 function pirateShip(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0x6b4428, 0, 0.35, 0, 1.6, 0.8, 4.0);
-  part(g, box(), 0x8a5a3b, 0, 0.8, -1.4, 1.5, 0.5, 1.0);
-  part(g, cyl(), 0x5b3a22, 0, 2.0, 0.2, 0.12, 3.0, 0.12);
+  part(g, box(), 0x6d4322, 0, 0.35, 0, 1.6, 0.8, 4.0);
+  part(g, box(), 0x8c5835, 0, 0.8, -1.4, 1.5, 0.5, 1.0);
+  part(g, cyl(), 0x5c391d, 0, 2.0, 0.2, 0.12, 3.0, 0.12);
   part(g, box(), 0x2b2b2f, 0, 2.3, 0.25, 1.6, 1.3, 0.04);
   part(g, sphere(), 0xffffff, 0, 2.35, 0.28, 0.4, 0.4, 0.04);
   return g;
 }
 function cannon(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0x8a5a3b, 0, 0.18, 0, 0.6, 0.3, 0.8);
+  part(g, box(), 0x8c5835, 0, 0.18, 0, 0.6, 0.3, 0.8);
   part(g, cyl(), 0x33363b, 0, 0.42, 0.15, 0.26, 0.9, 0.26).rotation.x = Math.PI / 2 - 0.25;
   return g;
 }
@@ -285,54 +285,54 @@ function caveArch(): THREE.Group {
 }
 function cliffFalls(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0x7f8b6a, 0, 1.2, 0, 4.5, 2.4, 1.6);
-  part(g, box(), 0x4f9a4a, 0, 2.45, 0, 4.6, 0.2, 1.7);
-  part(g, box(), 0x8fdcf5, 0.2, 1.2, 0.82, 1.2, 2.4, 0.06, 0x2a7090).castShadow = false;
-  part(g, cyl(), 0x6cc8e8, 0.2, -0.05, 1.6, 2.6, 0.06, 1.6).castShadow = false;
+  part(g, box(), 0x7f8c68, 0, 1.2, 0, 4.5, 2.4, 1.6);
+  part(g, box(), 0x4a9c44, 0, 2.45, 0, 4.6, 0.2, 1.7);
+  part(g, box(), 0x89ddf8, 0.2, 1.2, 0.82, 1.2, 2.4, 0.06, 0x2a7090).castShadow = false;
+  part(g, cyl(), 0x63c9eb, 0.2, -0.05, 1.6, 2.6, 0.06, 1.6).castShadow = false;
   return g;
 }
 function stepPyramid(): THREE.Group {
   const g = new THREE.Group();
-  for (let i = 0; i < 4; i++) part(g, box(), i % 2 ? 0xb7b2a0 : 0xa9a48f, 0, 0.3 + i * 0.6, 0, 3.4 - i * 0.75, 0.6, 3.4 - i * 0.75);
-  part(g, box(), 0x4f9a4a, 0.9, 0.62, 1.2, 0.6, 0.06, 0.5);
+  for (let i = 0; i < 4; i++) part(g, box(), i % 2 ? 0xb8b29f : 0xaaa58e, 0, 0.3 + i * 0.6, 0, 3.4 - i * 0.75, 0.6, 3.4 - i * 0.75);
+  part(g, box(), 0x4a9c44, 0.9, 0.62, 1.2, 0.6, 0.06, 0.5);
   return g;
 }
 function bigLeaf(rng: Rng): THREE.Group {
   const g = new THREE.Group();
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2 + rng.next();
-    const l = part(g, box(), 0x3f9a4a, Math.cos(a) * 0.4, 0.35, Math.sin(a) * 0.4, 0.9, 0.04, 0.4);
+    const l = part(g, box(), 0x379c45, Math.cos(a) * 0.4, 0.35, Math.sin(a) * 0.4, 0.9, 0.04, 0.4);
     l.rotation.set(0, -a, 0.5);
   }
   return g;
 }
 function scarecrow(): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0x7a5236, 0, 0.8, 0, 0.08, 1.6, 0.08);
-  part(g, box(), 0x7a5236, 0, 1.2, 0, 1.2, 0.07, 0.07);
-  part(g, box(), 0x8f4fb0, 0, 1.15, 0, 0.5, 0.5, 0.3);
-  part(g, sphere(), 0xf0b45a, 0, 1.6, 0, 0.36, 0.36, 0.36);
-  part(g, cone(), 0x3d3550, 0, 1.92, 0, 0.5, 0.4, 0.5);
+  part(g, cyl(), 0x7c5131, 0, 0.8, 0, 0.08, 1.6, 0.08);
+  part(g, box(), 0x7c5131, 0, 1.2, 0, 1.2, 0.07, 0.07);
+  part(g, box(), 0x8f48b3, 0, 1.15, 0, 0.5, 0.5, 0.3);
+  part(g, sphere(), 0xf4b44c, 0, 1.6, 0, 0.36, 0.36, 0.36);
+  part(g, cone(), 0x3c3451, 0, 1.92, 0, 0.5, 0.4, 0.5);
   return g;
 }
 function castleWall(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0x6c6587, 0, 0.8, 0, 5.0, 1.6, 0.7);
-  for (let i = 0; i < 6; i++) part(g, box(), 0x6c6587, -2.25 + i * 0.9, 1.75, 0, 0.45, 0.3, 0.7);
+  part(g, box(), 0x6b6388, 0, 0.8, 0, 5.0, 1.6, 0.7);
+  for (let i = 0; i < 6; i++) part(g, box(), 0x6b6388, -2.25 + i * 0.9, 1.75, 0, 0.45, 0.3, 0.7);
   for (const x of [-2.6, 2.6]) {
-    part(g, cyl(), 0x5d5678, x, 1.3, 0, 1.2, 2.6, 1.2);
-    part(g, cone(), 0x4a3f7a, x, 3.0, 0, 1.4, 1.0, 1.4);
+    part(g, cyl(), 0x5c5479, x, 1.3, 0, 1.2, 2.6, 1.2);
+    part(g, cone(), 0x483b7c, x, 3.0, 0, 1.4, 1.0, 1.4);
     part(g, box(), 0xffd27a, x, 1.6, 0.6, 0.25, 0.35, 0.04, 0xffa53a);
   }
-  part(g, box(), 0x2b2540, 0, 0.6, 0.36, 1.1, 1.2, 0.04);
+  part(g, box(), 0x2a2341, 0, 0.6, 0.36, 1.1, 1.2, 0.04);
   return g;
 }
 function xmasTree(): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0x7a5236, 0, 0.25, 0, 0.3, 0.5, 0.3);
-  for (let i = 0; i < 4; i++) part(g, cone(), 0x2f7a46, 0, 0.75 + i * 0.6, 0, 2.2 - i * 0.45, 0.9, 2.2 - i * 0.45);
+  part(g, cyl(), 0x7c5131, 0, 0.25, 0, 0.3, 0.5, 0.3);
+  for (let i = 0; i < 4; i++) part(g, cone(), 0x297c44, 0, 0.75 + i * 0.6, 0, 2.2 - i * 0.45, 0.9, 2.2 - i * 0.45);
   part(g, sphere(), 0xffd84a, 0, 3.15, 0, 0.35, 0.35, 0.35, 0xffb000);
-  const baubles = [0xd94a4a, 0xf2d16b, 0x5b8fd6, 0xffffff];
+  const baubles = [0xdc3b3b, 0xf6d260, 0x518dd9, 0xffffff];
   for (let i = 0; i < 10; i++) {
     const a = i * 2.2;
     const y = 0.7 + (i % 4) * 0.55;
@@ -343,20 +343,20 @@ function xmasTree(): THREE.Group {
 }
 function starfish(rng: Rng): THREE.Group {
   const g = new THREE.Group();
-  for (let i = 0; i < 5; i++) part(g, box(), [0xf28c5a, 0xf7b267][rng.int(0, 1)], 0, 0.03, 0, 0.08, 0.04, 0.32).rotation.y = (i / 5) * Math.PI * 2;
+  for (let i = 0; i < 5; i++) part(g, box(), [0xf6874b, 0xfbb15b][rng.int(0, 1)], 0, 0.03, 0, 0.08, 0.04, 0.32).rotation.y = (i / 5) * Math.PI * 2;
   return g;
 }
 function umbrella(): THREE.Group {
   const g = new THREE.Group();
-  part(g, cyl(), 0xf4ede0, 0, 0.8, 0, 0.06, 1.6, 0.06);
-  part(g, cone(), 0xe85a5a, 0, 1.6, 0, 1.6, 0.4, 1.6);
-  part(g, box(), 0xf9f3e6, 0.5, 0.05, 0.6, 0.6, 0.06, 1.1);
+  part(g, cyl(), 0xf5eddf, 0, 0.8, 0, 0.06, 1.6, 0.06);
+  part(g, cone(), 0xec4d4d, 0, 1.6, 0, 1.6, 0.4, 1.6);
+  part(g, box(), 0xfaf3e5, 0.5, 0.05, 0.6, 0.6, 0.06, 1.1);
   return g;
 }
 function sled(): THREE.Group {
   const g = new THREE.Group();
-  part(g, box(), 0xc4473c, 0, 0.22, 0, 0.6, 0.1, 1.1);
-  for (const x of [-0.26, 0.26]) part(g, box(), 0x8a8f96, x, 0.08, 0, 0.05, 0.06, 1.2);
+  part(g, box(), 0xc73b2c, 0, 0.22, 0, 0.6, 0.1, 1.1);
+  for (const x of [-0.26, 0.26]) part(g, box(), 0x898f96, x, 0.08, 0, 0.05, 0.06, 1.2);
   return g;
 }
 const rngConst: Rng = { next: () => 0.5, int: (a: number) => a };
@@ -457,7 +457,7 @@ const riverside: Scene = (f, rng) => {
 const deepWoods: Scene = (f, rng) => {
   const { g, put } = sceneKit(f);
   const { hw, hz } = f;
-  put(LIB.house(0x9c6b45, 0x3e6e45)(rng), -hw + 1.2, -hz - 2.8, 0.2);
+  put(LIB.house(0x9e6a3e, 0x3b6f43)(rng), -hw + 1.2, -hz - 2.8, 0.2);
   for (let x = -hw - 3; x < hw + 3; x += 1.2) put(LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.4, -hz - (x < -hw + 2.5 ? 4.6 : 1.8 + rng.next() * 2.6));
   sides(put, f, () => LIB.pine(false)(rng), 1.3, 1.2);
   for (let x = -hw - 3; x < hw + 3; x += 1.1) put(rng.next() < 0.3 ? LIB.mushroom(rng) : LIB.pine(false)(rng), x + (rng.next() - 0.5) * 0.4, hz + 1.8 + rng.next() * 2.2);
@@ -602,7 +602,7 @@ const iceLake: Scene = (f, rng) => {
   const { g, put } = sceneKit(f);
   const { hw, hz } = f;
   const ice = new THREE.Group();
-  part(ice, box(), 0xcfeaf7, 0, -0.06, -hz - 3.2, 2 * hw + 6, 0.06, 3.4).castShadow = false;
+  part(ice, box(), 0xcdeaf8, 0, -0.06, -hz - 3.2, 2 * hw + 6, 0.06, 3.4).castShadow = false;
   g.add(ice);
   for (let x = -hw - 2; x < hw + 2; x += 1.6) put(LIB.iceBlock(rng), x + (rng.next() - 0.5) * 0.6, -hz - 1.4);
   put(sled(), 1.2, -hz - 3.0, 0.6);

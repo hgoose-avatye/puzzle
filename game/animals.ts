@@ -63,6 +63,8 @@ const GATE_FADE = 0.8;
 const BLOCK_SPACING = 1;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
+/** The same hue, more saturated, for the lit plate and gate (the floor marks and effects keep pieceColor). */
+const plateColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.896, 0.55);
 
 /** Badge colours for a bomb's remaining taps: calm, getting close, about to go off. */
 export const fuseTone = (n: number): { line: string; text: string } =>
@@ -212,13 +214,14 @@ export class PieceView {
     this.bodyLen = piece.cells.length;
     ({ track: this.track, headStart: this.headStart } = routeOf(level, piece));
     const color = pieceColor(piece.id);
+    const lit = plateColor(piece.id);
 
     this.segments = buildAnimal(speciesFor(piece), this.bodyLen);
     for (const seg of this.segments) this.group.add(seg);
 
     // Colored plate under each cell, following the path, so the whole animal reads as one color.
     for (let i = 0; i < this.bodyLen; i++) {
-      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
+      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color: lit }));
       this.plates.push(plate);
       this.markers.push(plate);
       this.group.add(plate);
@@ -243,7 +246,7 @@ export class PieceView {
     this.buildAheadMarks(color);
     this.group.add(this.aheadMarks);
     this.group.add(this.chevrons);
-    const gate = this.buildGate(color);
+    const gate = this.buildGate(lit);
     this.gate = gate;
     this.markers.push(gate);
     this.group.add(gate);

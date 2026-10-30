@@ -17,12 +17,12 @@ type Rim = 'curb' | 'log' | 'surf' | 'vine' | 'iron' | 'snow';
 interface Style { floor: Floor; rim: Rim; a: number; b: number; bed: number; rimColor: number }
 
 const STYLES: Record<Theme, Style> = {
-  village: { floor: 'stone', rim: 'curb', a: 0xf3ead8, b: 0xe8dcc4, bed: 0xbcae94, rimColor: 0xc9bfae },
-  forest: { floor: 'plank', rim: 'log', a: 0xc89a66, b: 0xb98a58, bed: 0x6b4e33, rimColor: 0x8a5a3b },
-  pirate: { floor: 'sand', rim: 'surf', a: 0xf3dfae, b: 0xeed6a0, bed: 0xd9bf86, rimColor: 0xffffff },
-  jungle: { floor: 'moss', rim: 'vine', a: 0xc9c6b2, b: 0xbdbaa4, bed: 0x6f7a5a, rimColor: 0x4f9a4a },
-  haunted: { floor: 'cobble', rim: 'iron', a: 0x9b95b2, b: 0x8c86a6, bed: 0x4b4566, rimColor: 0x2f2a3d },
-  winter: { floor: 'ice', rim: 'snow', a: 0xe8f4fb, b: 0xd6ebf6, bed: 0xb7cfdf, rimColor: 0xffffff },
+  village: { floor: 'stone', rim: 'curb', a: 0xf4ead7, b: 0xe9dcc2, bed: 0xbdae92, rimColor: 0xcabfad },
+  forest: { floor: 'plank', rim: 'log', a: 0xcb995f, b: 0xbc8951, bed: 0x6d4d2f, rimColor: 0x8c5835 },
+  pirate: { floor: 'sand', rim: 'surf', a: 0xf5e0aa, b: 0xf0d79c, bed: 0xdcc081, rimColor: 0xffffff },
+  jungle: { floor: 'moss', rim: 'vine', a: 0xcac7b1, b: 0xbebba3, bed: 0x6f7b58, rimColor: 0x4a9c44 },
+  haunted: { floor: 'cobble', rim: 'iron', a: 0xa9a3c2, b: 0x9b95b8, bed: 0x655d87, rimColor: 0x564e6d },
+  winter: { floor: 'ice', rim: 'snow', a: 0xe7f4fc, b: 0xd5ebf7, bed: 0xb5cfe0, rimColor: 0xffffff },
 };
 
 const geos = new Map<string, THREE.BufferGeometry>();
@@ -51,7 +51,7 @@ export function buildPlaza(level: Level, cells: Array<{ x: number; y: number }>,
   const pos = cells.map((c) => world(c.x, c.y));
   out.add(instanced(g('bed', () => new THREE.BoxGeometry(1, 0.1, 1)), pos.map((p) => at(p.x, -0.06, p.z)), st.bed, 1));
   // the beach plaza sits on a sand island in the sea
-  if (st.rim === 'surf') out.add(instanced(g('beach', () => new RoundedBoxGeometry(3.2, 0.12, 3.2, 3, 0.5)), pos.map((p) => at(p.x, -0.1, p.z)), 0xf1d9a0, 1));
+  if (st.rim === 'surf') out.add(instanced(g('beach', () => new RoundedBoxGeometry(3.2, 0.12, 3.2, 3, 0.5)), pos.map((p) => at(p.x, -0.1, p.z)), 0xf4da9c, 1));
 
   const mats: THREE.Matrix4[] = [];
   const cols: THREE.Color[] = [];
@@ -72,7 +72,7 @@ export function buildPlaza(level: Level, cells: Array<{ x: number; y: number }>,
       // moss patches on a few slabs, shells on the sand
       const spots: THREE.Matrix4[] = [];
       pos.forEach((p) => { if (rng.next() < 0.35) spots.push(at(p.x + (rng.next() - 0.5) * 0.5, 0.012, p.z + (rng.next() - 0.5) * 0.5, rng.next() * 3, st.floor === 'sand' ? 0.12 : 0.3 + rng.next() * 0.2, 1, st.floor === 'sand' ? 0.1 : 0.2 + rng.next() * 0.2)); });
-      out.add(instanced(g('spot', () => new THREE.CylinderGeometry(0.5, 0.5, 0.02, 10)), spots, st.floor === 'sand' ? 0xffd9c7 : 0x7fae5a, 1));
+      out.add(instanced(g('spot', () => new THREE.CylinderGeometry(0.5, 0.5, 0.02, 10)), spots, st.floor === 'sand' ? 0xffd9c7 : 0x7eb054, 1));
     }
   }
 
@@ -96,7 +96,7 @@ export function buildPlaza(level: Level, cells: Array<{ x: number; y: number }>,
     iron: () => new RoundedBoxGeometry(0.16, 0.14, 1.14, 2, 0.04),
     snow: () => new RoundedBoxGeometry(0.3, 0.22, 1.2, 3, 0.11),
   };
-  const rim = instanced(g(`rim-${st.rim}`, rimGeo[st.rim]), edges, st.rim === 'iron' ? 0x5b556e : st.rimColor, st.rim === 'surf' ? 0.4 : 0.9);
+  const rim = instanced(g(`rim-${st.rim}`, rimGeo[st.rim]), edges, st.rim === 'iron' ? 0x736c8b : st.rimColor, st.rim === 'surf' ? 0.4 : 0.9);
   rim.castShadow = st.rim !== 'surf';
   out.add(rim);
   if (posts.length) out.add(instanced(g('ironpost', () => new THREE.CylinderGeometry(0.035, 0.035, 0.5, 6)), posts, st.rimColor, 0.6));
