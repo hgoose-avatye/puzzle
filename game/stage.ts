@@ -261,12 +261,18 @@ export class Stage {
     this.fit();
   }
 
-  /** Grid coordinates (cell centers on integers) under a screen point, or null if the ray misses the floor. */
-  screenToGrid(clientX: number, clientY: number): { x: number; y: number } | null {
-    if (!this.level) return null;
+  /** The camera ray through a screen point (client pixels), shared by floor and model picking. */
+  rayAt(clientX: number, clientY: number): THREE.Raycaster {
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
     this.ray.setFromCamera(ndc, this.camera);
+    return this.ray;
+  }
+
+  /** Grid coordinates (cell centers on integers) under a screen point, or null if the ray misses the floor. */
+  screenToGrid(clientX: number, clientY: number): { x: number; y: number } | null {
+    if (!this.level) return null;
+    this.rayAt(clientX, clientY);
     const hit = new THREE.Vector3();
     if (!this.ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return null;
     return { x: hit.x + (this.level.width - 1) / 2, y: hit.z + (this.level.height - 1) / 2 };

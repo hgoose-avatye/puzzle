@@ -41,6 +41,9 @@ const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS
  * Vite dev server. A production build sees no parameters, and the bundler drops the code behind import.meta.env.DEV.
  */
 const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
+/** ?touchdebug on the dev server: every touch on screen with what it hit and what became of it (game/touchdebug.ts). */
+let touchDebug: import('./touchdebug').TouchDebug | null = null;
+if (import.meta.env.DEV && params.has('touchdebug')) void import('./touchdebug').then((m) => { touchDebug = new m.TouchDebug(); });
 const DEMO = params.has('demo');
 
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
@@ -130,9 +133,28 @@ async function loadLevel(n: number): Promise<void> {
   showIntro(built.level, built.hearts !== undefined);
 }
 
+/** True when the object and all its parents are drawn (the raycaster also hits hidden objects). */
+const drawn = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+
+/** The animal whose body, plate or badge is drawn under a screen point, standing or running; null if none. */
+function animalAt(clientX: number, clientY: number): number | null {
+  const owner = new Map<THREE.Object3D, number>();
+  for (const [id, v] of views) if (v.group.visible) for (const t of v.tapTargets()) owner.set(t, id);
+  const hit = stage.rayAt(clientX, clientY).intersectObjects([...owner.keys()], true).find((h) => drawn(h.object));
+  for (let o: THREE.Object3D | null = hit?.object ?? null; o; o = o.parent) if (owner.has(o)) return owner.get(o)!;
+  return null;
+}
+
+/**
+ * The animal a finger means. First the one drawn under it: a tap on the top of an animal hits the floor about half a
+ * cell behind it (the camera looks down at 58 degrees), so picking by the floor alone chose the animal behind or
+ * nothing. Only when no animal is drawn there, the closest standing animal within 0.75 cell of the floor point.
+ */
 function pick(clientX: number, clientY: number): number | null {
   const state = current();
   if (!state) return null;
+  const seen = animalAt(clientX, clientY);
+  if (seen !== null) return seen;
   const g = stage.screenToGrid(clientX, clientY);
   if (!g) return null;
   let best: { id: number; d: number } | null = null;
@@ -173,11 +195,19 @@ function crackCrates(): void {
   }
 }
 
-function onTap(id: number): void {
-  if (!flow || isCleared(flow.state) || flow.lost) return;
+/** What became of a tap, for the touch diagnostics (?touchdebug). */
+type TapOutcome = 'exited' | 'blocked' | 'repeat (R1)' | 'ignored: running' | 'ignored: waiting' | 'ignored: gone' | 'level over' | 'no level';
+
+function onTap(id: number): TapOutcome {
+  if (!flow) return 'no level';
+  if (isCleared(flow.state) || flow.lost) return 'level over';
   // null: a repeat on an animal still shaking from its blocked tap, the same tap (no second heart)
   const ev = flow.tap(id, performance.now());
-  if (!ev) return;
+  if (!ev) return 'repeat (R1)';
+  if (ev.type === 'ignored') {
+    const runner = flow.traffic.get(id)?.state;
+    return runner === 'waiting' ? 'ignored: waiting' : runner ? 'ignored: running' : 'ignored: gone';
+  }
   const view = views.get(id);
   if (ev.type === 'exited' && view) {
     // The rules treat it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
@@ -207,6 +237,7 @@ function onTap(id: number): void {
     if (!failPlayed) { failPlayed = true; sound.play('gameover'); }
     showEnd(false);
   }
+  return ev.type;
 }
 
 const SEEN_KEY = 'animal-rescue-seen';
@@ -344,15 +375,23 @@ const release = (id: number | null): void => {
 canvas.addEventListener('pointerdown', (e) => {
   sound.unlock();
   const id = pick(e.clientX, e.clientY);
-  if (id !== null && flow?.input.down(e.pointerId, id)) { views.get(id)?.showPath(true); sound.play('select'); }
+  touchDebug?.log({ kind: 'down', e, picked: id, result: id === null ? 'nothing under the finger' : current()?.alive.has(id) ? 'pressed' : 'pressed a running animal' });
+  // a running or waiting animal is pressed too (its tap is then ignored, rule R2) but shows no path
+  if (id !== null && flow?.input.down(e.pointerId, id) && current()?.alive.has(id)) { views.get(id)?.showPath(true); sound.play('select'); }
 });
 canvas.addEventListener('pointerup', (e) => {
   if (!flow) return;
-  const { released, tap: id } = flow.input.up(e.pointerId, pick(e.clientX, e.clientY));
+  const over = pick(e.clientX, e.clientY);
+  const { released, tap: id } = flow.input.up(e.pointerId, over);
   release(released);
-  if (id !== null) onTap(id);
+  const result = id !== null ? onTap(id) : released === null ? 'no press to finish' : `moved off ${released}`;
+  touchDebug?.log({ kind: 'up', e, picked: over, result });
 });
-canvas.addEventListener('pointercancel', (e) => release(flow?.input.cancel(e.pointerId) ?? null));
+canvas.addEventListener('pointercancel', (e) => {
+  const released = flow?.input.cancel(e.pointerId) ?? null;
+  release(released);
+  touchDebug?.log({ kind: 'cancel', e, picked: released, result: 'cancelled by the browser' });
+});
 $('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 // skipping levels without clearing them is a testing aid only
@@ -425,10 +464,47 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   scene: () => stage.scene,
   sound,
   ids: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id)).map((p) => p.id) : []; },
+  /** A screen point where a finger would get this animal: the top of its head, or the closest such point around it. */
   screenOf: (id: number) => {
+    const v = views.get(id);
+    if (!v) return null;
+    const box = new THREE.Box3().setFromObject(v.tapTargets()[0]);
+    const top = new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2).project(stage.camera);
+    const rect = stage.renderer.domElement.getBoundingClientRect();
+    const x0 = rect.left + ((top.x + 1) / 2) * rect.width;
+    const y0 = rect.top + ((1 - top.y) / 2) * rect.height;
+    for (let r = 0; r <= 40; r += 2) for (let a = 0; a < 16; a++) {
+      const x = x0 + r * Math.cos((a * Math.PI) / 8), y = y0 + r * Math.sin((a * Math.PI) / 8);
+      if (pick(x, y) === id) return { x, y };
+      if (r === 0) break;
+    }
+    return null;
+  },
+  /** Touch probe at a screen point: the animal whose model is drawn there, the one pick() chooses, and the element on top. */
+  probe: (clientX: number, clientY: number) => {
+    const rect = stage.renderer.domElement.getBoundingClientRect();
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1)), stage.camera);
+    let seen: number | null = null;
     const s = current();
-    const p = s?.level.pieces.find((q) => q.id === id);
-    return p && s ? stage.gridToScreen(s.level, p.cells[0].x, p.cells[0].y) : null;
+    const groups = [...views.entries()].filter(([id, v]) => v.group.visible && s?.alive.has(id));
+    // the raycaster also hits hidden objects (path chevrons, badges): only count what is drawn
+    const drawn = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+    const hit = ray.intersectObjects(groups.map(([, v]) => v.group), true).find((h) => drawn(h.object));
+    if (hit) seen = groups.find(([, v]) => { let o: THREE.Object3D | null = hit.object; while (o && o !== v.group) o = o.parent; return o === v.group; })?.[0] ?? null;
+    // which part was hit: tapTargets() lists the body blocks, then one plate per block, then the badge
+    let part: 'body' | 'plate' | 'badge' | 'other' | null = null;
+    if (hit && seen !== null) {
+      const v = views.get(seen)!;
+      const targets = v.tapTargets();
+      part = 'other';
+      for (let o: THREE.Object3D | null = hit.object; o && o !== v.group; o = o.parent) {
+        const i = targets.indexOf(o);
+        if (i >= 0) { part = i < v.bodyLen ? 'body' : i < 2 * v.bodyLen ? 'plate' : 'badge'; break; }
+      }
+    }
+    const top = document.elementFromPoint(clientX, clientY);
+    return { seen, part, hitY: hit ? +hit.point.y.toFixed(2) : null, picked: pick(clientX, clientY), grid: stage.screenToGrid(clientX, clientY), top: top === stage.renderer.domElement ? 'canvas' : (top?.id || top?.tagName || null) };
   },
   state: () => { const s = current(); return s && { taps: s.taps, blocked: s.blockedTaps, hearts: s.hearts, fuses: { ...s.fuses }, alive: [...s.alive], cleared: isCleared(s), failed: isFailed(s) }; },
 };

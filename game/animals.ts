@@ -389,6 +389,11 @@ export class PieceView {
   /** World position of the head block (for effects). */
   headWorld(): THREE.Vector3 { return this.segments[0].position; }
 
+  /** What a finger can land on: the body blocks, the colour plates under them and the badge over the head (not the gate or the path). */
+  tapTargets(): THREE.Object3D[] {
+    return [...this.segments, ...this.plates, this.badge];
+  }
+
   /** World position of the exit gate. */
   gateWorld(): THREE.Vector3 { return this.gatePos; }
 

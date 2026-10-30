@@ -176,6 +176,22 @@ export async function runP0Checks(browser, base, report) {
     check('no page errors', p.errs.length === 0, p.errs.join(' | '));
   });
 
+  // a tap lands on the animal drawn under the finger, not on the floor cell behind it (camera looks down at 58 degrees)
+  await scenario('tap picks the animal drawn there', url('?level=10'), async (p) => {
+    const t = await p.evaluate(() => {
+      const c = { ok: 0, wrong: 0, miss: 0 };
+      for (let y = 2; y < innerHeight; y += 6) for (let x = 2; x < innerWidth; x += 6) {
+        const q = window.__game.probe(x, y);
+        if (q.seen === null || q.top !== 'canvas') continue;
+        c[q.picked === q.seen ? 'ok' : q.picked === null ? 'miss' : 'wrong']++;
+      }
+      return c;
+    });
+    const n = t.ok + t.wrong + t.miss;
+    // what is left is mostly the gate markers on the board edge, drawn as part of an animal but not tappable
+    check('tap picks the animal drawn there (level 10): at least 90%, another animal at most 3%', t.ok / n >= 0.9 && t.wrong / n <= 0.03, `ok ${(100 * t.ok / n).toFixed(1)}%, wrong ${(100 * t.wrong / n).toFixed(1)}%, miss ${(100 * t.miss / n).toFixed(1)}% of ${n} points`);
+  });
+
   // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1
   const BOMB = url('?demo=bomb');
   const bar = (p) => p.evaluate(() => { const b = document.getElementById('bombBar'); return b.hidden ? null : { text: b.textContent, cls: b.className }; });
