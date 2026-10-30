@@ -2,6 +2,8 @@
 
 동물 구출 퍼즐(가제)의 현재 상태다. 무엇이 됐고, 무엇을 더 만들어야 하고, 무엇을 다듬어야 하는지 한곳에 모았다. 규칙과 기획의 근거는 [설계 문서](superpowers/specs/2026-10-29-puzzle-core-generator-design.md)에 있다.
 
+앞으로의 단계별 계획은 [ROADMAP.md](ROADMAP.md)에 있다.
+
 ## 1. 한눈에 보기
 
 | 항목 | 상태 |
