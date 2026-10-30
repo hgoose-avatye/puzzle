@@ -89,6 +89,10 @@ export class Stage {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+  /** Camera elevation above the board plane in degrees (90 = straight down). Only dev comparisons (?cam) change it. */
+  elevation = 58;
+  /** Dev comparisons (?camzoom=keep): stay at the distance the 58 degree camera would use, so only the angle changes. */
+  keepZoom = false;
   private board = new THREE.Group();
   private level: Level | null = null;
   private readonly ray = new THREE.Raycaster();
@@ -233,20 +237,32 @@ export class Stage {
   /** Move the camera back until the whole board fits the viewport. */
   fit(): void {
     if (!this.level) return;
-    const { width: w, height: h } = this.level;
+    const d = this.fitDistance(this.keepZoom ? 58 : this.elevation);
+    this.place(this.elevation, d);
+  }
+
+  private place(elevationDeg: number, d: number): void {
+    const elev = (elevationDeg * Math.PI) / 180;
+    this.camera.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
+    this.camera.lookAt(0, 0, 0.4);
+    this.camera.updateMatrixWorld();
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** The nearest camera distance at this elevation that shows the whole board with its margins. */
+  private fitDistance(elevationDeg: number): number {
+    const { width: w, height: h } = this.level!;
     const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => new THREE.Vector3(sx * (w / 2 + 0.45), 0, sz * (h / 2 + 0.8)));
-    const elev = (58 * Math.PI) / 180;
-    for (let d = 6; d < 90; d += 0.4) {
-      this.camera.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
-      this.camera.lookAt(0, 0, 0.4);
-      this.camera.updateMatrixWorld();
-      this.camera.updateProjectionMatrix();
+    let d = 6;
+    for (; d < 90; d += 0.4) {
+      this.place(elevationDeg, d);
       const fits = corners.every((c) => {
         const p = c.clone().project(this.camera);
         return Math.abs(p.x) < 0.97 && p.y > -0.8 && p.y < 0.86;
       });
       if (fits) break;
     }
+    return d;
   }
 
   resize(): void {

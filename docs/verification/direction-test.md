@@ -11,6 +11,7 @@
 |---|---|
 | 기존 | `http://<PC 주소>:5200/?demo=quiz` |
 | AD | `http://<PC 주소>:5200/?demo=quiz&look=AD` |
+| (선택) 카메라 50° | `?demo=quiz&cam=50`, `?demo=quiz&look=AD&cam=50` ([camera-experiment.md](camera-experiment.md)) |
 
 - 두 조건은 동물 10마리의 위치, 종류, 방향이 같고 동물 모양만 다릅니다.
 - 화면에는 번호나 정답이 나오지 않습니다.

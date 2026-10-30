@@ -1,7 +1,7 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
-import { canExit, isAsleep, lockedBy } from '../src/core/rules';
+import { canExit, headDirection, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
@@ -46,6 +46,11 @@ const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new 
 let touchDebug: import('./touchdebug').TouchDebug | null = null;
 /** ?look=A|D|E|AD on the dev server: direction-reading mockups (game/blocks.ts Look). */
 if (['A', 'D', 'E', 'AD'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
+/** ?cam=<degrees> on the dev server: camera elevation comparisons; &camzoom=keep keeps the 58 degree distance. */
+if (params.has('cam')) {
+  stage.elevation = Math.min(85, Math.max(20, Number(params.get('cam')) || 58));
+  stage.keepZoom = params.get('camzoom') === 'keep';
+}
 if (import.meta.env.DEV && params.has('touchdebug')) void import('./touchdebug').then((m) => { touchDebug = new m.TouchDebug(); });
 const DEMO = params.has('demo');
 
@@ -499,6 +504,42 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
     }
     return { id, reach: +(worst).toFixed(3) };
   }),
+  /**
+   * Camera comparison stats on a screen grid: per standing animal, points where it is drawn in front, points where it is
+   * hidden behind another animal, and points showing its eyes; plus where the board lies on screen.
+   */
+  viewStats: (step = 4) => {
+    const s = current();
+    if (!s) return null;
+    const owner = new Map<THREE.Object3D, number>();
+    for (const [id, v] of views) if (v.group.visible && s.alive.has(id)) for (const t of v.tapTargets()) owner.set(t, id);
+    const idOf = (o: THREE.Object3D | null): number | null => { for (; o; o = o.parent) if (owner.has(o)) return owner.get(o)!; return null; };
+    const isEye = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (o.userData.eye) return true; return false; };
+    const per: Record<number, { visible: number; hidden: number; eyes: number }> = {};
+    for (const id of owner.values()) per[id] ??= { visible: 0, hidden: 0, eyes: 0 };
+    for (let y = 1; y < innerHeight; y += step) for (let x = 1; x < innerWidth; x += step) {
+      const hits = stage.rayAt(x, y).intersectObjects([...owner.keys()], true).filter((h) => drawn(h.object));
+      const seen: number[] = [];
+      for (const h of hits) { const id = idOf(h.object); if (id !== null && !seen.includes(id)) seen.push(id); }
+      if (!seen.length) continue;
+      per[seen[0]].visible++;
+      if (isEye(hits[0].object)) per[seen[0]].eyes++;
+      for (const id of seen.slice(1)) per[id].hidden++;
+    }
+    const { width: w, height: h } = s.level;
+    const rect = stage.renderer.domElement.getBoundingClientRect();
+    const corners = [[-0.5, -0.5], [w - 0.5, -0.5], [-0.5, h - 0.5], [w - 0.5, h - 0.5]].map(([gx, gy]) => {
+      const p = stage.worldOf(s.level, gx, gy).project(stage.camera);
+      return { x: rect.left + ((p.x + 1) / 2) * rect.width, y: rect.top + ((1 - p.y) / 2) * rect.height };
+    });
+    const bar = document.getElementById('retry')!.getBoundingClientRect().top;
+    const hud = Math.max(document.getElementById('hud')!.getBoundingClientRect().bottom, document.getElementById('mute')!.getBoundingClientRect().bottom);
+    const xs = corners.map((c) => c.x), ys = corners.map((c) => c.y);
+    return {
+      animals: s.level.pieces.map((p) => ({ id: p.id, len: p.cells.length, dir: headDirection(p), ...per[p.id] })),
+      board: { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys), screenW: innerWidth, screenH: innerHeight, barTop: bar, hudBottom: hud },
+    };
+  },
   /** Touch probe at a screen point: the animal whose model is drawn there, the one pick() chooses, and the element on top. */
   probe: (clientX: number, clientY: number) => {
     const rect = stage.renderer.domElement.getBoundingClientRect();
