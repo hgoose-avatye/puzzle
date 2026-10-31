@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { directionVector, exitCell, exitDirection, headDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
-import { exitPath } from '../src/game/path';
-import { smoothPath, trackAt, type Track } from '../src/game/smooth';
+import { routeOf } from '../src/game/flow';
+import { trackAt, type Track } from '../src/game/smooth';
 import { buildAnimal } from './blocks';
 
 /** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
@@ -24,8 +24,8 @@ export function speciesFor(piece: Piece): string {
 }
 
 const RUN_SPEED = 7.5;
-/** Current running speed in cells/s (tests may override it with window.__runSpeed). */
-export const runSpeed = (): number => (typeof window === 'undefined' ? undefined : (window as unknown as { __runSpeed?: number }).__runSpeed) ?? RUN_SPEED;
+/** Current running speed in cells/s (on the dev server, tests may override it with window.__runSpeed). */
+export const runSpeed = (): number => (import.meta.env.DEV && typeof window !== 'undefined' ? (window as unknown as { __runSpeed?: number }).__runSpeed : undefined) ?? RUN_SPEED;
 
 /** Collision "!" bubble: appear, hold, fade out. */
 const ALERT_IN = 0.08;
@@ -41,6 +41,7 @@ const V_DEPTH = 0.12;
 const V_THICK = 0.045;
 /** how far a sideways-facing animal's V slides along its front edge towards the camera */
 const V_SIDE_SHIFT = 0.34;
+
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
@@ -48,12 +49,12 @@ const LAUNCH_TIME = 0.2;
 const GATE_TIME = 0.4;
 /** cells past the gate over which a block shrinks away */
 const GATE_FADE = 0.8;
-/** Corner radius (cells) of the rounded exit path. */
-const CORNER_RADIUS = 0.3;
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
 const BLOCK_SPACING = 1;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
+/** The same hue, more saturated, for the lit plate and gate (the floor marks and effects keep pieceColor). */
+const plateColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.896, 0.55);
 
 /** Badge colours for a bomb's remaining taps: calm, getting close, about to go off. */
 export const fuseTone = (n: number): { line: string; text: string } =>
@@ -201,16 +202,16 @@ export class PieceView {
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
     this.bodyLen = piece.cells.length;
-    this.track = smoothPath(exitPath(level, piece), CORNER_RADIUS);
-    this.headStart = this.track.vertexU[this.bodyLen - 1];
+    ({ track: this.track, headStart: this.headStart } = routeOf(level, piece));
     const color = pieceColor(piece.id);
+    const lit = plateColor(piece.id);
 
     this.segments = buildAnimal(speciesFor(piece), this.bodyLen);
     for (const seg of this.segments) this.group.add(seg);
 
     // Colored plate under each cell, following the path, so the whole animal reads as one color.
     for (let i = 0; i < this.bodyLen; i++) {
-      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
+      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color: lit }));
       this.plates.push(plate);
       this.markers.push(plate);
       this.group.add(plate);
@@ -235,7 +236,7 @@ export class PieceView {
     this.buildAheadMarks(color);
     this.group.add(this.aheadMarks);
     this.group.add(this.chevrons);
-    const gate = this.buildGate(color);
+    const gate = this.buildGate(lit);
     this.gate = gate;
     this.markers.push(gate);
     this.group.add(gate);
@@ -301,19 +302,25 @@ export class PieceView {
     // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
     // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
     const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
-    for (const side of [-1, 1]) {
-      const x0 = side * V_HALF;
-      const z0 = tipZ - V_DEPTH;
-      const m = new THREE.Mesh(EDGE_BAR, tint);
-      m.userData.sharedGeometry = true;
-      m.scale.set(V_THICK, 1, Math.hypot(x0, tipZ - z0) + V_THICK);
-      m.position.set(along + x0 / 2, 0.104, (z0 + tipZ) / 2);
-      m.rotation.y = Math.atan2(-x0, tipZ - z0);
-      this.aheadMarks.add(m);
-    }
+    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK);
     const head = this.piece.cells[0];
     this.aheadMarks.position.copy(this.world(head.x, head.y));
     this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
+  }
+
+  /** A flat bar on the floor from (x0, z0) to (x1, z1) in the mark's local frame (+z the way the animal runs). */
+  private addBar(tint: THREE.Material, x0: number, z0: number, x1: number, z1: number, thick: number): void {
+    const m = new THREE.Mesh(EDGE_BAR, tint);
+    m.userData.sharedGeometry = true;
+    m.scale.set(thick, 1, Math.hypot(x1 - x0, z1 - z0) + thick);
+    m.position.set((x0 + x1) / 2, 0.104, (z0 + z1) / 2);
+    m.rotation.y = Math.atan2(x1 - x0, z1 - z0);
+    this.aheadMarks.add(m);
+  }
+
+  /** The floor cue's parts, for dev measurements of how much of it is hidden. */
+  markParts(): THREE.Object3D[] {
+    return [...this.aheadMarks.children];
   }
 
   private buildGate(color: THREE.Color): THREE.Object3D {
@@ -391,6 +398,11 @@ export class PieceView {
 
   /** World position of the head block (for effects). */
   headWorld(): THREE.Vector3 { return this.segments[0].position; }
+
+  /** What a finger can land on: the body blocks, the colour plates under them and the badge over the head (not the gate or the path). */
+  tapTargets(): THREE.Object3D[] {
+    return [...this.segments, ...this.plates, this.badge];
+  }
 
   /** World position of the exit gate. */
   gateWorld(): THREE.Vector3 { return this.gatePos; }

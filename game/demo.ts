@@ -79,3 +79,55 @@ export function crossLevel(): Level {
     ],
   };
 }
+
+/**
+ * crossLevel with a bomb on 2 (fuse 2), for checking bombs by hand: tap 1 and the bar warns at 1; then tapping 2 saves
+ * it even while it waits behind 1, and tapping 3 first sets it off.
+ */
+export function bombLevel(): Level {
+  const level = crossLevel();
+  return { ...level, pieces: level.pieces.map((p) => (p.id === 2 ? { ...p, fuse: 2 } : p)) };
+}
+
+/**
+ * Board for comparing direction cues (?demo=dirs): 1-, 2- and 3-cell animals facing up, down, left and right, then a
+ * crowded bottom row where animals stand right in front of each other or between the camera and another animal.
+ */
+export function dirsLevel(): { level: Level; species: Map<number, string> } {
+  const rows: Array<[number, string, Array<[number, number]>, Direction?]> = [
+    [1, 'penguin', [[1, 1]], 'up'], [2, 'chick', [[3, 1]], 'down'], [3, 'parrot', [[5, 1]], 'left'], [4, 'penguin', [[7, 1]], 'right'],
+    [5, 'fox', [[1, 3], [1, 4]]], [6, 'pig', [[3, 4], [3, 3]]], [7, 'tiger', [[5, 3], [6, 3]]], [8, 'husky', [[8, 4], [7, 4]]],
+    [9, 'dachshund', [[1, 6], [1, 7], [1, 8]]], [10, 'snake', [[3, 8], [3, 7], [3, 6]]], [11, 'crocodile', [[5, 6], [6, 6], [7, 6]]], [12, 'caterpillar', [[8, 8], [7, 8], [6, 8]]],
+    // crowded: an animal ahead of it, or between it and the camera
+    [13, 'chick', [[1, 10]], 'up'], [14, 'parrot', [[1, 11]], 'left'], [15, 'penguin', [[1, 9]], 'right'],
+    [16, 'fox', [[3, 9], [3, 10]]], [17, 'pig', [[4, 11], [3, 11]]],
+    [18, 'parrot', [[5, 10]], 'down'], [19, 'penguin', [[5, 11]], 'right'],
+    [20, 'chick', [[7, 10]], 'left'], [21, 'penguin', [[6, 10]], 'up'],
+  ];
+  const species = new Map<number, string>();
+  const pieces: Level['pieces'] = rows.map(([id, name, cells, dir]) => {
+    species.set(id, name);
+    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(dir ? { dir } : {}) };
+  });
+  return { level: { width: 9, height: 12, pieces }, species };
+}
+
+/**
+ * Ten animals for the "which way will it go?" test (?demo=quiz): five one-cell, three two-cell, two three-cell, dark
+ * ones (penguin, husky) included, two crowded (a chick facing a penguin, with a dachshund on its camera side). Answers
+ * are in docs/verification/direction-test.md and nowhere on screen: up 3, down 3, left 2, right 2.
+ */
+export function quizLevel(): { level: Level; species: Map<number, string> } {
+  const rows: Array<[number, string, Array<[number, number]>, Direction?]> = [
+    [1, 'penguin', [[1, 1]], 'up'], [2, 'chick', [[4, 1]], 'left'], [3, 'parrot', [[5, 4]], 'left'],
+    [4, 'penguin', [[2, 6]], 'down'], [5, 'chick', [[2, 7]], 'up'],
+    [6, 'husky', [[3, 3], [2, 3]]], [7, 'fox', [[1, 5], [1, 4]]], [8, 'cow', [[4, 6], [4, 5]]],
+    [9, 'snake', [[6, 1], [6, 2], [6, 3]]], [10, 'dachshund', [[3, 8], [2, 8], [1, 8]]],
+  ];
+  const species = new Map<number, string>();
+  const pieces: Level['pieces'] = rows.map(([id, name, cells, dir]) => {
+    species.set(id, name);
+    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(dir ? { dir } : {}) };
+  });
+  return { level: { width: 7, height: 9, pieces }, species };
+}

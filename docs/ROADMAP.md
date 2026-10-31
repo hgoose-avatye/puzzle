@@ -124,6 +124,18 @@
 | P0-6 | **발견된 버그 수정** | 커밋 | 위 테스트 재실행 |
 | P0-7 | **자체 플레이 체크리스트** | 레벨 1·31·61·91·121·151에서 연타, 두 손가락, 대기 중 재시작, 실패 직후 탭 | 자체 플레이 기록 |
 
+**진행 상황 (2026-10-30, `feat/p0-rules`)**
+
+| # | 상태 | 근거 |
+|---|---|---|
+| P0-1 | 완료(사용자 검토) | [rules.md](rules.md), 결정 R1~R5 |
+| P0-2 | 완료 | [src/game/flow.ts](../src/game/flow.ts) `PlayFlow`, [flow.test.ts](../src/game/flow.test.ts): 180레벨 × 무작위 플레이 2회 |
+| P0-3 | 불변 조건 1~8 자동 테스트됨 | flow.test.ts. 상자는 별도 단언 없이 무작위 플레이에 포함(금은 남은 동물로 계산되므로 다시 하기에서 함께 초기화) |
+| P0-4 | 완료 | R1·R5, [input.test.ts](../src/game/input.test.ts), 헤드리스 검증 |
+| P0-5 | 완료 | `npm run test:e2e`, [tests/e2e/README.md](../tests/e2e/README.md). 결과는 [verification/p0-browser-checks.md](verification/p0-browser-checks.md) |
+| P0-6 | R1·R3·R5 적용 | rules.md 10·11장 |
+| P0-7 | 체크리스트 작성, **실기기 테스트 미실행** | [verification/p0-device-checklist.md](verification/p0-device-checklist.md) (iOS Safari, Android Chrome, 16항목). 실기기 결과가 나오기 전까지 P0는 완료가 아님 |
+
 ## P1 작업 계획
 
 | # | 작업 | 산출물 | 검증 |

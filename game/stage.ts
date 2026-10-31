@@ -76,6 +76,8 @@ function disposeOwned(root: THREE.Object3D): void {
     if (sp.isSprite) { sp.material.map?.dispose(); sp.material.dispose(); return; }
     const m = o as THREE.Mesh;
     if (!m.isMesh || m.userData.shared) return;
+    // merged scenery (scenes.ts mergeProp): its own geometry, the shared cached materials
+    if (m.userData.ownGeometry) { m.geometry.dispose(); return; }
     if (!m.userData.sharedGeometry) m.geometry.dispose();
     for (const mt of Array.isArray(m.material) ? m.material : [m.material]) {
       (mt as THREE.MeshStandardMaterial).map?.dispose();
@@ -89,10 +91,14 @@ export class Stage {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+  /** Camera elevation above the board plane in degrees (90 = straight down). Only dev comparisons (?cam) change it. */
+  elevation = 58;
+  /** Dev comparisons (?camzoom=keep): stay at the distance the 58 degree camera would use, so only the angle changes. */
+  keepZoom = false;
   private board = new THREE.Group();
   private level: Level | null = null;
   private readonly ray = new THREE.Raycaster();
-  private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.1);
+  private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.05);
   private crates: Array<{ crate: Crate; obj: THREE.Object3D; crack: THREE.Object3D; pips: THREE.Sprite; cracks: number; shakeT: number }> = [];
   /** Miniature look of the reference: the board stays sharp, the scenery above and below softens. */
   private composer!: EffectComposer;
@@ -101,12 +107,15 @@ export class Stage {
   constructor(private readonly container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // neutral tone mapping (applied in the OutputPass) keeps the brighter animal colours from clipping
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
     this.scene.background = new THREE.Color(0xcfe8f3);
     this.scene.add(this.hemi);
-    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.7);
     sun.position.set(4, 10, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -214,11 +223,11 @@ export class Stage {
 
   private arrowTile(level: Level, x: number, y: number, dir: 'up' | 'down' | 'left' | 'right'): THREE.Object3D {
     const g = new THREE.Group();
-    const tile = new THREE.Mesh(new RoundedBoxGeometry(0.92, 0.08, 0.92, 2, 0.03), new THREE.MeshStandardMaterial({ color: 0xece4cf }));
+    const tile = new THREE.Mesh(new RoundedBoxGeometry(0.92, 0.08, 0.92, 2, 0.03), new THREE.MeshStandardMaterial({ color: 0xede4ce }));
     tile.position.y = 0.05;
     tile.receiveShadow = true;
     g.add(tile);
-    const tri = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.55, 3), new THREE.MeshStandardMaterial({ color: 0x8a7a52 }));
+    const tri = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.55, 3), new THREE.MeshStandardMaterial({ color: 0x8c7b4f }));
     tri.rotation.x = Math.PI / 2;
     tri.position.y = 0.11;
     const holder = new THREE.Group();
@@ -233,20 +242,32 @@ export class Stage {
   /** Move the camera back until the whole board fits the viewport. */
   fit(): void {
     if (!this.level) return;
-    const { width: w, height: h } = this.level;
+    const d = this.fitDistance(this.keepZoom ? 58 : this.elevation);
+    this.place(this.elevation, d);
+  }
+
+  private place(elevationDeg: number, d: number): void {
+    const elev = (elevationDeg * Math.PI) / 180;
+    this.camera.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
+    this.camera.lookAt(0, 0, 0.4);
+    this.camera.updateMatrixWorld();
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** The nearest camera distance at this elevation that shows the whole board with its margins. */
+  private fitDistance(elevationDeg: number): number {
+    const { width: w, height: h } = this.level!;
     const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => new THREE.Vector3(sx * (w / 2 + 0.45), 0, sz * (h / 2 + 0.8)));
-    const elev = (58 * Math.PI) / 180;
-    for (let d = 6; d < 90; d += 0.4) {
-      this.camera.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
-      this.camera.lookAt(0, 0, 0.4);
-      this.camera.updateMatrixWorld();
-      this.camera.updateProjectionMatrix();
+    let d = 6;
+    for (; d < 90; d += 0.4) {
+      this.place(elevationDeg, d);
       const fits = corners.every((c) => {
         const p = c.clone().project(this.camera);
         return Math.abs(p.x) < 0.97 && p.y > -0.8 && p.y < 0.86;
       });
       if (fits) break;
     }
+    return d;
   }
 
   resize(): void {
@@ -261,12 +282,18 @@ export class Stage {
     this.fit();
   }
 
-  /** Grid coordinates (cell centers on integers) under a screen point, or null if the ray misses the floor. */
-  screenToGrid(clientX: number, clientY: number): { x: number; y: number } | null {
-    if (!this.level) return null;
+  /** The camera ray through a screen point (client pixels), shared by floor and model picking. */
+  rayAt(clientX: number, clientY: number): THREE.Raycaster {
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
     this.ray.setFromCamera(ndc, this.camera);
+    return this.ray;
+  }
+
+  /** Grid coordinates (cell centers on integers) under a screen point, or null if the ray misses the floor. */
+  screenToGrid(clientX: number, clientY: number): { x: number; y: number } | null {
+    if (!this.level) return null;
+    this.rayAt(clientX, clientY);
     const hit = new THREE.Vector3();
     if (!this.ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit)) return null;
     return { x: hit.x + (this.level.width - 1) / 2, y: hit.z + (this.level.height - 1) / 2 };
