@@ -97,12 +97,17 @@ function paintBombBar(): void {
   warn.textContent = '💣 다른 친구가 1번 더 나가면 펑!';
 }
 
+/** Heart icons for the HUD and the result card: the hearts left bright, the ones used dark. Fixed markup only. */
+const heartsMarkup = (left: number, max: number): string =>
+  '<i class="heart full"></i>'.repeat(Math.max(0, left)) + '<i class="heart empty"></i>'.repeat(Math.max(0, max - Math.max(0, left)));
+
 function refreshHud(): void {
   const state = current();
   if (!state) return;
   const spec = levelSpec(levelNumber);
   $('levelLabel').textContent = `레벨 ${levelNumber}`;
-  $('hearts').textContent = state.hearts === undefined ? '' : '♥'.repeat(Math.max(0, state.hearts)) + '♡'.repeat(Math.max(0, maxHearts - Math.max(0, state.hearts)));
+  $('hearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
+  $('hearts').setAttribute('aria-label', state.hearts === undefined ? '' : `하트 ${Math.max(0, state.hearts)}개 남음`);
   void spec;
   for (const [id, v] of views) {
     const piece = state.level.pieces.find((p) => p.id === id)!;
@@ -298,6 +303,9 @@ function showIntro(level: Level, hearts: boolean): void {
   if (fresh.length === 0) return;
   writeSeen([...seen, ...fresh.map(([id]) => id)]);
   $('popup').hidden = false;
+  $('popup').dataset.kind = 'intro';
+  $('popupHearts').innerHTML = '';
+  $('popupBtn').className = 'primary';
   $('popupTitle').textContent = `레벨 ${levelNumber}`;
   const sub = $('popupSub');
   sub.innerHTML = '';
@@ -386,7 +394,10 @@ function showEnd(won: boolean): void {
   }
   $('popup').hidden = false;
   $('msg').textContent = '';
+  $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
+  $('popupHearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
+  $('popupBtn').className = won ? 'primary' : 'yellow';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
   $('popupHome').hidden = false;
