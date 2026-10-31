@@ -4,8 +4,7 @@ import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/cu
 import { canExit, headDirection, isAsleep, lockedBy } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
-import { PieceView, runSpeed, setMarkStyle, speciesOverride, type MarkStyle } from './animals';
-import { setCrown, setLook, setOneCellBase, type Look } from './blocks';
+import { PieceView, runSpeed, speciesOverride } from './animals';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { TitleScreen, titleBoard } from './screens';
@@ -46,12 +45,6 @@ const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS
 const params = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
 /** ?touchdebug on the dev server: every touch on screen with what it hit and what became of it (game/touchdebug.ts). */
 let touchDebug: import('./touchdebug').TouchDebug | null = null;
-/** ?look=A|D|E|AD on the dev server: direction-reading mockups (game/blocks.ts Look). */
-if (['A', 'D', 'E', 'AD'].includes(params.get('look') ?? '')) setLook(params.get('look') as Look);
-/** ?one=base keeps the shipped one-cell animals under another look; ?mark=v|v2|edge picks their floor cue (dev server). */
-setOneCellBase(params.get('one') === 'base');
-setCrown(params.get('crown') === '1');
-if (['v', 'v2', 'edge'].includes(params.get('mark') ?? '')) setMarkStyle(params.get('mark') as MarkStyle);
 /** ?cam=<degrees> on the dev server: camera elevation comparisons; &camzoom=keep keeps the 58 degree distance. */
 if (params.has('cam')) {
   stage.elevation = Math.min(85, Math.max(20, Number(params.get('cam')) || 58));

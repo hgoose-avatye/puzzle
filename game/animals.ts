@@ -4,7 +4,7 @@ import { directionVector, exitCell, exitDirection, headDirection, traceExit } fr
 import type { Level, Piece } from '../src/core/types';
 import { routeOf } from '../src/game/flow';
 import { trackAt, type Track } from '../src/game/smooth';
-import { buildAnimal, currentLook } from './blocks';
+import { buildAnimal } from './blocks';
 
 /** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
@@ -42,16 +42,6 @@ const V_THICK = 0.045;
 /** how far a sideways-facing animal's V slides along its front edge towards the camera */
 const V_SIDE_SHIFT = 0.34;
 
-/**
- * Floor cue on one-cell animals, for the comparison on the dev server (?mark=). 'v': the shipped pale V. 'v2': the same V
- * in a dark, desaturated shade of the animal's colour and a little thicker. 'edge': a threshold on the tile's front edge
- * with a small notch pointing out. Null: the look decides (only the shipped look has the V).
- */
-export type MarkStyle = 'v' | 'v2' | 'edge';
-let markStyle: MarkStyle | null = null;
-export function setMarkStyle(next: MarkStyle | null): void { markStyle = next; }
-/** v2 and edge: the animal's colour pulled most of the way to a dark grey, so it reads on any plate without being bright. */
-const darkTint = (color: THREE.Color): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0x2a2622), 0.6) });
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
@@ -303,22 +293,16 @@ export class PieceView {
    * runs.
    */
   private buildAheadMarks(color: THREE.Color): void {
-    // looks A, D, E and AD test the animal itself unless ?mark= asks for a floor cue
-    const style = markStyle ?? (currentLook() === 'base' ? 'v' : null);
-    if (!style || this.bodyLen !== 1) return;
+    if (this.bodyLen !== 1) return;
     const dir = headDirection(this.piece);
     const v = directionVector(dir);
-    if (style === 'edge') this.addThreshold(darkTint(color));
-    else {
-      const thick = style === 'v2' ? 0.065 : V_THICK;
-      const tint = style === 'v2' ? darkTint(color) : new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
-      // local frame: +z is the way it runs; the point is at tipZ and the arms end V_DEPTH behind it
-      const tipZ = dir === 'up' ? -0.47 + V_DEPTH : 0.46;
-      // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
-      // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
-      const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
-      for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, thick);
-    }
+    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
+    // local frame: +z is the way it runs; the point is at tipZ and the arms end V_DEPTH behind it
+    const tipZ = dir === 'up' ? -0.47 + V_DEPTH : 0.46;
+    // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
+    // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
+    const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
+    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK);
     const head = this.piece.cells[0];
     this.aheadMarks.position.copy(this.world(head.x, head.y));
     this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
@@ -332,15 +316,6 @@ export class PieceView {
     m.position.set((x0 + x1) / 2, 0.104, (z0 + z1) / 2);
     m.rotation.y = Math.atan2(x1 - x0, z1 - z0);
     this.aheadMarks.add(m);
-  }
-
-  /** Mark 'edge': a threshold across the front edge of the tile with a small notch in the middle pointing out. */
-  private addThreshold(tint: THREE.Material): void {
-    const z = 0.44;
-    this.addBar(tint, -0.4, z, -0.12, z, 0.06);
-    this.addBar(tint, 0.12, z, 0.4, z, 0.06);
-    this.addBar(tint, -0.12, z, 0, z + 0.05, 0.06);
-    this.addBar(tint, 0.12, z, 0, z + 0.05, 0.06);
   }
 
   /** The floor cue's parts, for dev measurements of how much of it is hidden. */
