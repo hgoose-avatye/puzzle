@@ -1,18 +1,1 @@
-{
- "dachshund_head_180.png": {
-  "band": 588,
-  "rows": 113
- },
- "dachshund_body_000.png": {
-  "band": 560,
-  "rows": 72
- },
- "dachshund_body_180.png": {
-  "band": 560,
-  "rows": 191
- },
- "dachshund_tail_000.png": {
-  "band": 530,
-  "rows": 163
- }
-}
+{}

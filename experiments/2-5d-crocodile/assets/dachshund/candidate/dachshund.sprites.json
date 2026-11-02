@@ -1,0 +1,37 @@
+{
+  "species": "dachshund",
+  "note": "candidate: parts cut from received-v2 sheets by tools/dachshund_import.py into the standard frame, ends flattened to join into one dog; 270 mirrors 90, diagonals use the nearest",
+  "frame": {
+    "size": 1024,
+    "cellPx": 512,
+    "anchor": [
+      512,
+      640
+    ]
+  },
+  "scale": 1.2,
+  "tuck": 0,
+  "parts": {
+    "head": {
+      "drawn": {
+        "0": "dachshund_head_000.png",
+        "90": "dachshund_head_090.png",
+        "180": "dachshund_head_180.png"
+      }
+    },
+    "body": {
+      "drawn": {
+        "0": "dachshund_body_000.png",
+        "90": "dachshund_body_090.png",
+        "180": "dachshund_body_180.png"
+      }
+    },
+    "tail": {
+      "drawn": {
+        "0": "dachshund_tail_000.png",
+        "90": "dachshund_tail_090.png",
+        "180": "dachshund_tail_180.png"
+      }
+    }
+  }
+}
