@@ -49,7 +49,7 @@ describe('crocodile manifest', () => {
   });
 });
 
-describe('chick manifest (1 cell, cut-out sprites with their own anchors)', () => {
+describe('chick manifest (1 cell, standard-frame pictures; approved 2026-11-02)', () => {
   const chick = JSON.parse(readFileSync(new URL('../public/sprites/chick/chick.sprites.json', import.meta.url), 'utf8')) as SpeciesSprites;
 
   it('every file exists; the one block is a single part', () => {
@@ -60,27 +60,27 @@ describe('chick manifest (1 cell, cut-out sprites with their own anchors)', () =
     expect(partsFor(1)).toEqual(['single']);
   });
 
-  it('4 facings as the old chick drawing: down front, up back, left side, right side mirrored, with anchors', () => {
-    expect(spriteFor(chick, 'single', 0)).toEqual({ file: 'chick_front.png', mirror: false, anchor: [50.0, 90.59] });
-    expect(spriteFor(chick, 'single', 180)?.file).toBe('chick_back.png');
-    expect(spriteFor(chick, 'single', 270)).toMatchObject({ file: 'chick_side_right.png', mirror: false });
-    expect(spriteFor(chick, 'single', 90)).toMatchObject({ file: 'chick_side_right.png', mirror: true });
+  it('4 facings as the old chick drawing: down front, up back, left side, right side mirrored', () => {
+    expect(spriteFor(chick, 'single', 0)).toEqual({ file: 'approved/chick_000.png', mirror: false });
+    expect(spriteFor(chick, 'single', 180)?.file).toBe('approved/chick_180.png');
+    expect(spriteFor(chick, 'single', 270)).toMatchObject({ file: 'approved/chick_270.png', mirror: false });
+    expect(spriteFor(chick, 'single', 90)).toMatchObject({ file: 'approved/chick_270.png', mirror: true });
   });
 
   it('diagonals have no picture: nearestSprite takes the next facing clockwise, as the old chick drawing rounded', () => {
     expect(missingHeadings(chick, 'single')).toEqual([45, 135, 225, 315]);
     // legacy: Math.round(angle / 90°) -> 45° is the right side, 135° the back, 225° the left side, 315° the front
-    expect(nearestSprite(chick, 'single', 45)).toMatchObject({ file: 'chick_side_right.png', mirror: true, heading: 90 });
-    expect(nearestSprite(chick, 'single', 135)).toMatchObject({ file: 'chick_back.png', heading: 180 });
-    expect(nearestSprite(chick, 'single', 225)).toMatchObject({ file: 'chick_side_right.png', mirror: false, heading: 270 });
-    expect(nearestSprite(chick, 'single', 315)).toMatchObject({ file: 'chick_front.png', heading: 0 });
+    expect(nearestSprite(chick, 'single', 45)).toMatchObject({ file: 'approved/chick_270.png', mirror: true, heading: 90 });
+    expect(nearestSprite(chick, 'single', 135)).toMatchObject({ file: 'approved/chick_180.png', heading: 180 });
+    expect(nearestSprite(chick, 'single', 225)).toMatchObject({ file: 'approved/chick_270.png', mirror: false, heading: 270 });
+    expect(nearestSprite(chick, 'single', 315)).toMatchObject({ file: 'approved/chick_000.png', heading: 0 });
   });
 
   it('switches on the continuous angle, halfway between drawn facings (not after rounding to 45°)', () => {
     // 30° into a bend from down to right: still the front (legacy: Math.round(30 / 90) = 0)
-    expect(nearestSprite(chick, 'single', 30)).toMatchObject({ file: 'chick_front.png', heading: 0 });
-    expect(nearestSprite(chick, 'single', 44)).toMatchObject({ file: 'chick_front.png', heading: 0 });
-    expect(nearestSprite(chick, 'single', 46)).toMatchObject({ file: 'chick_side_right.png', mirror: true, heading: 90 });
+    expect(nearestSprite(chick, 'single', 30)).toMatchObject({ file: 'approved/chick_000.png', heading: 0 });
+    expect(nearestSprite(chick, 'single', 44)).toMatchObject({ file: 'approved/chick_000.png', heading: 0 });
+    expect(nearestSprite(chick, 'single', 46)).toMatchObject({ file: 'approved/chick_270.png', mirror: true, heading: 90 });
     for (let deg = 0; deg < 360; deg += 1.5) {
       const legacy = Math.round(deg / 90) % 4; // 0 front, 1 right side, 2 back, 3 left side
       expect(nearestSprite(chick, 'single', deg)!.heading, `${deg}°`).toBe(legacy * 90);
