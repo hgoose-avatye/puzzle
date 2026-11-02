@@ -5,127 +5,185 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>탈출해 친구들!</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='14' width='80' height='76' rx='20' fill='%23f5a3b5'/%3E%3Ccircle cx='36' cy='48' r='7' fill='%233b3a36'/%3E%3Ccircle cx='64' cy='48' r='7' fill='%233b3a36'/%3E%3Cellipse cx='50' cy='66' rx='10' ry='7' fill='%23e2667f'/%3E%3C/svg%3E" />
+    <!-- fonts are served locally (game/public/assets/fonts/README.md); the logo's Jua blocks load first so it does not jump -->
+    <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.86.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.87.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.89.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.90.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.91.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/assets/fonts/pretendard/pretendard.css" />
+    <link rel="stylesheet" href="/assets/fonts/jua/jua.css" />
     <style>
-      /* one set of tokens for the title, the HUD, the buttons, the pills and the cards */
+      /* one set of tokens for the title, the HUD, the buttons, the cards: warm cream paper, wood frames, sticker edges */
       :root { --cream: #fff8e8; --cream-a: rgba(255,248,232,.9); --edge: #dccfb6; --ink: #3b3a36; --ink-soft: #6b6558; --green: #6cc24a; --green-edge: #4c9431;
-        --orange: #f07b3f; --leaf: #4aa542; --brown: #5b3d27; --warn: #f2a33d; --warn-ink: #b9670f; --danger: #d0322a; --heart: #e0564a; --safe-b: max(16px, env(safe-area-inset-bottom)); }
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8f3; font-family: system-ui, -apple-system, sans-serif; touch-action: none; user-select: none; }
+        --orange: #f07b3f; --leaf: #4aa542; --brown: #5b3d27; --warn: #f2a33d; --warn-ink: #b9670f; --danger: #d0322a; --heart: #e0564a; --safe-b: max(16px, env(safe-area-inset-bottom));
+        --paper: linear-gradient(180deg, #fffaf0, #f8e6c2); --wood: linear-gradient(180deg, #c98c4f, #91592b); --wood-grain: repeating-linear-gradient(100deg, rgba(255,255,255,.14) 0 2px, transparent 2px 9px);
+        --wood-ink: #4a3424; --wood-soft: #7a5a3c;
+        /* Pretendard for everything people read while playing; Jua only for the logo and the big result and card titles.
+           If a font fails to load, the system's Korean font takes over. */
+        --font-ui: 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+        --font-title: 'Jua', var(--font-ui); }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8f3; font-family: var(--font-ui); font-weight: 500; touch-action: none; user-select: none; }
       #app { position: fixed; inset: 0; }
-      button { min-height: 56px; min-width: 120px; padding: 0 18px; font-size: 19px; font-weight: 800; font-family: inherit; border: 0; border-radius: 28px; background: var(--cream); color: var(--ink);
-        box-shadow: 0 4px 0 var(--edge); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-      button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--edge); }
+
+      /* buttons: raised cards with a thick bottom edge (--btn-edge) that sinks when pressed */
+      button { --btn-edge: #d2b98c; min-height: 56px; min-width: 120px; padding: 0 18px; font-size: 19px; font-weight: 600; font-family: inherit; border: 2px solid #ead7b0; border-radius: 28px;
+        background: linear-gradient(180deg, #fffcf4, #f6e6c6); color: var(--ink);
+        box-shadow: 0 5px 0 var(--btn-edge), 0 8px 12px rgba(60,40,20,.16), inset 0 2px 0 rgba(255,255,255,.85); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+      button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--btn-edge), 0 3px 6px rgba(60,40,20,.14), inset 0 2px 0 rgba(255,255,255,.85); }
       button[hidden] { display: none !important; }
       button svg { flex: none; }
-      .primary { background: var(--green); color: #fff; box-shadow: 0 5px 0 var(--green-edge); }
-      .primary:active { box-shadow: 0 2px 0 var(--green-edge); }
-      /* secondary buttons on a cream card get an edge, so they still read as buttons */
-      .secondary { border: 2px solid var(--edge); color: var(--ink-soft); }
+      .primary { --btn-edge: #3d8a2a; border-color: #4c9c34; background: linear-gradient(180deg, #8ad95f, #55b23a); color: #fff; text-shadow: 0 1px 0 rgba(30,80,20,.45); }
+      .yellow { --btn-edge: #d39314; border-color: #e7a91f; background: linear-gradient(180deg, #ffe46e, #ffc727); color: var(--brown); }
+      .blue { --btn-edge: #79acd3; border-color: #9fcbeb; background: linear-gradient(180deg, #eef8ff, #c4e5fb); color: #1f5f8f; }
+      /* secondary buttons on a cream card: the cream button, a little quieter */
+      .secondary { color: var(--wood-soft); }
+      /* wood frame around a cream paper panel, the concept's HUD cards */
+      .wood { border: 4px solid transparent; border-radius: 18px; background: var(--paper) padding-box, var(--wood-grain) border-box, var(--wood) border-box;
+        box-shadow: 0 3px 0 var(--brown), 0 6px 10px rgba(60,40,20,.22), inset 0 2px 0 rgba(255,255,255,.75); color: var(--wood-ink); }
 
-      /* HUD: a quiet level card on the left, hearts and a small sound button on the right */
-      #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 64px 10px 12px; color: var(--ink); pointer-events: none; }
-      #hud > div { background: var(--cream-a); border-radius: 16px; padding: 5px 12px 6px; box-shadow: 0 2px 0 rgba(0,0,0,.08); }
-      #hud > div:first-child { max-width: calc(100% - 132px); }
-      #levelLabel { font-size: 17px; font-weight: 800; line-height: 1.2; }
-      #stageLabel { font-size: 12px; font-weight: 700; line-height: 1.25; color: var(--ink-soft); margin-top: 1px; }
+      /* HUD: the level card (level, place, stage dots, hearts) on the left, the sound button and the bomb card on the right */
+      #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: flex-start; padding: 10px 64px 0 10px; pointer-events: none; }
+      .hudCard { display: flex; align-items: center; gap: 10px; padding: 4px 10px 5px 11px; max-width: 100%; box-sizing: border-box; }
+      .hudText { min-width: 0; }
+      #levelLabel { font-size: 18px; font-weight: 700; line-height: 1.2; }
+      #stageLabel { font-size: 12px; font-weight: 700; line-height: 1.25; color: var(--wood-soft); margin-top: 1px; word-break: keep-all; }
       #stageDots { display: flex; gap: 3px; margin-top: 3px; }
-      #stageDots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(59,58,54,.18); }
+      #stageDots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(91,61,39,.2); }
       #stageDots i.done { background: var(--green); }
       #stageDots i.now { background: var(--warn); box-shadow: 0 0 0 2px rgba(242,163,61,.35); }
-      #hearts { font-size: 17px; font-weight: 700; color: var(--heart); padding: 7px 12px !important; letter-spacing: 0; }
+      #hearts { display: flex; gap: 3px; flex: none; }
       #hearts:empty { display: none; }
-      #mute { position: fixed; top: 10px; right: 12px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 22px; background: var(--cream-a); color: var(--ink-soft); box-shadow: 0 2px 0 rgba(0,0,0,.08); }
-      #mute:active { transform: translateY(2px); box-shadow: none; }
+      /* hearts: bright red with a highlight while left, dark once used */
+      .heart { display: block; width: 24px; height: 22px; background: no-repeat center / contain; }
+      .heart.full { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 20.5 3.6 12.3A5.6 5.6 0 0 1 12 4.9a5.6 5.6 0 0 1 8.4 7.4z' fill='%23ef4b4b' stroke='%23862b25' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cellipse cx='7.6' cy='8.6' rx='2' ry='1.4' fill='%23fff' opacity='.75' transform='rotate(-35 7.6 8.6)'/%3E%3C/svg%3E"); }
+      .heart.empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 20.5 3.6 12.3A5.6 5.6 0 0 1 12 4.9a5.6 5.6 0 0 1 8.4 7.4z' fill='%236b5d55' stroke='%233f342e' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+      #mute { position: fixed; top: 10px; right: 12px; width: 46px; height: 46px; min-width: 46px; min-height: 46px; padding: 0; border-radius: 23px; border: 3px solid transparent;
+        background: var(--paper) padding-box, var(--wood-grain) border-box, var(--wood) border-box; color: var(--wood-ink); box-shadow: 0 3px 0 var(--brown), 0 5px 8px rgba(60,40,20,.2); }
+      #mute:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--brown); }
       #mute .off, #mute.muted .on { display: none; }
       #mute.muted .off { display: block; }
-      /* the closest bomb's number, under the hearts; red and beating at 1 */
-      #bombChip { position: fixed; top: 62px; right: 12px; padding: 4px 10px; border-radius: 14px; background: var(--cream-a); border: 2px solid var(--warn); color: var(--warn-ink); font-size: 16px; font-weight: 800; box-shadow: 0 2px 0 rgba(0,0,0,.08); pointer-events: none; }
+      /* the closest bomb's number in a wood card under the sound button; red frame and beating at 1 */
+      #bombChip { position: fixed; top: 66px; right: 10px; padding: 2px 10px 3px 8px; border: 4px solid transparent; border-radius: 18px; background: var(--paper) padding-box, var(--wood-grain) border-box, var(--wood) border-box;
+        color: var(--wood-ink); font-size: 20px; font-weight: 700; line-height: 1.3; box-shadow: 0 3px 0 var(--brown), 0 6px 10px rgba(60,40,20,.22); pointer-events: none; }
       #bombChip[hidden] { display: none; }
-      #bombChip.danger { border-color: var(--danger); color: var(--danger); animation: chipBeat .7s ease-in-out infinite; }
+      #bombChip.danger { background: linear-gradient(180deg, #fff1ed, #ffd6cc) padding-box, linear-gradient(180deg, #ec5a4b, #a8231b) border-box; color: var(--danger); box-shadow: 0 3px 0 #7d1a14, 0 6px 10px rgba(120,20,10,.25); animation: chipBeat .7s ease-in-out infinite; }
       @keyframes chipBeat { 50% { transform: scale(1.08); } }
 
-      #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; background: rgba(255,248,232,.95); border-radius: 26px; padding: 14px 26px; font-size: 24px; font-weight: 800; color: var(--ink); box-shadow: 0 6px 0 rgba(0,0,0,.12); pointer-events: none; animation: bannerIn 1.9s ease both; }
+      #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; border: 5px solid transparent; border-radius: 26px; padding: 12px 24px;
+        background: var(--paper) padding-box, var(--wood-grain) border-box, var(--wood) border-box; font-size: 24px; font-weight: 700; color: var(--wood-ink); box-shadow: 0 5px 0 var(--brown), 0 10px 18px rgba(60,40,20,.25);
+        pointer-events: none; animation: bannerIn 1.9s ease both; }
       #banner[hidden] { display: none; }
       #bannerIcon { font-size: 40px; }
       @keyframes bannerIn { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.9); } 15%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60%) scale(.98); } }
+
+      /* cards: cream paper with a white sticker edge, a tan rim and a soft drop shadow */
+      .card, .ilCard { background: linear-gradient(180deg, #fffbf3, #fff1d8); border: 3px solid #fff; border-radius: 30px; text-align: center; box-sizing: border-box;
+        box-shadow: 0 0 0 3px #ecd5a8, 0 8px 0 3px #d6b985, 0 18px 30px rgba(40,30,15,.32); }
       #interlude { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 5; }
       #interlude[hidden] { display: none; }
-      .ilCard { background: var(--cream); border-radius: 32px; padding: 30px 32px 26px; width: min(86vw, 360px); text-align: center; box-shadow: 0 10px 0 rgba(0,0,0,.15); animation: ilIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+      .ilCard { padding: 28px 28px 26px; width: min(86vw, 360px); animation: ilIn .45s cubic-bezier(.2,1.4,.4,1) both; }
       @keyframes ilIn { from { opacity: 0; transform: translateY(24px) scale(.92); } to { opacity: 1; transform: none; } }
       #ilIcon { font-size: 76px; line-height: 1.1; }
-      #ilKicker { font-size: 17px; font-weight: 700; color: #8a7d62; margin-top: 6px; }
-      #ilTitle { font-size: 30px; font-weight: 800; margin: 4px 0 8px; color: var(--ink); }
+      #ilKicker { font-size: 17px; font-weight: 700; color: var(--wood-soft); margin-top: 6px; }
+      /* big titles: Jua with a white sticker stroke, a dark outline in the title's colour family and a soft drop */
+      #ilTitle, #popupTitle { font-family: var(--font-title); font-weight: 400; line-height: 1.12; word-break: keep-all; color: var(--title-c, var(--orange));
+        -webkit-text-stroke: 9px #fff; paint-order: stroke fill;
+        filter: drop-shadow(2.2px 0 0 var(--title-edge, #7a3a14)) drop-shadow(-2.2px 0 0 var(--title-edge, #7a3a14)) drop-shadow(0 2.2px 0 var(--title-edge, #7a3a14)) drop-shadow(0 -2.2px 0 var(--title-edge, #7a3a14)) drop-shadow(0 5px 0 rgba(60,40,20,.25)); }
+      #ilTitle { --title-c: var(--leaf); --title-edge: #2f6a26; font-size: 34px; margin: 6px 0 10px; }
       #ilSub { font-size: 18px; color: var(--ink-soft); margin-bottom: 20px; line-height: 1.45; white-space: pre-line; }
-      #ilBtn { min-width: 180px; }
+      #ilBtn { min-width: 200px; min-height: 60px; font-size: 20px; }
 
       /* notes just above the buttons, the one strip free of the board on every screen size: why a tap did not go, and
          the bomb warning at 1 (closest to the buttons) */
-      #notes { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 64px); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+      #notes { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 78px); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
       #msg, #bombBar { width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; background: var(--cream-a); border-radius: 16px; padding: 4px 14px; box-shadow: 0 3px 0 rgba(0,0,0,.1);
-        text-align: center; font-size: 16px; font-weight: 800; line-height: 1.3; word-break: keep-all; }
+        text-align: center; font-size: 16px; font-weight: 700; line-height: 1.3; word-break: keep-all; }
       #msg { color: #b3402f; }
       #msg:empty, #bombBar[hidden] { display: none; }
       #bombBar { border: 2px solid var(--danger); color: var(--danger); }
 
-      #bar { position: fixed; bottom: var(--safe-b); left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
-      #bar button { min-width: 124px; font-size: 18px; }
-      #bar #home { width: 56px; min-width: 56px; padding: 0; }
-      @media (max-width: 340px) { #bar { gap: 8px; } #bar button { min-width: 100px; padding: 0 12px; } }
+      /* bottom controls: raised cards with the icon above the label; home, the hint in yellow, retry in blue */
+      #bar { position: fixed; bottom: var(--safe-b); left: 0; right: 0; display: flex; justify-content: center; gap: 10px; }
+      #bar button { flex-direction: column; gap: 1px; height: 64px; min-height: 64px; min-width: 124px; padding: 0 10px; border-radius: 20px; font-size: 15px; line-height: 1.15; }
+      #bar #home { width: 84px; min-width: 84px; }
+      @media (max-width: 340px) { #bar { gap: 8px; } #bar button { min-width: 100px; } #bar #home { width: 76px; min-width: 76px; } }
 
-      #popup { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,40,40,.35); }
+      #popup { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,30,20,.38); }
       #popup[hidden] { display: none; }
-      .card { background: var(--cream); border-radius: 28px; padding: 28px 32px; text-align: center; box-shadow: 0 6px 0 var(--edge); width: min(340px, calc(100vw - 32px)); box-sizing: border-box; }
-      #popupTitle { font-size: clamp(26px, 7.4vw, 30px); font-weight: 800; line-height: 1.2; margin-bottom: 8px; color: var(--ink); word-break: keep-all; }
-      #popupSub { font-size: 18px; color: var(--ink-soft); margin-bottom: 18px; }
+      .card { padding: 26px 24px 24px; width: min(340px, calc(100vw - 32px)); }
+      /* the title's colour says what happened: green rescue, plum hearts out, orange-red bomb, orange for a level's rules */
+      #popup { --title-c: var(--orange); --title-edge: #7a3a14; }
+      #popup[data-kind='win'] { --title-c: var(--leaf); --title-edge: #2f6a26; }
+      #popup[data-kind='hearts'] { --title-c: #5d4b78; --title-edge: #34284a; }
+      #popup[data-kind='bomb'] { --title-c: #e8603c; --title-edge: #7a2a12; }
+      #popupTitle { font-size: clamp(32px, 9.6vw, 40px); margin-bottom: 6px; }
+      #popup[data-kind='intro'] #popupTitle { font-size: 30px; }
+      #popupSub { font-size: 18px; color: var(--ink-soft); margin-bottom: 14px; }
+      /* the hearts as the level ended, on a pale tray where the concept has its stars */
+      #popupHearts { display: flex; justify-content: center; gap: 12px; width: max-content; margin: 0 auto 18px; padding: 10px 20px; border-radius: 20px; background: #f3e4c4; box-shadow: inset 0 2px 4px rgba(120,80,30,.18), 0 1px 0 #fff; }
+      #popupHearts:empty { display: none; }
+      #popupHearts .heart { width: 38px; height: 35px; }
       .tip { text-align: left; font-size: 18px; line-height: 1.45; margin: 0 0 10px; max-width: 300px; color: var(--ink); }
-      .popBtns { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-      #popupBtn { min-width: 180px; }
-      #popupHome { min-height: 48px; min-width: 140px; font-size: 17px; }
+      .popBtns { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+      #popupBtn { min-width: 220px; min-height: 60px; font-size: 20px; }
+      #popupHome { min-height: 52px; min-width: 180px; font-size: 18px; }
 
-      /* title screen: an overlay over the 3D board with the game's own animals */
-      #title { position: fixed; inset: 0; z-index: 4; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: max(40px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
-        background: linear-gradient(180deg, rgba(207,232,243,.92) 0%, rgba(207,232,243,0) 36%), linear-gradient(0deg, rgba(255,248,232,.94) 0%, rgba(255,248,232,0) 32%); }
+      /* title screen: an overlay over the 3D board with the game's own animals, warmed with cream at top and bottom */
+      #title { position: fixed; inset: 0; z-index: 4; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: max(36px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, rgba(255,243,214,.96) 0%, rgba(255,243,214,.6) 22%, rgba(255,243,214,0) 42%), linear-gradient(0deg, rgba(255,246,226,.97) 0%, rgba(255,246,226,0) 34%); }
       #title[hidden] { display: none; }
       .tHead { text-align: center; }
-      .tKicker { display: inline-block; background: var(--cream); color: #8a7a5c; font-size: 14px; font-weight: 800; letter-spacing: .08em; padding: 5px 14px; border-radius: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
-      /* a two-line sticker logo: a round white outline behind the letters (paint-order) and a thin brown edge around it */
-      #tName { margin: 10px 0 8px; font-size: clamp(38px, 6.6vh, 52px); font-weight: 900; line-height: 1.04; letter-spacing: -.01em; word-break: keep-all;
-        -webkit-text-stroke: 8px #fff; paint-order: stroke fill;
-        filter: drop-shadow(1.8px 0 0 var(--brown)) drop-shadow(-1.8px 0 0 var(--brown)) drop-shadow(0 1.8px 0 var(--brown)) drop-shadow(0 -1.8px 0 var(--brown)) drop-shadow(0 5px 0 rgba(91,61,39,.3)); }
+      /* a two-line sticker logo: a round white outline behind the letters (paint-order) and a brown edge around it */
+      .logo { position: relative; display: inline-block; margin: 14px 0 8px; }
+      #tName { margin: 0; font-family: var(--font-title); font-size: clamp(44px, 8vh, 62px); font-weight: 400; line-height: 1.04; letter-spacing: -.01em; word-break: keep-all;
+        -webkit-text-stroke: 10px #fff; paint-order: stroke fill;
+        filter: drop-shadow(2.4px 0 0 var(--brown)) drop-shadow(-2.4px 0 0 var(--brown)) drop-shadow(0 2.4px 0 var(--brown)) drop-shadow(0 -2.4px 0 var(--brown)) drop-shadow(0 6px 0 rgba(91,61,39,.35)); }
       #tName .a, #tName .b { display: block; }
       #tName .a { color: var(--orange); transform: rotate(-3deg); }
       #tName .b { color: var(--leaf); transform: rotate(2deg) translateX(10px); }
+      /* small leaves and a flower around the logo, sticker-edged like it */
+      .deco { position: absolute; display: block; pointer-events: none; filter: drop-shadow(0 3px 0 rgba(91,61,39,.3)); }
+      .deco.sprout { width: 15%; top: -22%; left: 8%; transform: rotate(-14deg); }
+      .deco.flower { width: 15%; top: 2%; right: -9%; transform: rotate(12deg); }
+      .deco.clover { width: 14%; bottom: 0; left: -10%; transform: rotate(-10deg); }
       /* the subtitle on a small frosted pill, only as big as its words */
-      .tSub { display: inline-block; margin: 2px 0 0; padding: 5px 14px; border-radius: 16px; background: rgba(255,248,232,.8); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
-        font-size: 15px; font-weight: 700; color: #4a4438; box-shadow: 0 2px 0 rgba(0,0,0,.06); word-break: keep-all; }
-      .tButtons { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
-      .tButtons button { width: min(300px, 100%); min-height: 60px; border-radius: 30px; font-size: 21px; }
-      #tContinue { flex-direction: column; gap: 0; }
-      #tContinue small { display: block; font-size: 13px; font-weight: 700; opacity: .9; margin-top: 1px; }
+      .tSub { display: inline-block; margin: 2px 0 0; padding: 5px 14px; border-radius: 16px; background: rgba(255,248,232,.85); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+        font-size: 15px; font-weight: 500; color: #4a4438; box-shadow: 0 2px 0 rgba(0,0,0,.06); word-break: keep-all; }
+      .tButtons { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+      .tButtons button { width: min(300px, 100%); min-height: 64px; border-radius: 32px; font-size: 22px; }
+      .tButtons .play { width: 30px; height: 30px; }
+      #tContinue .lbl { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+      #tContinue small { display: block; font-size: 13px; font-weight: 700; opacity: .85; margin-top: 1px; }
       #tRestart { min-height: 52px; font-size: 18px; }
       /* short screens: the title block gives the board below it some room */
-      @media (max-height: 700px) { #title { padding-top: max(24px, env(safe-area-inset-top)); } #tName { margin: 6px 0 6px; } }
+      @media (max-height: 700px) { #title { padding-top: max(24px, env(safe-area-inset-top)); } .logo { margin: 12px 0 6px; } }
       body.on-title #hud, body.on-title #bar, body.on-title #notes, body.on-title #mute, body.on-title #bombChip, body.on-title #banner { display: none; }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="hud"><div><div id="levelLabel"></div><div id="stageLabel"></div><div id="stageDots"></div></div><div id="hearts"></div></div>
+    <div id="hud"><div class="hudCard wood"><div class="hudText"><div id="levelLabel"></div><div id="stageLabel"></div><div id="stageDots"></div></div><div id="hearts"></div></div></div>
     <button id="mute" aria-label="소리 끄기"><svg class="on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><svg class="off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg></button>
     <div id="bombChip" hidden></div>
     <div id="notes"><div id="msg"></div><div id="bombBar" hidden></div></div>
-    <div id="bar"><button id="home" aria-label="처음 화면으로"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg></button><button id="retry"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4.5h4.5"/></svg><span>다시</span></button><button id="hint"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>힌트</span></button><button id="next" hidden>다음 ▶</button></div>
+    <div id="bar"><button id="home" aria-label="처음 화면으로"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg><span>홈</span></button><button id="hint" class="yellow"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>힌트</span></button><button id="retry" class="blue"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4.5h4.5"/></svg><span>다시 하기</span></button><button id="next" hidden>다음 ▶</button></div>
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
     <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><button id="ilBtn" class="primary"></button></div></div>
-    <div id="popup" hidden><div class="card"><div id="popupTitle"></div><div id="popupSub"></div><div class="popBtns"><button id="popupBtn" class="primary"></button><button id="popupHome" class="secondary" hidden>처음으로</button></div></div></div>
+    <div id="popup" hidden><div class="card"><div id="popupTitle"></div><div id="popupSub"></div><div id="popupHearts"></div><div class="popBtns"><button id="popupBtn" class="primary"></button><button id="popupHome" class="secondary" hidden>처음으로</button></div></div></div>
     <div id="title" hidden>
       <div class="tHead">
-        <div class="tKicker">동물 구출 퍼즐</div>
-        <h1 id="tName"><span class="a">탈출해</span> <span class="b">친구들!</span></h1>
+        <div class="logo">
+          <h1 id="tName"><span class="a">탈출해</span> <span class="b">친구들!</span></h1>
+          <svg class="deco sprout" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 38V22" stroke="#2f6a26" stroke-width="3.5" stroke-linecap="round"/><path d="M20 24C10 24 5 16 6 8c9 0 15 6 14 16z" fill="#6cc24a" stroke="#2f6a26" stroke-width="2"/><path d="M20 22c1-10 8-15 16-14 0 9-6 15-16 14z" fill="#8ad95f" stroke="#2f6a26" stroke-width="2"/></svg>
+          <svg class="deco flower" viewBox="0 0 40 40" aria-hidden="true"><g fill="#fff" stroke="#e48aa0" stroke-width="2"><circle cx="20" cy="9" r="7"/><circle cx="30.5" cy="16.5" r="7"/><circle cx="26.5" cy="29" r="7"/><circle cx="13.5" cy="29" r="7"/><circle cx="9.5" cy="16.5" r="7"/></g><circle cx="20" cy="20" r="6" fill="#ffcf3f" stroke="#d39314" stroke-width="2"/></svg>
+          <svg class="deco clover" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 22v15" stroke="#2f6a26" stroke-width="3" stroke-linecap="round"/><g fill="#6cc24a" stroke="#2f6a26" stroke-width="2"><circle cx="20" cy="12" r="8"/><circle cx="12" cy="24" r="8"/><circle cx="28" cy="24" r="8"/></g></svg>
+        </div>
         <p class="tSub">길을 비켜 주면 친구들이 문으로 달려 나가요</p>
       </div>
       <div class="tButtons">
-        <button id="tStart" class="primary">게임 시작</button>
-        <button id="tContinue" class="primary" hidden>이어하기<small id="tWhere"></small></button>
+        <button id="tStart" class="yellow"><svg class="play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8z"/></svg><span>게임 시작</span></button>
+        <button id="tContinue" class="yellow" hidden><svg class="play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8z"/></svg><span class="lbl">이어하기<small id="tWhere"></small></span></button>
         <button id="tRestart" class="secondary" hidden>처음부터</button>
       </div>
     </div>

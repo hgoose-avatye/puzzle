@@ -42,6 +42,8 @@ const V_THICK = 0.045;
 /** how far a sideways-facing animal's V slides along its front edge towards the camera */
 const V_SIDE_SHIFT = 0.34;
 
+/** Bomb count on the badge: Pretendard Bold like the HUD numbers, the system font until it has loaded. */
+const BADGE_NUMBER_FONT = "700 70px Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif";
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
@@ -74,31 +76,39 @@ function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
   const numW = number === undefined ? 0 : number >= 10 ? 96 : 60;
   const w = Math.min(300, items.length * iconW + numW + 40);
   const x0 = (320 - w) / 2;
-  ctx.fillStyle = '#fff8e8';
-  ctx.strokeStyle = tone.line;
-  ctx.lineWidth = 10;
-  ctx.beginPath();
-  ctx.roundRect(x0, 14, w, 92, 46);
-  ctx.fill();
-  ctx.stroke();
-  // little tail pointing down at the animal
-  ctx.beginPath();
-  ctx.moveTo(150, 104);
-  ctx.lineTo(160, 122);
-  ctx.lineTo(170, 104);
-  ctx.closePath();
-  ctx.fill();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '62px system-ui, sans-serif';
-  items.forEach((it, i) => ctx.fillText(it, x0 + 20 + iconW * (i + 0.5), 62));
-  if (number !== undefined) {
-    ctx.font = '900 70px system-ui, sans-serif';
-    ctx.fillStyle = tone.text;
-    ctx.fillText(String(number), x0 + 20 + items.length * iconW + numW / 2, 64);
-  }
+  const paint = (): void => {
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#fff8e8';
+    ctx.strokeStyle = tone.line;
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.roundRect(x0, 14, w, 92, 46);
+    ctx.fill();
+    ctx.stroke();
+    // little tail pointing down at the animal
+    ctx.beginPath();
+    ctx.moveTo(150, 104);
+    ctx.lineTo(160, 122);
+    ctx.lineTo(170, 104);
+    ctx.closePath();
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '62px system-ui, sans-serif';
+    items.forEach((it, i) => ctx.fillText(it, x0 + 20 + iconW * (i + 0.5), 62));
+    if (number !== undefined) {
+      ctx.font = BADGE_NUMBER_FONT;
+      ctx.fillStyle = tone.text;
+      ctx.fillText(String(number), x0 + 20 + items.length * iconW + numW / 2, 64);
+    }
+  };
+  paint();
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  // the number is drawn once; if Pretendard is still loading, draw it again when it arrives
+  if (number !== undefined && !document.fonts.check(BADGE_NUMBER_FONT)) {
+    void document.fonts.load(BADGE_NUMBER_FONT, '0123456789').then(() => { paint(); tex.needsUpdate = true; });
+  }
   return tex;
 }
 
