@@ -108,7 +108,8 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     if (shown !== url) { material.map = tex; material.needsUpdate = true; shown = url; }
     if (!img?.width) return;
     // the visual offset moves the picture (y down = drawn lower), i.e. the effective anchor the other way
-    const ow = pick.offset ? offsetWeight(entry.sprites, part, deg, pick.heading) : 0;
+    // temporarily off at 0°/180°: those joining offsets pulled end cards onto the next cell, leaving its plate bare
+    const ow = pick.offset && pick.heading % 180 !== 0 ? offsetWeight(entry.sprites, part, deg, pick.heading) : 0;
     const [ax0, ay0] = pick.anchor ?? entry.sprites.frame.anchor;
     const ax = ax0 - (pick.offset?.[0] ?? 0) * ow, ay = ay0 - (pick.offset?.[1] ?? 0) * ow;
     const w = img.width / cellPx, h = img.height / cellPx;
