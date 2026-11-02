@@ -33,7 +33,12 @@ const ART_CANDIDATE = query.get('art') === 'candidate';
 const manifests = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.sprites.json', { eager: true, import: 'default' }) as Record<string, SpeciesSprites>;
 const pictures = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 const registry = new Map<string, { sprites: SpeciesSprites; dir: string }>();
-for (const [path, sprites] of Object.entries(manifests)) registry.set(sprites.species, { sprites, dir: path.slice(0, path.lastIndexOf('/') + 1) });
+// a manifest under candidate/ (its own frame and pictures, e.g. the chick's standard-frame cut-outs) stands in for the
+// species' manifest only with ?art=candidate and is ignored otherwise; every other manifest registers as before
+const isCandidateManifest = (path: string) => path.includes('/candidate/');
+const register = (path: string, sprites: SpeciesSprites) => registry.set(sprites.species, { sprites, dir: path.slice(0, path.lastIndexOf('/') + 1) });
+for (const [path, sprites] of Object.entries(manifests)) if (!isCandidateManifest(path)) register(path, sprites);
+if (ART_CANDIDATE) for (const [path, sprites] of Object.entries(manifests)) if (isCandidateManifest(path)) register(path, sprites);
 /** candidates whose bottom was moved down behind the near part by repeating one row band (tools/polish_candidates.py) */
 const extensions = import.meta.glob('../2-5d-crocodile/assets/*/candidate/extend.json', { eager: true, import: 'default' }) as Record<string, Record<string, { band: number; rows: number }>>;
 /**
