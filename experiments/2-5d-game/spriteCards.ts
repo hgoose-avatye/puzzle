@@ -9,8 +9,9 @@
  *  - faces the camera, with the picture's floor anchor on the block's floor point, moved by the picture's visual offset
  *    weighted by how close the block's real angle is to that picture's heading (offsetWeight: no jump when it switches),
  *  - is pulled 0.10 cell per joint toward the head (drawing only; the game's positions and rules are unchanged),
- *  - is slid toward the camera just far enough that the part drawn below the anchor stays above the floor (a camera-
- *    facing card through the floor point would otherwise sink into the board), and scaled back to keep its size.
+ *  - has its anchor on the screen projection of the plate-top floor point, on a plane through the block centre (depth
+ *    between animals follows the blocks, not the picture's transparent margin), sized from the projected cell width
+ *    there (DIAGNOSIS.md, placement C).
  * Depth against walls, props and other animals comes from the normal depth buffer; transparent pixels are cut out.
  */
 import * as THREE from 'three';
@@ -50,10 +51,15 @@ function texture(url: string): THREE.Texture {
   return t;
 }
 
-const tmp = { pos: new THREE.Vector3(), cam: new THREE.Vector3(), fwd: new THREE.Vector3(), q: new THREE.Quaternion(), head: new THREE.Vector3() };
+const tmp = { pos: new THREE.Vector3(), cam: new THREE.Vector3(), fwd: new THREE.Vector3(), q: new THREE.Quaternion(), head: new THREE.Vector3(), centre: new THREE.Vector3(), at: new THREE.Vector3(), plane: new THREE.Plane(), ray: new THREE.Ray() };
 let cardsDrawn = 0;
 let cardsMissing = 0;
 export const cardStats = (): { drawn: number; missing: number } => ({ drawn: cardsDrawn, missing: cardsMissing });
+
+/** top of the coloured plate under each cell (game/animals.ts: RoundedBox height 0.1 at y 0.05) */
+const PLATE_TOP = 0.1;
+/** height of the block centre above the plate top, in cells: the depth the card is drawn at */
+const CARD_DEPTH_LIFT = 0.45;
 
 /** opaque-texel lookup per picture, for the alpha-aware hit test */
 const alphaMaps = new Map<string, { w: number; h: number; a: Uint8ClampedArray }>();
@@ -121,18 +127,19 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     animated.getWorldPosition(tmp.pos);
     tmp.head.set(Math.sin(root.rotation.y), 0, Math.cos(root.rotation.y)).multiplyScalar(index * tuck * root.scale.x);
     tmp.pos.add(tmp.head);
-    // slide toward the camera so the lowest pixel sits on the floor, then rescale so the card keeps its screen size
+    tmp.pos.y += PLATE_TOP;
+    // camera-facing plane through the block centre; the anchor goes where the ray to the floor point meets it
     camera.getWorldPosition(tmp.cam);
     camera.getWorldDirection(tmp.fwd);
-    const below = ((img.height - ay) / cellPx) * root.scale.x; // world height of the picture under its anchor
-    const elev = Math.asin(Math.min(1, Math.max(0.05, -tmp.fwd.y)));
-    const slide = below * Math.cos(elev) / Math.sin(elev);
-    const dist = tmp.pos.distanceTo(tmp.cam);
-    tmp.pos.addScaledVector(tmp.fwd, -slide);
-    const k = (dist - slide) / dist;
+    tmp.centre.copy(tmp.pos).setY(tmp.pos.y + CARD_DEPTH_LIFT * root.scale.x);
+    tmp.plane.setFromNormalAndCoplanarPoint(tmp.fwd.clone().negate(), tmp.centre);
+    tmp.ray.set(tmp.cam, tmp.pos.clone().sub(tmp.cam).normalize());
+    if (!tmp.ray.intersectPlane(tmp.plane, tmp.at)) tmp.at.copy(tmp.pos);
+    // same projected cell width as at the floor point: world size scales with depth along the view axis
+    const k = tmp.at.clone().sub(tmp.cam).dot(tmp.fwd) / tmp.pos.clone().sub(tmp.cam).dot(tmp.fwd);
     // place in the parent's frame: world position and the camera's rotation
     animated.updateWorldMatrix(true, false);
-    card.position.copy(animated.worldToLocal(tmp.pos.clone()));
+    card.position.copy(animated.worldToLocal(tmp.at.clone()));
     animated.getWorldQuaternion(tmp.q).invert();
     card.quaternion.copy(tmp.q.multiply(camera.quaternion));
     const s = root.scale.x * k / (animated.getWorldScale(new THREE.Vector3()).x || 1);
