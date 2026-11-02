@@ -53,6 +53,33 @@ let cardsDrawn = 0;
 let cardsMissing = 0;
 export const cardStats = (): { drawn: number; missing: number } => ({ drawn: cardsDrawn, missing: cardsMissing });
 
+/** opaque-texel lookup per picture, for the alpha-aware hit test */
+const alphaMaps = new Map<string, { w: number; h: number; a: Uint8ClampedArray }>();
+function alphaAt(img: HTMLImageElement, u: number, v: number): number {
+  let m = alphaMaps.get(img.src);
+  if (!m) {
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d')!; g.drawImage(img, 0, 0);
+    m = { w: img.width, h: img.height, a: g.getImageData(0, 0, img.width, img.height).data };
+    alphaMaps.set(img.src, m);
+  }
+  const x = Math.min(m.w - 1, Math.max(0, Math.floor(u * m.w))), y = Math.min(m.h - 1, Math.max(0, Math.floor((1 - v) * m.h)));
+  return m.a[(y * m.w + x) * 4 + 3];
+}
+
+/**
+ * Mesh.raycast that drops hits on transparent texels. alphaTest hides them on screen, the default ray does not, so a
+ * tap on another animal seen through a card's empty margin picked the card's animal (DIAGNOSIS.md, touch: 19~36% → 0%).
+ */
+function alphaRaycast(mesh: THREE.Mesh): void {
+  mesh.raycast = (raycaster, intersects) => {
+    const hits: THREE.Intersection[] = [];
+    THREE.Mesh.prototype.raycast.call(mesh, raycaster, hits);
+    const img = (mesh.material as THREE.MeshBasicMaterial).map?.image as HTMLImageElement | undefined;
+    for (const h of hits) if (img?.width && h.uv && alphaAt(img, h.uv.x, h.uv.y) > 127) intersects.push(h);
+  };
+}
+
 function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: ReturnType<typeof partsFor>[number], index: number): THREE.Group {
   const root = new THREE.Group();
   const animated = new THREE.Group();
@@ -60,6 +87,7 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
   const material = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, toneMapped: false });
   const card = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   card.userData.spriteCard = true;
+  alphaRaycast(card);
   animated.add(card);
   // a larger card is the same picture over a smaller pixel-per-cell: the anchor (feet) stays on the floor point
   const cellPx = entry.sprites.frame.cellPx / (CARD_SCALE * (entry.sprites.scale ?? 1));
