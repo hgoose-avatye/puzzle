@@ -172,34 +172,95 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     const ow = pick.offset && pick.heading % 180 !== 0 ? offsetWeight(entry.sprites, part, deg, pick.heading) : 0;
     const [ax0, ay0] = pick.anchor ?? entry.sprites.frame.anchor;
     const ax = ax0 - (pick.offset?.[0] ?? 0) * ow, ay = ay0 - (pick.offset?.[1] ?? 0) * ow;
-    const w = img.width / cellPx, h = img.height / cellPx;
-    const anchorX = pick.mirror ? img.width - ax : ax;
     // floor point of the block (with the hop), pulled toward the head along the block's heading
     animated.getWorldPosition(tmp.pos);
     tmp.head.set(Math.sin(root.rotation.y), 0, Math.cos(root.rotation.y)).multiplyScalar(index * tuck * root.scale.x);
     tmp.pos.add(tmp.head);
     tmp.pos.y += PLATE_TOP;
-    // camera-facing plane through the block centre; the anchor goes where the ray to the floor point meets it
-    camera.getWorldPosition(tmp.cam);
-    camera.getWorldDirection(tmp.fwd);
-    tmp.centre.copy(tmp.pos).setY(tmp.pos.y + CARD_DEPTH_LIFT * root.scale.x);
-    tmp.plane.setFromNormalAndCoplanarPoint(tmp.fwd.clone().negate(), tmp.centre);
-    tmp.ray.set(tmp.cam, tmp.pos.clone().sub(tmp.cam).normalize());
-    if (!tmp.ray.intersectPlane(tmp.plane, tmp.at)) tmp.at.copy(tmp.pos);
-    // same projected cell width as at the floor point: world size scales with depth along the view axis
-    const k = tmp.at.clone().sub(tmp.cam).dot(tmp.fwd) / tmp.pos.clone().sub(tmp.cam).dot(tmp.fwd);
-    // place in the parent's frame: world position and the camera's rotation
-    animated.updateWorldMatrix(true, false);
-    card.position.copy(animated.worldToLocal(tmp.at.clone()));
-    animated.getWorldQuaternion(tmp.q).invert();
-    card.quaternion.copy(tmp.q.multiply(camera.quaternion));
-    const s = root.scale.x * k / (animated.getWorldScale(new THREE.Vector3()).x || 1);
-    card.scale.set((pick.mirror ? -w : w) * s, h * s, 1);
-    // the plane is centred: shift it so the anchor pixel is at the floor point
-    const offX = (img.width / 2 - anchorX) / cellPx, offY = (ay - img.height / 2) / cellPx;
-    card.position.add(new THREE.Vector3(pick.mirror ? -offX : offX, offY, 0).multiplyScalar(s).applyQuaternion(card.quaternion));
+    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror);
   };
   return root;
+}
+
+/**
+ * Placement C for one card: a camera-facing plane through the block centre above the world floor point `floor` (plate
+ * top included), the picture's anchor pixel (ax, ay) on that point, sized from the projected cell width there.
+ */
+function placeCard(card: THREE.Mesh, animated: THREE.Object3D, floor: THREE.Vector3, scaleX: number, camera: THREE.Camera, img: HTMLImageElement, cellPx: number, ax: number, ay: number, mirror: boolean): void {
+  const w = img.width / cellPx, h = img.height / cellPx;
+  const anchorX = mirror ? img.width - ax : ax;
+  // camera-facing plane through the block centre; the anchor goes where the ray to the floor point meets it
+  camera.getWorldPosition(tmp.cam);
+  camera.getWorldDirection(tmp.fwd);
+  tmp.centre.copy(floor).setY(floor.y + CARD_DEPTH_LIFT * scaleX);
+  tmp.plane.setFromNormalAndCoplanarPoint(tmp.fwd.clone().negate(), tmp.centre);
+  tmp.ray.set(tmp.cam, floor.clone().sub(tmp.cam).normalize());
+  if (!tmp.ray.intersectPlane(tmp.plane, tmp.at)) tmp.at.copy(floor);
+  // same projected cell width as at the floor point: world size scales with depth along the view axis
+  const k = tmp.at.clone().sub(tmp.cam).dot(tmp.fwd) / floor.clone().sub(tmp.cam).dot(tmp.fwd);
+  // place in the parent's frame: world position and the camera's rotation
+  animated.updateWorldMatrix(true, false);
+  card.position.copy(animated.worldToLocal(tmp.at.clone()));
+  animated.getWorldQuaternion(tmp.q).invert();
+  card.quaternion.copy(tmp.q.multiply(camera.quaternion));
+  const s = scaleX * k / (animated.getWorldScale(new THREE.Vector3()).x || 1);
+  card.scale.set((mirror ? -w : w) * s, h * s, 1);
+  // the plane is centred: shift it so the anchor pixel is at the floor point
+  const offX = (img.width / 2 - anchorX) / cellPx, offY = (ay - img.height / 2) / cellPx;
+  card.position.add(new THREE.Vector3(mirror ? -offX : offX, offY, 0).multiplyScalar(s).applyQuaternion(card.quaternion));
+}
+
+/** blocks this far apart in heading (degrees) are on different legs of a turn: the corner cell between them is empty */
+const JOINT_DEG = 45;
+/** screen direction of a world vector: 'up' (away from the camera), 'down', 'left', 'right' */
+const screenDir = (v: THREE.Vector3): 'up' | 'down' | 'left' | 'right' => (Math.abs(v.z) >= Math.abs(v.x) ? (v.z < 0 ? 'up' : 'down') : v.x > 0 ? 'right' : 'left');
+
+/**
+ * The corner piece between block `ahead` (toward the head) and `behind` (manifest `joints`): while the two blocks head
+ * different ways the corner cell between them is empty (blocks are one cell apart on a track whose corners have a
+ * 0.3-cell radius, so at most one block is ever inside the bend), and the straight cards' cut ends show. The piece is
+ * drawn at the corner cell — where the two blocks' lines meet — with the elbow picture whose arms point at the two
+ * blocks (left-hand corners mirror the right-hand pictures), with placement C like every other card. Cosmetic only:
+ * no fold, not tappable, not counted.
+ */
+function jointCard(entry: { sprites: SpeciesSprites; dir: string }, ahead: THREE.Group, behind: THREE.Group): THREE.Mesh {
+  const joints = entry.sprites.joints!;
+  const material = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, toneMapped: false });
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
+  card.raycast = () => {};
+  card.visible = false;
+  const animated = ahead.children[0];
+  animated.add(card);
+  const cellPx = entry.sprites.frame.cellPx / (CARD_SCALE * (entry.sprites.scale ?? 1));
+  const fA = new THREE.Vector3(), fB = new THREE.Vector3(), pA = new THREE.Vector3(), pB = new THREE.Vector3();
+  let shown = '';
+  card.onBeforeRender = (_r, _s, camera) => {
+    const d = ahead.rotation.y - behind.rotation.y;
+    const apart = Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) * 180 / Math.PI;
+    card.visible = apart >= JOINT_DEG;
+    if (!card.visible) return;
+    const L = ahead.scale.x; // one cell (BLOCK_SPACING) in world units
+    fA.set(Math.sin(ahead.rotation.y), 0, Math.cos(ahead.rotation.y));
+    fB.set(Math.sin(behind.rotation.y), 0, Math.cos(behind.rotation.y));
+    ahead.getWorldPosition(pA);
+    behind.getWorldPosition(pB);
+    // the corner: one cell back from the block ahead along its heading = one cell on from the block behind along its
+    // heading; the mean of the two while one block is still inside the bend
+    tmp.pos.copy(pA).addScaledVector(fA, -L).add(pB.addScaledVector(fB, L)).multiplyScalar(0.5);
+    tmp.pos.y += PLATE_TOP;
+    // arms of the elbow: toward the block ahead, and toward the block behind (against its heading)
+    const toAhead = screenDir(fA), toBehind = screenDir(fB.negate());
+    const vertical = toAhead === 'up' || toAhead === 'down' ? toAhead : toBehind;
+    const horizontal = toAhead === 'left' || toAhead === 'right' ? toAhead : toBehind;
+    const url = pictures[entry.dir + (vertical === 'up' ? joints.upRight : joints.downRight)];
+    const tex = texture(url);
+    const img = tex.image as HTMLImageElement | undefined;
+    if (shown !== url) { material.map = tex; material.needsUpdate = true; shown = url; }
+    if (!img?.width) return;
+    const [ax, ay] = entry.sprites.frame.anchor;
+    placeCard(card, animated, tmp.pos, ahead.scale.x, camera, img, cellPx, ax, ay, horizontal === 'left');
+  };
+  return card;
 }
 
 /** every buildAnimal call: the species the game chose (speciesFor) and how it was drawn, for the capture script */
@@ -219,5 +280,7 @@ export function buildAnimal(species: string, cells: number): THREE.Group[] {
   const parts = partsFor(n);
   const blocks: THREE.Group[] = [];
   parts.forEach((part, i) => blocks.push(cardBlock(entry, part, i, blocks)));
+  // corner pieces between neighbouring blocks, when the manifest has them (only shown while the two blocks turn)
+  if (entry.sprites.joints) for (let i = 0; i + 1 < blocks.length; i++) jointCard(entry, blocks[i], blocks[i + 1]);
   return blocks;
 }

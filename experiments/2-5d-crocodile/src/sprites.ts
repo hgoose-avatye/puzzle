@@ -34,6 +34,12 @@ export interface SpeciesSprites {
   /** visual tuck per joint toward the head, in cells; absent = the shared default (0.10). Crocodile: 0 (approved 2026-11-01) */
   tuck?: number;
   parts: Partial<Record<Part, PartSprites>>;
+  /**
+   * Corner pieces for multi-cell animals: the body bent 90° inside one cell, drawn between two blocks while they are
+   * on different legs of a turn (the corner cell is otherwise empty). `upRight` has its arms toward the top and the
+   * right of the screen, `downRight` toward the bottom and the right; left-hand corners mirror them. Same frame.
+   */
+  joints?: { upRight: string; downRight: string };
 }
 
 /** Which part each block is, head first: 1 cell a single sprite, 2 cells head + tail, more cells head, bodies, tail. */

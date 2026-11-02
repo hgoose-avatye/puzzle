@@ -190,6 +190,32 @@ def main():
         'tuck': 0,
         'parts': {part: {'drawn': {str(d): f'dachshund_{part}_{d:03d}.png' for d in (0, 90, 180)}} for part in ('head', 'body', 'tail')},
     }
+    # corner pieces (received-v3/dachshund_elbow_{up_right,down_right}.png): the body bent 90° in one cell, arms toward
+    # the top / bottom and the right of the screen; keyed and scaled like the straight pictures (arm = body width)
+    elbows = {}
+    for key, name in (('upRight', 'up_right'), ('downRight', 'down_right')):
+        path = os.path.join(root, 'received-v3', f'dachshund_elbow_{name}.png')
+        if not os.path.exists(path):
+            continue
+        img = key_green(np.array(Image.open(path).convert('RGB')))
+        f = img[:, :, 3] > 0.5
+        ys, xs = np.where(f.any(1))[0], np.where(f.any(0))[0]
+        # the vertical arm's width = the body width (columns of the rows away from the horizontal arm)
+        vert_rows = range(ys[0], ys[0] + (ys[-1] - ys[0]) // 4) if name == 'up_right' else range(ys[-1] - (ys[-1] - ys[0]) // 4, ys[-1])
+        arm_w = np.median([f[y].sum() for y in vert_rows if f[y].any()])
+        img = resize(img, args.body_width * cell / arm_w)
+        f = img[:, :, 3] > 0.5
+        ys, xs = np.where(f.any(1))[0], np.where(f.any(0))[0]
+        # the corner cell: the vertical arm's end on the cell's back / front edge, the horizontal arm's end on the right edge
+        vx = np.where(f[ys[0] + 5 if name == 'up_right' else ys[-1] - 5])[0]
+        cx = (vx[0] + vx[-1]) / 2 + 0  # vertical arm's centre line -> cell centre x
+        cy = (ys[0] + depth / 2) if name == 'up_right' else (ys[-1] - depth / 2)
+        elbows[key] = f'dachshund_elbow_{name}.png'
+        frame = window(img, cx, cy)
+        Image.fromarray(to8(frame)).save(os.path.join(out_dir, elbows[key]))
+        print(f'{elbows[key]}: arm width {arm_w:.0f} px -> {args.body_width} cell, horizontal arm reaches x {(xs[-1] - cx) / cell:+.2f} cells from the cell centre')
+    if len(elbows) == 2:
+        manifest['joints'] = elbows
     with open(os.path.join(out_dir, 'dachshund.sprites.json'), 'w') as fh:
         json.dump(manifest, fh, indent=2)
         fh.write('\n')
