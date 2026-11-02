@@ -41,6 +41,8 @@ const V_DEPTH = 0.12;
 const V_THICK = 0.045;
 /** how far a sideways-facing animal's V slides along its front edge towards the camera */
 const V_SIDE_SHIFT = 0.34;
+/** 2.5D cards: height of the direction V over the head's tile (level with the top of the head block) */
+const CARD_MARK_HEIGHT = 0.98;
 
 /** Bomb count on the badge: Pretendard Bold like the HUD numbers, the system font until it has loaded. */
 const BADGE_NUMBER_FONT = "700 70px Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif";
@@ -303,30 +305,39 @@ export class PieceView {
    * runs.
    */
   private buildAheadMarks(color: THREE.Color): void {
+    // Classic 3D: the floor V of one-cell animals only, as before. 2.5D cards: every animal (see below).
+    const cards = this.segments[0]?.userData.spriteCards === true;
+    if (this.bodyLen !== 1 && !cards) return;
     const dir = headDirection(this.piece);
     const v = directionVector(dir);
-    // 2.5D cards are taller than the blocks and the card of the animal on the next tile covers this tile's front edge, so
-    // a floor mark under them is hidden most of the time: for cards the V is drawn last, over everything but badges
-    const cards = this.segments[0]?.userData.spriteCards === true;
-    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5), ...(cards ? { transparent: true, depthTest: false } : {}) });
+    const head = this.piece.cells[0];
+    if (cards) {
+      // The cards are taller than the blocks and the card of the animal on the tile nearer the camera covers this tile's
+      // front edge, so a floor V is hidden most of the time; drawn on top instead, it lands on other animals' bodies.
+      // So for cards the same V sits level with the top of the head block, centred on the head's tile: no card from a
+      // neighbouring tile reaches there, and being just in front of this animal's own card plane it is drawn over this
+      // animal (no depth test) but still behind any animal that really stands in front of it.
+      const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5), transparent: true, depthTest: false });
+      for (const side of [-1, 1]) this.addBar(tint, side * V_HALF, -V_DEPTH / 2, 0, V_DEPTH / 2, V_THICK);
+      this.aheadMarks.position.copy(this.world(head.x, head.y)).setY(CARD_MARK_HEIGHT);
+      this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
+      return;
+    }
+    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
     // local frame: +z is the way it runs; the point is at tipZ and the arms end V_DEPTH behind it
     const tipZ = dir === 'up' ? -0.47 + V_DEPTH : 0.46;
     // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
     // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
     const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
-    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK, cards);
-    // the V lies on the head's tile; facing up the board it sits at the edge nearest the camera instead, which for a
-    // long animal is the last tile's (the body would hide the head tile's)
-    const tile = dir === 'up' ? this.piece.cells[this.piece.cells.length - 1] : this.piece.cells[0];
-    this.aheadMarks.position.copy(this.world(tile.x, tile.y));
+    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK);
+    this.aheadMarks.position.copy(this.world(head.x, head.y));
     this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
   }
 
   /** A flat bar on the floor from (x0, z0) to (x1, z1) in the mark's local frame (+z the way the animal runs). */
-  private addBar(tint: THREE.Material, x0: number, z0: number, x1: number, z1: number, thick: number, onTop = false): void {
+  private addBar(tint: THREE.Material, x0: number, z0: number, x1: number, z1: number, thick: number): void {
     const m = new THREE.Mesh(EDGE_BAR, tint);
     m.userData.sharedGeometry = true;
-    if (onTop) m.renderOrder = 9; // after the cards (transparent pass), under the badges (10+)
     m.scale.set(thick, 1, Math.hypot(x1 - x0, z1 - z0) + thick);
     m.position.set((x0 + x1) / 2, 0.104, (z0 + z1) / 2);
     m.rotation.y = Math.atan2(x1 - x0, z1 - z0);
