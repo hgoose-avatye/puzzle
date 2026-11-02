@@ -23,6 +23,8 @@ export function speciesFor(piece: Piece): string {
   return pool[piece.id % pool.length];
 }
 
+/** 2.5D cards (approved 2026-11-02): the plate under each cell is a soft shadow pad, not the animal's hue */
+const CARD_PLATE = { color: 0x000000, opacity: 0.1 };
 const RUN_SPEED = 7.5;
 /** Current running speed in cells/s (on the dev server, tests may override it with window.__runSpeed). */
 export const runSpeed = (): number => (import.meta.env.DEV && typeof window !== 'undefined' ? (window as unknown as { __runSpeed?: number }).__runSpeed : undefined) ?? RUN_SPEED;
@@ -221,9 +223,15 @@ export class PieceView {
     this.segments = buildAnimal(speciesFor(piece), this.bodyLen);
     for (const seg of this.segments) this.group.add(seg);
 
-    // Colored plate under each cell, following the path, so the whole animal reads as one color.
+    // Plate under each cell, following the path: Classic 3D in the animal's colour so the whole animal reads as one
+    // colour; 2.5D cards as a neutral shadow pad (the pictures carry the identity, the gate and the V keep the colour).
+    const cards = this.segments[0]?.userData.spriteCards === true;
+    const plateMaterial = (): THREE.Material =>
+      cards
+        ? new THREE.MeshStandardMaterial({ color: CARD_PLATE.color, transparent: true, opacity: CARD_PLATE.opacity, roughness: 1 })
+        : new THREE.MeshStandardMaterial({ color: lit });
     for (let i = 0; i < this.bodyLen; i++) {
-      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color: lit }));
+      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), plateMaterial());
       this.plates.push(plate);
       this.markers.push(plate);
       this.group.add(plate);
