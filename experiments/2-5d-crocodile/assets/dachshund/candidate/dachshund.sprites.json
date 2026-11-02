@@ -1,6 +1,6 @@
 {
   "species": "dachshund",
-  "note": "candidate: parts cut from received-v2 sheets by tools/dachshund_import.py into the standard frame, ends flattened to join into one dog; 270 mirrors 90, diagonals use the nearest",
+  "note": "candidate: whole-body pictures (received-v3, one per heading, 58\u00b0 camera) split per cell by tools/dachshund_full_import.py; 270 mirrors 90, diagonals use the nearest",
   "frame": {
     "size": 1024,
     "cellPx": 512,
