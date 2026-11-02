@@ -31,8 +31,7 @@ TWO = {'tail_000': 'head_000'}
 EDITS = {
     'snake': {'head_180': {'extend': 500}, 'body_000': {'extend': 535}, 'body_180': {'extend': 535}, 'tail_000': {'extend': 535}},
     'caterpillar': {'head_180': {'extend': 590}, 'body_000': {'extend': 530}, 'body_180': {'extend': 530}, 'tail_000': {'extend': 530}},
-    'dachshund': {'head_180': {'extend': 588}, 'body_000': {'extend': 560, 'lid': True}, 'body_180': {'extend': 560, 'lid': True},
-                  'tail_000': {'extend': 530, 'lid': True}},
+    # dachshund: no longer here — its approved pictures are cut from whole-body renders (tools/dachshund_full_import.py)
     # 2-cell head_180 is left as is: its bottom already sits >= 99% behind the 180° tail
     # husky: the band sits above the white cut face (from row ~430), which then goes behind the head like the legs
     **{sp: {'tail_000': {'extend': band}, 'head_090': {'legs': True}}

@@ -9,3 +9,7 @@
   이웃 카드가 코너로 옮겨 간 몇 프레임 동안 노출됨.
 
 `?art=candidate`로만 표시되며 기본 에셋 승격 전까지 승인된 다른 동물과 무관합니다.
+
+- **v4 (승인, 2026-11-02)** — v3 9장 + 코너 조각 2장(`received-v3/dachshund_elbow_sheet.png`)을 `approved/`로 승격하고
+  기본 매니페스트가 이를 사용합니다(`joints`로 회전 중 코너 칸을 채움, `spriteCards.ts`). `received/`의 원래 부품 그림은
+  보존만 되고 쓰이지 않습니다.

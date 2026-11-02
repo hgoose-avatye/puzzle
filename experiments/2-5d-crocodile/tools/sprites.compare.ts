@@ -214,7 +214,7 @@ describe('batch 2 visual offsets (tail 0°, head 180°): anchor = real feet, off
   });
 });
 
-describe('batch 3 (3 cells: snake, caterpillar, dachshund), provisional manifests on received/ pictures', () => {
+describe('batch 3 (3 cells): snake and caterpillar on provisional received/ manifests, dachshund on its approved whole-body cuts', () => {
   const load = (sp: string) => JSON.parse(readFileSync(new URL(`../assets/${sp}/${sp}.sprites.json`, import.meta.url), 'utf8')) as SpeciesSprites;
   const shift = (m: SpeciesSprites, part: 'head' | 'body' | 'tail', deg: number) => {
     const pick = nearestSprite(m, part, deg)!;
@@ -253,11 +253,12 @@ describe('batch 3 (3 cells: snake, caterpillar, dachshund), provisional manifest
     });
   }
 
-  it('dachshund: the legless body stands on the head/tail body line (anchor y 560 at every heading), still look kept at 0/180', () => {
+  it('dachshund (approved 2026-11-02): standard frame, no per-picture anchors or offsets, two corner pieces present', () => {
     const m = load('dachshund');
-    for (const pic of Object.values(m.parts.body!.drawn)) expect(typeof pic === 'object' && pic.anchor).toEqual([512, 560]);
-    // body raised 50 px; its 0/180 joining offsets grew by the same 50, so the standing 0°/180° picture does not move
-    expect(560 - shift(m, 'body', 0)).toBe(510 - 80);
-    expect(560 - shift(m, 'body', 180)).toBe(510 - 169);
+    expect(m.frame).toEqual({ size: 1024, cellPx: 512, anchor: [512, 640] });
+    expect(m.tuck).toBe(0);
+    for (const part of ['head', 'body', 'tail'] as const) for (const pic of Object.values(m.parts[part]!.drawn)) expect(typeof pic).toBe('string');
+    expect(m.joints && Object.keys(m.joints).sort()).toEqual(['downRight', 'upRight']);
+    for (const f of Object.values(m.joints!)) expect(existsSync(new URL(`../assets/dachshund/${f}`, import.meta.url)), f).toBe(true);
   });
 });
