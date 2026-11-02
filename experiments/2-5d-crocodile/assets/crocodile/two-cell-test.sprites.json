@@ -1,0 +1,33 @@
+{
+  "species": "two-cell-test",
+  "note": "compatibility test only: a 2-cell animal built from the approved crocodile head and tail (no new art, not a real species)",
+  "frame": {
+    "size": 1024,
+    "cellPx": 512,
+    "anchor": [
+      512,
+      640
+    ]
+  },
+  "scale": 1.2,
+  "parts": {
+    "head": {
+      "drawn": {
+        "0": "head-approved/crocodile_head_000.png",
+        "45": "head-approved/crocodile_head_045.png",
+        "90": "head-approved/crocodile_head_090.png",
+        "135": "head-approved/crocodile_head_135.png",
+        "180": "head-approved/crocodile_head_180.png"
+      }
+    },
+    "tail": {
+      "drawn": {
+        "0": "tail-approved/crocodile_tail_000.png",
+        "45": "tail-approved/crocodile_tail_045.png",
+        "90": "tail-approved/crocodile_tail_090.png",
+        "135": "tail-approved/crocodile_tail_135.png",
+        "180": "tail-approved/crocodile_tail_180.png"
+      }
+    }
+  }
+}

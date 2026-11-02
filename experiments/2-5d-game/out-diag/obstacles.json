@@ -1,0 +1,282 @@
+{
+ "levels": [
+  {
+   "lv": 47,
+   "n": 3
+  },
+  {
+   "lv": 49,
+   "n": 3
+  },
+  {
+   "lv": 51,
+   "n": 3
+  },
+  {
+   "lv": 53,
+   "n": 3
+  },
+  {
+   "lv": 57,
+   "n": 3
+  },
+  {
+   "lv": 59,
+   "n": 3
+  },
+  {
+   "lv": 21,
+   "n": 2
+  },
+  {
+   "lv": 23,
+   "n": 2
+  },
+  {
+   "lv": 27,
+   "n": 2
+  },
+  {
+   "lv": 29,
+   "n": 2
+  },
+  {
+   "lv": 37,
+   "n": 2
+  },
+  {
+   "lv": 39,
+   "n": 2
+  },
+  {
+   "lv": 41,
+   "n": 2
+  },
+  {
+   "lv": 43,
+   "n": 2
+  },
+  {
+   "lv": 11,
+   "n": 1
+  },
+  {
+   "lv": 13,
+   "n": 1
+  },
+  {
+   "lv": 17,
+   "n": 1
+  },
+  {
+   "lv": 19,
+   "n": 1
+  },
+  {
+   "lv": 31,
+   "n": 1
+  },
+  {
+   "lv": 33,
+   "n": 1
+  },
+  {
+   "lv": 67,
+   "n": 1
+  },
+  {
+   "lv": 69,
+   "n": 1
+  },
+  {
+   "lv": 71,
+   "n": 1
+  },
+  {
+   "lv": 73,
+   "n": 1
+  },
+  {
+   "lv": 77,
+   "n": 1
+  },
+  {
+   "lv": 79,
+   "n": 1
+  },
+  {
+   "lv": 81,
+   "n": 1
+  },
+  {
+   "lv": 83,
+   "n": 1
+  },
+  {
+   "lv": 87,
+   "n": 1
+  },
+  {
+   "lv": 89,
+   "n": 1
+  },
+  {
+   "lv": 97,
+   "n": 1
+  },
+  {
+   "lv": 99,
+   "n": 1
+  },
+  {
+   "lv": 101,
+   "n": 1
+  },
+  {
+   "lv": 103,
+   "n": 1
+  },
+  {
+   "lv": 107,
+   "n": 1
+  },
+  {
+   "lv": 109,
+   "n": 1
+  },
+  {
+   "lv": 111,
+   "n": 1
+  },
+  {
+   "lv": 113,
+   "n": 1
+  },
+  {
+   "lv": 117,
+   "n": 1
+  },
+  {
+   "lv": 119,
+   "n": 1
+  },
+  {
+   "lv": 127,
+   "n": 1
+  },
+  {
+   "lv": 129,
+   "n": 1
+  },
+  {
+   "lv": 131,
+   "n": 1
+  },
+  {
+   "lv": 133,
+   "n": 1
+  },
+  {
+   "lv": 137,
+   "n": 1
+  },
+  {
+   "lv": 139,
+   "n": 1
+  },
+  {
+   "lv": 141,
+   "n": 1
+  },
+  {
+   "lv": 143,
+   "n": 1
+  },
+  {
+   "lv": 147,
+   "n": 1
+  },
+  {
+   "lv": 149,
+   "n": 1
+  },
+  {
+   "lv": 157,
+   "n": 1
+  },
+  {
+   "lv": 159,
+   "n": 1
+  },
+  {
+   "lv": 161,
+   "n": 1
+  },
+  {
+   "lv": 163,
+   "n": 1
+  },
+  {
+   "lv": 167,
+   "n": 1
+  },
+  {
+   "lv": 169,
+   "n": 1
+  },
+  {
+   "lv": 171,
+   "n": 1
+  },
+  {
+   "lv": 173,
+   "n": 1
+  },
+  {
+   "lv": 177,
+   "n": 1
+  },
+  {
+   "lv": 179,
+   "n": 1
+  }
+ ],
+ "depth": {
+  "47 A": {
+   "rays": 20467,
+   "cardOverObstacleInFront": 0,
+   "obstacleBehindOverCard": 0,
+   "cardVsObstacle": 4
+  },
+  "47 C": {
+   "rays": 20467,
+   "cardOverObstacleInFront": 0,
+   "obstacleBehindOverCard": 0,
+   "cardVsObstacle": 3
+  },
+  "49 A": {
+   "rays": 20467,
+   "cardOverObstacleInFront": 0,
+   "obstacleBehindOverCard": 0,
+   "cardVsObstacle": 0
+  },
+  "49 C": {
+   "rays": 20467,
+   "cardOverObstacleInFront": 0,
+   "obstacleBehindOverCard": 0,
+   "cardVsObstacle": 0
+  },
+  "51 A": {
+   "rays": 20467,
+   "cardOverObstacleInFront": 0,
+   "obstacleBehindOverCard": 0,
+   "cardVsObstacle": 10
+  },
+  "51 C": {
+   "rays": 20467,
+   "cardOverObstacleInFront": 0,
+   "obstacleBehindOverCard": 0,
+   "cardVsObstacle": 13
+  }
+ }
+}

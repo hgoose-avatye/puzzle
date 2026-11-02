@@ -1,0 +1,39 @@
+{
+  "species": "penguin",
+  "frame": {
+    "size": 1024,
+    "cellPx": 512,
+    "anchor": [
+      512,
+      640
+    ]
+  },
+  "scale": 1.2,
+  "parts": {
+    "single": {
+      "drawn": {
+        "0": {
+          "file": "approved/penguin_single_000.png",
+          "anchor": [
+            512,
+            509
+          ]
+        },
+        "90": {
+          "file": "approved/penguin_single_090.png",
+          "anchor": [
+            512,
+            509
+          ]
+        },
+        "180": {
+          "file": "approved/penguin_single_180.png",
+          "anchor": [
+            512,
+            509
+          ]
+        }
+      }
+    }
+  }
+}

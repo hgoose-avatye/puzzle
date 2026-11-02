@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>악어 2.5D 실험</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header id="hud">
+      <div class="card"><b>악어 2.5D</b><span id="hearts"></span></div>
+      <span class="tag">임시 스프라이트</span>
+      <button id="reset" type="button">다시</button>
+    </header>
+    <canvas id="board" aria-label="퍼즐 보드: 동물을 누르면 문 쪽으로 달려 나가요"></canvas>
+    <section id="panel">
+      <p id="msg"></p>
+      <p id="note"></p>
+      <div id="scenes"></div>
+      <div class="opts">
+        <label>방향 <select id="dirs"><option value="8">8</option><option value="16">16</option><option value="32">32</option></select></label>
+        <label><input id="blend" type="checkbox" /> 프레임 섞기</label>
+        <label><input id="slow" type="checkbox" /> 느리게</label>
+      </div>
+    </section>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

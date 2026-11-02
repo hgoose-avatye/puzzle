@@ -1,0 +1,3 @@
+# Auto-generated capture frames (regenerable; full copy in the external experiments tar backup).
+# Only the PNGs are ignored: GIFs, measurement JSON and reports under out*/ stay tracked.
+*/out*/**/*.png

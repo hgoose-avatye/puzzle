@@ -1,0 +1,106 @@
+{
+  "species": "dachshund",
+  "frame": {
+    "size": 1024,
+    "cellPx": 512,
+    "anchor": [
+      512,
+      640
+    ]
+  },
+  "scale": 1.2,
+  "tuck": 0,
+  "parts": {
+    "head": {
+      "drawn": {
+        "0": {
+          "file": "received/dachshund_head_000.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "90": {
+          "file": "received/dachshund_head_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "180": {
+          "file": "received/dachshund_head_180.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            530
+          ]
+        }
+      }
+    },
+    "body": {
+      "drawn": {
+        "0": {
+          "file": "received/dachshund_body_000.png",
+          "anchor": [
+            512,
+            560
+          ],
+          "offset": [
+            0,
+            130
+          ]
+        },
+        "90": {
+          "file": "received/dachshund_body_090.png",
+          "anchor": [
+            512,
+            560
+          ]
+        },
+        "180": {
+          "file": "received/dachshund_body_180.png",
+          "anchor": [
+            512,
+            560
+          ],
+          "offset": [
+            0,
+            219
+          ]
+        }
+      }
+    },
+    "tail": {
+      "drawn": {
+        "0": {
+          "file": "received/dachshund_tail_000.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            386
+          ]
+        },
+        "90": {
+          "file": "received/dachshund_tail_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "180": {
+          "file": "received/dachshund_tail_180.png",
+          "anchor": [
+            512,
+            510
+          ]
+        }
+      }
+    }
+  }
+}

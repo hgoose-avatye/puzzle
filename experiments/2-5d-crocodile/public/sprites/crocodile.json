@@ -1,0 +1,10 @@
+{
+ "frames": 32,
+ "frame": 300,
+ "ppu": 150,
+ "anchor": [
+  150,
+  196
+ ],
+ "temporary": true
+}

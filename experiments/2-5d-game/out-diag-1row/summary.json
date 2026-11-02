@@ -1,0 +1,4451 @@
+{
+ "chick-A": {
+  "cards": [
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_back.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.132,
+    "w": 1.14,
+    "cell_px": 41.1,
+    "feet_dy": 0.351,
+    "centre_dx": 0.069,
+    "buried": 0.139,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_front.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.042,
+    "w": 1.221,
+    "cell_px": 41.1,
+    "feet_dy": 0.347,
+    "centre_dx": 0.199,
+    "buried": 0.05,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_side_right.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 270,
+    "mirror": false,
+    "h": 1.059,
+    "w": 1.099,
+    "cell_px": 41.1,
+    "feet_dy": 0.346,
+    "centre_dx": 0.114,
+    "buried": 0.17,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_side_right.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 270,
+    "mirror": true,
+    "h": 1.058,
+    "w": 1.099,
+    "cell_px": 41.1,
+    "feet_dy": 0.357,
+    "centre_dx": 0.119,
+    "buried": 0.218,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "chick-B": {
+  "cards": [
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_back.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.135,
+    "w": 1.143,
+    "cell_px": 41.1,
+    "feet_dy": 0.297,
+    "centre_dx": 0.078,
+    "buried": 0.133,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_front.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.044,
+    "w": 1.223,
+    "cell_px": 41.1,
+    "feet_dy": 0.314,
+    "centre_dx": 0.205,
+    "buried": 0.126,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_side_right.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 270,
+    "mirror": false,
+    "h": 1.061,
+    "w": 1.102,
+    "cell_px": 41.1,
+    "feet_dy": 0.301,
+    "centre_dx": 0.113,
+    "buried": 0.283,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_side_right.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 270,
+    "mirror": true,
+    "h": 1.061,
+    "w": 1.102,
+    "cell_px": 41.1,
+    "feet_dy": 0.296,
+    "centre_dx": 0.114,
+    "buried": 0.278,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "chick-C": {
+  "cards": [
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_back.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.135,
+    "w": 1.143,
+    "cell_px": 41.1,
+    "feet_dy": 0.297,
+    "centre_dx": 0.078,
+    "buried": 0.012,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_front.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.045,
+    "w": 1.224,
+    "cell_px": 41.1,
+    "feet_dy": 0.3,
+    "centre_dx": 0.204,
+    "buried": 0.015,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_side_right.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 270,
+    "mirror": false,
+    "h": 1.061,
+    "w": 1.102,
+    "cell_px": 41.1,
+    "feet_dy": 0.297,
+    "centre_dx": 0.113,
+    "buried": 0.012,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "chick",
+    "part": "single",
+    "file": "chick_side_right.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 270,
+    "mirror": true,
+    "h": 1.061,
+    "w": 1.101,
+    "cell_px": 41.1,
+    "feet_dy": 0.311,
+    "centre_dx": 0.112,
+    "buried": 0.014,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "crocodile-A": {
+  "cards": [
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "crocodile_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.297,
+    "w": 1.051,
+    "cell_px": 21.5,
+    "feet_dy": 0.478,
+    "centre_dx": -0.049,
+    "buried": -0.1,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "crocodile_body_000.png",
+    "row": null,
+    "deg": 180,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.234,
+    "w": 1.105,
+    "cell_px": 21.7,
+    "feet_dy": 0.479,
+    "centre_dx": -0.052,
+    "buried": -0.109,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "crocodile_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.065,
+    "w": 0.775,
+    "cell_px": 21.9,
+    "feet_dy": 0.394,
+    "centre_dx": -0.052,
+    "buried": 0.016,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "crocodile_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.346,
+    "w": 1.107,
+    "cell_px": 21.9,
+    "feet_dy": 0.473,
+    "centre_dx": -0.024,
+    "buried": 0.026,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "crocodile_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.234,
+    "w": 1.105,
+    "cell_px": 21.7,
+    "feet_dy": 0.471,
+    "centre_dx": -0.025,
+    "buried": -0.094,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "crocodile_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.117,
+    "w": 0.775,
+    "cell_px": 21.5,
+    "feet_dy": 0.388,
+    "centre_dx": -0.025,
+    "buried": -0.098,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "crocodile_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.171,
+    "w": 1.33,
+    "cell_px": 21.5,
+    "feet_dy": 0.46,
+    "centre_dx": -0.039,
+    "buried": 0.021,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "crocodile_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.962,
+    "w": 1.243,
+    "cell_px": 21.5,
+    "feet_dy": 0.402,
+    "centre_dx": 0.014,
+    "buried": 0.033,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "crocodile_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.871,
+    "w": 1.213,
+    "cell_px": 21.5,
+    "feet_dy": 0.385,
+    "centre_dx": 0.015,
+    "buried": 0.039,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "crocodile_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.171,
+    "w": 1.33,
+    "cell_px": 21.5,
+    "feet_dy": 0.467,
+    "centre_dx": 0.088,
+    "buried": 0.028,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "crocodile_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.962,
+    "w": 1.243,
+    "cell_px": 21.5,
+    "feet_dy": 0.401,
+    "centre_dx": 0.036,
+    "buried": 0.008,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "crocodile_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.871,
+    "w": 1.213,
+    "cell_px": 21.5,
+    "feet_dy": 0.376,
+    "centre_dx": 0.035,
+    "buried": 0.03,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "crocodile",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.218,
+     17.358,
+     17.427
+    ],
+    "bottom": [
+     18.309,
+     18.309,
+     18.263
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "crocodile-B": {
+  "cards": [
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.298,
+    "w": 1.052,
+    "cell_px": 21.5,
+    "feet_dy": 0.439,
+    "centre_dx": 0.003,
+    "buried": -0.093,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_000.png",
+    "row": null,
+    "deg": 180,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.235,
+    "w": 1.106,
+    "cell_px": 21.7,
+    "feet_dy": 0.436,
+    "centre_dx": 0.001,
+    "buried": -0.106,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.066,
+    "w": 0.776,
+    "cell_px": 21.9,
+    "feet_dy": 0.346,
+    "centre_dx": 0.001,
+    "buried": 0.379,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.347,
+    "w": 1.108,
+    "cell_px": 21.9,
+    "feet_dy": 0.437,
+    "centre_dx": 0.002,
+    "buried": 0.469,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.235,
+    "w": 1.106,
+    "cell_px": 21.7,
+    "feet_dy": 0.432,
+    "centre_dx": 0.0,
+    "buried": -0.11,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.118,
+    "w": 0.776,
+    "cell_px": 21.5,
+    "feet_dy": 0.341,
+    "centre_dx": -0.001,
+    "buried": -0.098,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.172,
+    "w": 1.331,
+    "cell_px": 21.5,
+    "feet_dy": 0.438,
+    "centre_dx": -0.042,
+    "buried": 0.278,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.963,
+    "w": 1.244,
+    "cell_px": 21.5,
+    "feet_dy": 0.373,
+    "centre_dx": 0.003,
+    "buried": 0.398,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.872,
+    "w": 1.214,
+    "cell_px": 21.5,
+    "feet_dy": 0.343,
+    "centre_dx": -0.002,
+    "buried": 0.368,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.172,
+    "w": 1.331,
+    "cell_px": 21.5,
+    "feet_dy": 0.426,
+    "centre_dx": 0.043,
+    "buried": 0.428,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.963,
+    "w": 1.245,
+    "cell_px": 21.5,
+    "feet_dy": 0.36,
+    "centre_dx": -0.003,
+    "buried": 0.362,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.872,
+    "w": 1.214,
+    "cell_px": 21.5,
+    "feet_dy": 0.335,
+    "centre_dx": 0.003,
+    "buried": 0.337,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "crocodile",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.172,
+     17.311,
+     17.404
+    ],
+    "bottom": [
+     17.891,
+     17.915,
+     17.915
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "crocodile-C": {
+  "cards": [
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.299,
+    "w": 1.053,
+    "cell_px": 21.5,
+    "feet_dy": 0.419,
+    "centre_dx": -0.0,
+    "buried": -0.113,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_000.png",
+    "row": null,
+    "deg": 180,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.235,
+    "w": 1.106,
+    "cell_px": 21.7,
+    "feet_dy": 0.421,
+    "centre_dx": -0.001,
+    "buried": -0.098,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.066,
+    "w": 0.776,
+    "cell_px": 21.9,
+    "feet_dy": 0.342,
+    "centre_dx": 0.001,
+    "buried": 0.032,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.347,
+    "w": 1.108,
+    "cell_px": 21.9,
+    "feet_dy": 0.437,
+    "centre_dx": 0.002,
+    "buried": 0.013,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.235,
+    "w": 1.106,
+    "cell_px": 21.7,
+    "feet_dy": 0.433,
+    "centre_dx": 0.0,
+    "buried": -0.109,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.118,
+    "w": 0.776,
+    "cell_px": 21.5,
+    "feet_dy": 0.342,
+    "centre_dx": -0.001,
+    "buried": -0.097,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.172,
+    "w": 1.331,
+    "cell_px": 21.5,
+    "feet_dy": 0.435,
+    "centre_dx": -0.042,
+    "buried": 0.019,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.963,
+    "w": 1.244,
+    "cell_px": 21.5,
+    "feet_dy": 0.378,
+    "centre_dx": 0.003,
+    "buried": 0.031,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.872,
+    "w": 1.214,
+    "cell_px": 21.5,
+    "feet_dy": 0.353,
+    "centre_dx": -0.003,
+    "buried": 0.03,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "crocodile",
+    "part": "head",
+    "file": "head-approved/crocodile_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.172,
+    "w": 1.332,
+    "cell_px": 21.5,
+    "feet_dy": 0.42,
+    "centre_dx": 0.044,
+    "buried": 0.027,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "crocodile",
+    "part": "body",
+    "file": "body-approved/crocodile_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.963,
+    "w": 1.245,
+    "cell_px": 21.5,
+    "feet_dy": 0.363,
+    "centre_dx": -0.003,
+    "buried": 0.016,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "crocodile",
+    "part": "tail",
+    "file": "tail-approved/crocodile_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.872,
+    "w": 1.214,
+    "cell_px": 21.5,
+    "feet_dy": 0.346,
+    "centre_dx": 0.002,
+    "buried": 0.023,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "crocodile",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.172,
+     17.311,
+     17.404
+    ],
+    "bottom": [
+     18.263,
+     18.263,
+     18.216
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "dachshund-A": {
+  "cards": [
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "dachshund_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.037,
+    "w": 1.269,
+    "cell_px": 21.5,
+    "feet_dy": 1.577,
+    "centre_dx": -0.156,
+    "buried": -0.115,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "dachshund_body_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.763,
+    "w": 1.023,
+    "cell_px": 21.7,
+    "feet_dy": 0.756,
+    "centre_dx": -0.099,
+    "buried": -0.109,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "dachshund_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.948,
+    "w": 0.927,
+    "cell_px": 21.9,
+    "feet_dy": 0.366,
+    "centre_dx": -0.074,
+    "buried": 0.033,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "dachshund_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.058,
+    "w": 1.304,
+    "cell_px": 21.9,
+    "feet_dy": 0.366,
+    "centre_dx": -0.033,
+    "buried": 0.033,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "dachshund_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.756,
+    "w": 1.063,
+    "cell_px": 21.7,
+    "feet_dy": 0.535,
+    "centre_dx": -0.039,
+    "buried": -0.099,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "dachshund_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.892,
+    "w": 0.92,
+    "cell_px": 21.5,
+    "feet_dy": 1.227,
+    "centre_dx": -0.063,
+    "buried": -0.094,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "dachshund_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.058,
+    "w": 1.112,
+    "cell_px": 21.5,
+    "feet_dy": 0.345,
+    "centre_dx": 0.004,
+    "buried": 0.022,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "dachshund_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.728,
+    "w": 1.236,
+    "cell_px": 21.5,
+    "feet_dy": 0.219,
+    "centre_dx": 0.013,
+    "buried": 0.035,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "dachshund_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.962,
+    "w": 1.199,
+    "cell_px": 21.5,
+    "feet_dy": 0.344,
+    "centre_dx": 0.025,
+    "buried": 0.021,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "dachshund_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.058,
+    "w": 1.112,
+    "cell_px": 21.5,
+    "feet_dy": 0.351,
+    "centre_dx": 0.064,
+    "buried": 0.028,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "dachshund_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.728,
+    "w": 1.236,
+    "cell_px": 21.5,
+    "feet_dy": 0.222,
+    "centre_dx": 0.048,
+    "buried": 0.015,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "dachshund_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.962,
+    "w": 1.199,
+    "cell_px": 21.5,
+    "feet_dy": 0.343,
+    "centre_dx": 0.045,
+    "buried": 0.02,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "dachshund",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.218,
+     17.427,
+     17.427
+    ],
+    "bottom": [
+     18.24,
+     18.123,
+     18.24
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "dachshund-B": {
+  "cards": [
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.038,
+    "w": 1.27,
+    "cell_px": 21.5,
+    "feet_dy": 1.557,
+    "centre_dx": 0.003,
+    "buried": -0.112,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.764,
+    "w": 1.024,
+    "cell_px": 21.7,
+    "feet_dy": 0.704,
+    "centre_dx": 0.001,
+    "buried": -0.114,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.949,
+    "w": 0.928,
+    "cell_px": 21.9,
+    "feet_dy": 0.303,
+    "centre_dx": -0.001,
+    "buried": 0.312,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.06,
+    "w": 1.306,
+    "cell_px": 21.9,
+    "feet_dy": 0.304,
+    "centre_dx": 0.001,
+    "buried": 0.291,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.757,
+    "w": 1.064,
+    "cell_px": 21.7,
+    "feet_dy": 0.487,
+    "centre_dx": 0.002,
+    "buried": -0.101,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.893,
+    "w": 0.921,
+    "cell_px": 21.5,
+    "feet_dy": 1.207,
+    "centre_dx": 0.001,
+    "buried": -0.113,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.059,
+    "w": 1.113,
+    "cell_px": 21.5,
+    "feet_dy": 0.319,
+    "centre_dx": -0.001,
+    "buried": 0.344,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.729,
+    "w": 1.237,
+    "cell_px": 21.5,
+    "feet_dy": 0.199,
+    "centre_dx": -0.0,
+    "buried": 0.247,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.963,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.325,
+    "centre_dx": -0.001,
+    "buried": 0.374,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.06,
+    "w": 1.113,
+    "cell_px": 21.5,
+    "feet_dy": 0.308,
+    "centre_dx": 0.002,
+    "buried": 0.31,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.729,
+    "w": 1.238,
+    "cell_px": 21.5,
+    "feet_dy": 0.18,
+    "centre_dx": 0.001,
+    "buried": 0.182,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.963,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.308,
+    "centre_dx": 0.001,
+    "buried": 0.286,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "dachshund",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.172,
+     17.381,
+     17.381
+    ],
+    "bottom": [
+     17.915,
+     17.915,
+     17.938
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "dachshund-C": {
+  "cards": [
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.038,
+    "w": 1.27,
+    "cell_px": 21.5,
+    "feet_dy": 1.56,
+    "centre_dx": 0.004,
+    "buried": -0.109,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.764,
+    "w": 1.024,
+    "cell_px": 21.7,
+    "feet_dy": 0.708,
+    "centre_dx": 0.002,
+    "buried": -0.11,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.949,
+    "w": 0.928,
+    "cell_px": 21.9,
+    "feet_dy": 0.306,
+    "centre_dx": -0.001,
+    "buried": 0.018,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.06,
+    "w": 1.306,
+    "cell_px": 21.9,
+    "feet_dy": 0.303,
+    "centre_dx": 0.0,
+    "buried": 0.016,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.757,
+    "w": 1.064,
+    "cell_px": 21.7,
+    "feet_dy": 0.488,
+    "centre_dx": 0.002,
+    "buried": -0.1,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.893,
+    "w": 0.921,
+    "cell_px": 21.5,
+    "feet_dy": 1.209,
+    "centre_dx": 0.001,
+    "buried": -0.112,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.059,
+    "w": 1.113,
+    "cell_px": 21.5,
+    "feet_dy": 0.324,
+    "centre_dx": -0.001,
+    "buried": 0.024,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.729,
+    "w": 1.237,
+    "cell_px": 21.5,
+    "feet_dy": 0.198,
+    "centre_dx": -0.0,
+    "buried": 0.014,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.963,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.318,
+    "centre_dx": -0.0,
+    "buried": 0.019,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "dachshund",
+    "part": "head",
+    "file": "received/dachshund_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.059,
+    "w": 1.113,
+    "cell_px": 21.5,
+    "feet_dy": 0.322,
+    "centre_dx": 0.0,
+    "buried": 0.022,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "dachshund",
+    "part": "body",
+    "file": "received/dachshund_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.729,
+    "w": 1.237,
+    "cell_px": 21.5,
+    "feet_dy": 0.2,
+    "centre_dx": -0.001,
+    "buried": 0.016,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "dachshund",
+    "part": "tail",
+    "file": "received/dachshund_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.963,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.324,
+    "centre_dx": -0.001,
+    "buried": 0.024,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "dachshund",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.172,
+     17.381,
+     17.404
+    ],
+    "bottom": [
+     18.216,
+     18.1,
+     18.216
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "husky-A": {
+  "cards": [
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "husky_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.151,
+    "w": 1.095,
+    "cell_px": 28.3,
+    "feet_dy": 0.501,
+    "centre_dx": -0.085,
+    "buried": -0.072,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -5.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "husky_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.339,
+    "w": 1.1,
+    "cell_px": 28.6,
+    "feet_dy": 0.352,
+    "centre_dx": -0.069,
+    "buried": 0.011,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -5.5,
+     0
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "husky_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.153,
+    "w": 1.083,
+    "cell_px": 28.6,
+    "feet_dy": 0.362,
+    "centre_dx": -0.031,
+    "buried": 0.021,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -2.5,
+     0
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "husky_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.2,
+    "w": 1.1,
+    "cell_px": 28.3,
+    "feet_dy": 1.048,
+    "centre_dx": -0.051,
+    "buried": -0.072,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -2.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "husky_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.156,
+    "w": 1.121,
+    "cell_px": 28.3,
+    "feet_dy": 0.18,
+    "centre_dx": 0.005,
+    "buried": 0.014,
+    "y_screen": 386.8022953936071,
+    "block": [
+     0.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "husky_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.067,
+    "w": 1.266,
+    "cell_px": 28.3,
+    "feet_dy": 0.353,
+    "centre_dx": 0.018,
+    "buried": 0.028,
+    "y_screen": 386.8022953936071,
+    "block": [
+     1.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "husky_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.156,
+    "w": 1.121,
+    "cell_px": 28.3,
+    "feet_dy": 0.173,
+    "centre_dx": 0.059,
+    "buried": 0.006,
+    "y_screen": 386.8022953936071,
+    "block": [
+     4.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "husky_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.067,
+    "w": 1.266,
+    "cell_px": 28.3,
+    "feet_dy": 0.336,
+    "centre_dx": 0.047,
+    "buried": 0.01,
+    "y_screen": 386.8022953936071,
+    "block": [
+     3.5,
+     -1
+    ],
+    "index": 1
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "husky",
+    "parts": [
+     "head",
+     "tail"
+    ],
+    "top": [
+     12.694,
+     13.118
+    ],
+    "bottom": [
+     13.843,
+     14.002
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "husky-B": {
+  "cards": [
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.153,
+    "w": 1.097,
+    "cell_px": 28.3,
+    "feet_dy": 0.468,
+    "centre_dx": 0.001,
+    "buried": -0.087,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -5.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.341,
+    "w": 1.102,
+    "cell_px": 28.6,
+    "feet_dy": 0.304,
+    "centre_dx": 0.002,
+    "buried": 0.314,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -5.5,
+     0
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.156,
+    "w": 1.085,
+    "cell_px": 28.6,
+    "feet_dy": 0.298,
+    "centre_dx": 0.0,
+    "buried": 0.29,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -2.5,
+     0
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.203,
+    "w": 1.102,
+    "cell_px": 28.3,
+    "feet_dy": 1.017,
+    "centre_dx": 0.002,
+    "buried": 0.161,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -2.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.158,
+    "w": 1.123,
+    "cell_px": 28.3,
+    "feet_dy": 0.142,
+    "centre_dx": -0.001,
+    "buried": 0.152,
+    "y_screen": 386.8022953936071,
+    "block": [
+     0.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.068,
+    "w": 1.268,
+    "cell_px": 28.3,
+    "feet_dy": 0.315,
+    "centre_dx": -0.002,
+    "buried": 0.326,
+    "y_screen": 386.8022953936071,
+    "block": [
+     1.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.157,
+    "w": 1.122,
+    "cell_px": 28.3,
+    "feet_dy": 0.148,
+    "centre_dx": -0.0,
+    "buried": 0.176,
+    "y_screen": 386.8022953936071,
+    "block": [
+     4.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.068,
+    "w": 1.268,
+    "cell_px": 28.3,
+    "feet_dy": 0.315,
+    "centre_dx": 0.0,
+    "buried": 0.361,
+    "y_screen": 386.8022953936071,
+    "block": [
+     3.5,
+     -1
+    ],
+    "index": 1
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "husky",
+    "parts": [
+     "head",
+     "tail"
+    ],
+    "top": [
+     12.676,
+     13.065
+    ],
+    "bottom": [
+     13.649,
+     13.631
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "husky-C": {
+  "cards": [
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.153,
+    "w": 1.097,
+    "cell_px": 28.3,
+    "feet_dy": 0.455,
+    "centre_dx": -0.002,
+    "buried": -0.083,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -5.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.341,
+    "w": 1.102,
+    "cell_px": 28.6,
+    "feet_dy": 0.298,
+    "centre_dx": 0.001,
+    "buried": 0.028,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -5.5,
+     0
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.155,
+    "w": 1.085,
+    "cell_px": 28.6,
+    "feet_dy": 0.309,
+    "centre_dx": 0.001,
+    "buried": 0.021,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -2.5,
+     0
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.203,
+    "w": 1.102,
+    "cell_px": 28.3,
+    "feet_dy": 1.017,
+    "centre_dx": 0.002,
+    "buried": -0.086,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -2.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.158,
+    "w": 1.123,
+    "cell_px": 28.3,
+    "feet_dy": 0.129,
+    "centre_dx": -0.001,
+    "buried": 0.016,
+    "y_screen": 386.8022953936071,
+    "block": [
+     0.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.069,
+    "w": 1.268,
+    "cell_px": 28.3,
+    "feet_dy": 0.3,
+    "centre_dx": -0.001,
+    "buried": 0.028,
+    "y_screen": 386.8022953936071,
+    "block": [
+     1.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "husky",
+    "part": "head",
+    "file": "approved/husky_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.158,
+    "w": 1.123,
+    "cell_px": 28.3,
+    "feet_dy": 0.134,
+    "centre_dx": 0.002,
+    "buried": 0.021,
+    "y_screen": 386.8022953936071,
+    "block": [
+     4.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "husky",
+    "part": "tail",
+    "file": "approved/husky_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.069,
+    "w": 1.268,
+    "cell_px": 28.3,
+    "feet_dy": 0.31,
+    "centre_dx": 0.001,
+    "buried": 0.02,
+    "y_screen": 386.8022953936071,
+    "block": [
+     3.5,
+     -1
+    ],
+    "index": 1
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "husky",
+    "parts": [
+     "head",
+     "tail"
+    ],
+    "top": [
+     12.659,
+     13.048
+    ],
+    "bottom": [
+     13.79,
+     13.967
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "parrot-A": {
+  "cards": [
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "parrot_single_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.116,
+    "w": 1.09,
+    "cell_px": 41.1,
+    "feet_dy": 0.339,
+    "centre_dx": -0.065,
+    "buried": 0.006,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "parrot_single_000.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.113,
+    "w": 1.084,
+    "cell_px": 41.1,
+    "feet_dy": 0.354,
+    "centre_dx": -0.025,
+    "buried": 0.008,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "parrot_single_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.141,
+    "w": 0.933,
+    "cell_px": 41.1,
+    "feet_dy": 0.37,
+    "centre_dx": -0.027,
+    "buried": 0.012,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "parrot_single_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.141,
+    "w": 0.933,
+    "cell_px": 41.1,
+    "feet_dy": 0.359,
+    "centre_dx": 0.083,
+    "buried": 0.013,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "parrot-B": {
+  "cards": [
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.118,
+    "w": 1.092,
+    "cell_px": 41.1,
+    "feet_dy": 0.306,
+    "centre_dx": 0.0,
+    "buried": 0.312,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_000.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.116,
+    "w": 1.088,
+    "cell_px": 41.1,
+    "feet_dy": 0.304,
+    "centre_dx": 0.002,
+    "buried": 0.311,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.144,
+    "w": 0.935,
+    "cell_px": 41.1,
+    "feet_dy": 0.326,
+    "centre_dx": -0.036,
+    "buried": 0.333,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.144,
+    "w": 0.936,
+    "cell_px": 41.1,
+    "feet_dy": 0.315,
+    "centre_dx": 0.037,
+    "buried": 0.297,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "parrot-C": {
+  "cards": [
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.118,
+    "w": 1.092,
+    "cell_px": 41.1,
+    "feet_dy": 0.304,
+    "centre_dx": -0.0,
+    "buried": 0.018,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_000.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.115,
+    "w": 1.087,
+    "cell_px": 41.1,
+    "feet_dy": 0.316,
+    "centre_dx": 0.003,
+    "buried": 0.006,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.144,
+    "w": 0.935,
+    "cell_px": 41.1,
+    "feet_dy": 0.325,
+    "centre_dx": -0.036,
+    "buried": 0.015,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "parrot",
+    "part": "single",
+    "file": "approved/parrot_single_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.144,
+    "w": 0.935,
+    "cell_px": 41.1,
+    "feet_dy": 0.326,
+    "centre_dx": 0.036,
+    "buried": 0.004,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "penguin-A": {
+  "cards": [
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "penguin_single_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.094,
+    "w": 1.08,
+    "cell_px": 41.1,
+    "feet_dy": 0.346,
+    "centre_dx": -0.067,
+    "buried": 0.012,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "penguin_single_000.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.103,
+    "w": 1.085,
+    "cell_px": 41.1,
+    "feet_dy": 0.351,
+    "centre_dx": -0.027,
+    "buried": 0.005,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "penguin_single_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.099,
+    "w": 0.853,
+    "cell_px": 41.1,
+    "feet_dy": 0.343,
+    "centre_dx": 0.003,
+    "buried": 0.01,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "penguin_single_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.099,
+    "w": 0.853,
+    "cell_px": 41.1,
+    "feet_dy": 0.335,
+    "centre_dx": 0.052,
+    "buried": 0.014,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "penguin-B": {
+  "cards": [
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.097,
+    "w": 1.083,
+    "cell_px": 41.1,
+    "feet_dy": 0.295,
+    "centre_dx": -0.004,
+    "buried": 0.277,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_000.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.106,
+    "w": 1.088,
+    "cell_px": 41.1,
+    "feet_dy": 0.301,
+    "centre_dx": -0.0,
+    "buried": 0.295,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.101,
+    "w": 0.855,
+    "cell_px": 41.1,
+    "feet_dy": 0.3,
+    "centre_dx": -0.006,
+    "buried": 0.306,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.101,
+    "w": 0.855,
+    "cell_px": 41.1,
+    "feet_dy": 0.305,
+    "centre_dx": 0.005,
+    "buried": 0.323,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "penguin-C": {
+  "cards": [
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.097,
+    "w": 1.083,
+    "cell_px": 41.1,
+    "feet_dy": 0.31,
+    "centre_dx": -0.002,
+    "buried": 0.013,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_000.png",
+    "row": "top",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.106,
+    "w": 1.087,
+    "cell_px": 41.1,
+    "feet_dy": 0.309,
+    "centre_dx": 0.0,
+    "buried": 0.011,
+    "y_screen": 388.26816495888585,
+    "block": [
+     -1.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.102,
+    "w": 0.856,
+    "cell_px": 41.1,
+    "feet_dy": 0.292,
+    "centre_dx": -0.006,
+    "buried": 0.007,
+    "y_screen": 388.26816495888585,
+    "block": [
+     0.5,
+     -0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "penguin",
+    "part": "single",
+    "file": "approved/penguin_single_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.101,
+    "w": 0.855,
+    "cell_px": 41.1,
+    "feet_dy": 0.303,
+    "centre_dx": 0.005,
+    "buried": 0.006,
+    "y_screen": 388.26816495888585,
+    "block": [
+     2.5,
+     -0.5
+    ],
+    "index": 0
+   }
+  ],
+  "joints": []
+ },
+ "snake-A": {
+  "cards": [
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "snake_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.011,
+    "w": 1.028,
+    "cell_px": 21.5,
+    "feet_dy": 1.369,
+    "centre_dx": -0.146,
+    "buried": -0.114,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "snake_body_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.981,
+    "w": 1.056,
+    "cell_px": 21.7,
+    "feet_dy": 0.858,
+    "centre_dx": -0.108,
+    "buried": -0.099,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "snake_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.981,
+    "w": 0.974,
+    "cell_px": 21.9,
+    "feet_dy": 0.367,
+    "centre_dx": -0.073,
+    "buried": 0.034,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "snake_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.004,
+    "w": 1.086,
+    "cell_px": 21.9,
+    "feet_dy": 0.384,
+    "centre_dx": -0.034,
+    "buried": 0.028,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "snake_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.981,
+    "w": 1.063,
+    "cell_px": 21.7,
+    "feet_dy": 0.838,
+    "centre_dx": -0.047,
+    "buried": -0.096,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "snake_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.981,
+    "w": 0.981,
+    "cell_px": 21.5,
+    "feet_dy": 1.323,
+    "centre_dx": -0.065,
+    "buried": -0.114,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "snake_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.974,
+    "w": 1.236,
+    "cell_px": 21.5,
+    "feet_dy": 0.353,
+    "centre_dx": 0.005,
+    "buried": 0.03,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "snake_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.936,
+    "w": 1.13,
+    "cell_px": 21.5,
+    "feet_dy": 0.352,
+    "centre_dx": 0.013,
+    "buried": 0.029,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "snake_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.906,
+    "w": 1.198,
+    "cell_px": 21.5,
+    "feet_dy": 0.348,
+    "centre_dx": 0.024,
+    "buried": 0.025,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "snake_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.974,
+    "w": 1.236,
+    "cell_px": 21.5,
+    "feet_dy": 0.339,
+    "centre_dx": 0.064,
+    "buried": 0.039,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "snake_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.936,
+    "w": 1.131,
+    "cell_px": 21.5,
+    "feet_dy": 0.346,
+    "centre_dx": 0.054,
+    "buried": 0.023,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "snake_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.906,
+    "w": 1.198,
+    "cell_px": 21.5,
+    "feet_dy": 0.351,
+    "centre_dx": 0.043,
+    "buried": 0.028,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "snake",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.288,
+     17.335,
+     17.381
+    ],
+    "bottom": [
+     18.216,
+     18.24,
+     18.24
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "snake-B": {
+  "cards": [
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.013,
+    "w": 1.029,
+    "cell_px": 21.5,
+    "feet_dy": 1.352,
+    "centre_dx": 0.001,
+    "buried": -0.108,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.982,
+    "w": 1.057,
+    "cell_px": 21.7,
+    "feet_dy": 0.82,
+    "centre_dx": 0.002,
+    "buried": 0.002,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.982,
+    "w": 0.975,
+    "cell_px": 21.9,
+    "feet_dy": 0.316,
+    "centre_dx": 0.002,
+    "buried": 0.348,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.005,
+    "w": 1.087,
+    "cell_px": 21.9,
+    "feet_dy": 0.332,
+    "centre_dx": 0.001,
+    "buried": 0.365,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.982,
+    "w": 1.064,
+    "cell_px": 21.7,
+    "feet_dy": 0.796,
+    "centre_dx": 0.003,
+    "buried": -0.022,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.982,
+    "w": 0.982,
+    "cell_px": 21.5,
+    "feet_dy": 1.301,
+    "centre_dx": 0.002,
+    "buried": -0.113,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.975,
+    "w": 1.237,
+    "cell_px": 21.5,
+    "feet_dy": 0.315,
+    "centre_dx": -0.0,
+    "buried": 0.317,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.937,
+    "w": 1.132,
+    "cell_px": 21.5,
+    "feet_dy": 0.317,
+    "centre_dx": -0.002,
+    "buried": 0.365,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.907,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.314,
+    "centre_dx": -0.0,
+    "buried": 0.363,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.975,
+    "w": 1.238,
+    "cell_px": 21.5,
+    "feet_dy": 0.301,
+    "centre_dx": 0.001,
+    "buried": 0.303,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.938,
+    "w": 1.132,
+    "cell_px": 21.5,
+    "feet_dy": 0.297,
+    "centre_dx": 0.002,
+    "buried": 0.299,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.907,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.298,
+    "centre_dx": 0.001,
+    "buried": 0.3,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "snake",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.265,
+     17.288,
+     17.335
+    ],
+    "bottom": [
+     17.915,
+     17.915,
+     17.915
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "snake-C": {
+  "cards": [
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.013,
+    "w": 1.029,
+    "cell_px": 21.5,
+    "feet_dy": 1.351,
+    "centre_dx": 0.001,
+    "buried": -0.109,
+    "y_screen": 386.040767977966,
+    "block": [
+     -7.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.982,
+    "w": 1.057,
+    "cell_px": 21.7,
+    "feet_dy": 0.818,
+    "centre_dx": 0.002,
+    "buried": -0.115,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -7.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 0.982,
+    "w": 0.975,
+    "cell_px": 21.9,
+    "feet_dy": 0.315,
+    "centre_dx": 0.001,
+    "buried": 0.028,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -7.5,
+     0.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.006,
+    "w": 1.088,
+    "cell_px": 21.9,
+    "feet_dy": 0.314,
+    "centre_dx": -0.001,
+    "buried": 0.027,
+    "y_screen": 422.7113457090648,
+    "block": [
+     -3.5,
+     0.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.982,
+    "w": 1.064,
+    "cell_px": 21.7,
+    "feet_dy": 0.78,
+    "centre_dx": 0.002,
+    "buried": -0.107,
+    "y_screen": 404.2338575176246,
+    "block": [
+     -3.5,
+     -0.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 0.982,
+    "w": 0.982,
+    "cell_px": 21.5,
+    "feet_dy": 1.295,
+    "centre_dx": 0.001,
+    "buried": -0.096,
+    "y_screen": 386.040767977966,
+    "block": [
+     -3.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.975,
+    "w": 1.238,
+    "cell_px": 21.5,
+    "feet_dy": 0.298,
+    "centre_dx": 0.0,
+    "buried": 0.022,
+    "y_screen": 386.040767977966,
+    "block": [
+     0.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.938,
+    "w": 1.132,
+    "cell_px": 21.5,
+    "feet_dy": 0.298,
+    "centre_dx": -0.001,
+    "buried": 0.021,
+    "y_screen": 386.040767977966,
+    "block": [
+     1.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 0.907,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.302,
+    "centre_dx": 0.0,
+    "buried": 0.025,
+    "y_screen": 386.040767977966,
+    "block": [
+     2.5,
+     -1.5
+    ],
+    "index": 2
+   },
+   {
+    "species": "snake",
+    "part": "head",
+    "file": "received/snake_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.975,
+    "w": 1.238,
+    "cell_px": 21.5,
+    "feet_dy": 0.302,
+    "centre_dx": 0.001,
+    "buried": 0.026,
+    "y_screen": 386.040767977966,
+    "block": [
+     6.5,
+     -1.5
+    ],
+    "index": 0
+   },
+   {
+    "species": "snake",
+    "part": "body",
+    "file": "received/snake_body_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.937,
+    "w": 1.132,
+    "cell_px": 21.5,
+    "feet_dy": 0.309,
+    "centre_dx": 0.001,
+    "buried": 0.032,
+    "y_screen": 386.040767977966,
+    "block": [
+     5.5,
+     -1.5
+    ],
+    "index": 1
+   },
+   {
+    "species": "snake",
+    "part": "tail",
+    "file": "received/snake_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 0.907,
+    "w": 1.2,
+    "cell_px": 21.5,
+    "feet_dy": 0.315,
+    "centre_dx": -0.001,
+    "buried": 0.038,
+    "y_screen": 386.040767977966,
+    "block": [
+     4.5,
+     -1.5
+    ],
+    "index": 2
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "snake",
+    "parts": [
+     "head",
+     "body",
+     "tail"
+    ],
+    "top": [
+     17.242,
+     17.288,
+     17.335
+    ],
+    "bottom": [
+     18.193,
+     18.193,
+     18.193
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "tiger-A": {
+  "cards": [
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "tiger_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.093,
+    "w": 1.137,
+    "cell_px": 28.3,
+    "feet_dy": 0.532,
+    "centre_dx": -0.085,
+    "buried": -0.076,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -5.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "tiger_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.268,
+    "w": 1.086,
+    "cell_px": 28.6,
+    "feet_dy": 0.356,
+    "centre_dx": -0.071,
+    "buried": 0.015,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -5.5,
+     0
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "tiger_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.114,
+    "w": 1.079,
+    "cell_px": 28.6,
+    "feet_dy": 0.351,
+    "centre_dx": -0.031,
+    "buried": 0.028,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -2.5,
+     0
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "tiger_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.172,
+    "w": 1.081,
+    "cell_px": 28.3,
+    "feet_dy": 0.958,
+    "centre_dx": -0.048,
+    "buried": -0.075,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -2.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "tiger_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.116,
+    "w": 1.2,
+    "cell_px": 28.3,
+    "feet_dy": 0.189,
+    "centre_dx": 0.005,
+    "buried": 0.023,
+    "y_screen": 386.8022953936071,
+    "block": [
+     0.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "tiger_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.027,
+    "w": 1.299,
+    "cell_px": 28.3,
+    "feet_dy": 0.344,
+    "centre_dx": 0.018,
+    "buried": 0.019,
+    "y_screen": 386.8022953936071,
+    "block": [
+     1.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "tiger_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.116,
+    "w": 1.201,
+    "cell_px": 28.3,
+    "feet_dy": 0.175,
+    "centre_dx": 0.06,
+    "buried": 0.009,
+    "y_screen": 386.8022953936071,
+    "block": [
+     4.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "tiger_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.028,
+    "w": 1.299,
+    "cell_px": 28.3,
+    "feet_dy": 0.334,
+    "centre_dx": 0.047,
+    "buried": 0.026,
+    "y_screen": 386.8022953936071,
+    "block": [
+     3.5,
+     -1
+    ],
+    "index": 1
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "tiger",
+    "parts": [
+     "head",
+     "tail"
+    ],
+    "top": [
+     12.747,
+     13.083
+    ],
+    "bottom": [
+     13.843,
+     13.985
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "tiger-B": {
+  "cards": [
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.095,
+    "w": 1.139,
+    "cell_px": 28.3,
+    "feet_dy": 0.489,
+    "centre_dx": 0.002,
+    "buried": -0.084,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -5.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.271,
+    "w": 1.088,
+    "cell_px": 28.6,
+    "feet_dy": 0.299,
+    "centre_dx": -0.001,
+    "buried": 0.308,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -5.5,
+     0
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.116,
+    "w": 1.081,
+    "cell_px": 28.6,
+    "feet_dy": 0.301,
+    "centre_dx": 0.001,
+    "buried": 0.311,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -2.5,
+     0
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.175,
+    "w": 1.083,
+    "cell_px": 28.3,
+    "feet_dy": 0.919,
+    "centre_dx": 0.002,
+    "buried": 0.081,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -2.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.118,
+    "w": 1.202,
+    "cell_px": 28.3,
+    "feet_dy": 0.145,
+    "centre_dx": -0.001,
+    "buried": 0.156,
+    "y_screen": 386.8022953936071,
+    "block": [
+     0.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.029,
+    "w": 1.301,
+    "cell_px": 28.3,
+    "feet_dy": 0.301,
+    "centre_dx": -0.001,
+    "buried": 0.311,
+    "y_screen": 386.8022953936071,
+    "block": [
+     1.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.118,
+    "w": 1.202,
+    "cell_px": 28.3,
+    "feet_dy": 0.153,
+    "centre_dx": 0.0,
+    "buried": 0.164,
+    "y_screen": 386.8022953936071,
+    "block": [
+     4.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.029,
+    "w": 1.301,
+    "cell_px": 28.3,
+    "feet_dy": 0.309,
+    "centre_dx": 0.001,
+    "buried": 0.32,
+    "y_screen": 386.8022953936071,
+    "block": [
+     3.5,
+     -1
+    ],
+    "index": 1
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "tiger",
+    "parts": [
+     "head",
+     "tail"
+    ],
+    "top": [
+     12.712,
+     13.065
+    ],
+    "bottom": [
+     13.649,
+     13.666
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ },
+ "tiger-C": {
+  "cards": [
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_180.png",
+    "row": "top",
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.095,
+    "w": 1.139,
+    "cell_px": 28.3,
+    "feet_dy": 0.484,
+    "centre_dx": 0.001,
+    "buried": -0.088,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -5.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_180.png",
+    "row": null,
+    "deg": 180,
+    "pic": 180,
+    "mirror": false,
+    "h": 1.27,
+    "w": 1.088,
+    "cell_px": 28.6,
+    "feet_dy": 0.305,
+    "centre_dx": -0.0,
+    "buried": 0.017,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -5.5,
+     0
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_000.png",
+    "row": "middle",
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.116,
+    "w": 1.081,
+    "cell_px": 28.6,
+    "feet_dy": 0.298,
+    "centre_dx": 0.0,
+    "buried": 0.01,
+    "y_screen": 410.7712333099785,
+    "block": [
+     -2.5,
+     0
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_000.png",
+    "row": null,
+    "deg": 0,
+    "pic": 0,
+    "mirror": false,
+    "h": 1.174,
+    "w": 1.083,
+    "cell_px": 28.3,
+    "feet_dy": 0.921,
+    "centre_dx": 0.002,
+    "buried": -0.076,
+    "y_screen": 386.8022953936071,
+    "block": [
+     -2.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_090.png",
+    "row": "top",
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.118,
+    "w": 1.203,
+    "cell_px": 28.3,
+    "feet_dy": 0.137,
+    "centre_dx": -0.001,
+    "buried": -0.011,
+    "y_screen": 386.8022953936071,
+    "block": [
+     0.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_090.png",
+    "row": null,
+    "deg": 270,
+    "pic": 90,
+    "mirror": true,
+    "h": 1.029,
+    "w": 1.301,
+    "cell_px": 28.3,
+    "feet_dy": 0.297,
+    "centre_dx": -0.001,
+    "buried": 0.025,
+    "y_screen": 386.8022953936071,
+    "block": [
+     1.5,
+     -1
+    ],
+    "index": 1
+   },
+   {
+    "species": "tiger",
+    "part": "head",
+    "file": "approved/tiger_head_090.png",
+    "row": "top",
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.118,
+    "w": 1.202,
+    "cell_px": 28.3,
+    "feet_dy": 0.147,
+    "centre_dx": 0.001,
+    "buried": -0.072,
+    "y_screen": 386.8022953936071,
+    "block": [
+     4.5,
+     -1
+    ],
+    "index": 0
+   },
+   {
+    "species": "tiger",
+    "part": "tail",
+    "file": "approved/tiger_tail_090.png",
+    "row": null,
+    "deg": 90,
+    "pic": 90,
+    "mirror": false,
+    "h": 1.029,
+    "w": 1.301,
+    "cell_px": 28.3,
+    "feet_dy": 0.302,
+    "centre_dx": 0.002,
+    "buried": 0.012,
+    "y_screen": 386.8022953936071,
+    "block": [
+     3.5,
+     -1
+    ],
+    "index": 1
+   }
+  ],
+  "joints": [
+   {
+    "id": 103,
+    "species": "tiger",
+    "parts": [
+     "head",
+     "tail"
+    ],
+    "top": [
+     12.712,
+     13.065
+    ],
+    "bottom": [
+     13.808,
+     13.967
+    ],
+    "gap_cols_px": 0
+   }
+  ]
+ }
+}

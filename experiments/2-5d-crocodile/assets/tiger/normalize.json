@@ -1,0 +1,11 @@
+{
+ "source": "delivered/<file> (1254 px)",
+ "frame_scale": 0.8656,
+ "normalize": 1.06,
+ "feet_y": 640,
+ "anchor": [
+  512,
+  510
+ ],
+ "note": "start point for this species; later pictures are matched by block width, not blindly by this factor"
+}

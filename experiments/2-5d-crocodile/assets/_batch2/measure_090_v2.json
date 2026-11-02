@@ -1,0 +1,37 @@
+{
+ "cow": {
+  "k": 1.451,
+  "head_len": 1.06,
+  "tail_len": 1.05,
+  "head_body": 347,
+  "tail_body": 303
+ },
+ "pig": {
+  "k": 1.547,
+  "head_len": 1.08,
+  "tail_len": 1.06,
+  "head_body": 367,
+  "tail_body": 326
+ },
+ "fox": {
+  "k": 1.468,
+  "head_len": 1.09,
+  "tail_len": 1.01,
+  "head_body": 343,
+  "tail_body": 301
+ },
+ "tiger": {
+  "k": 1.592,
+  "head_len": 1.12,
+  "tail_len": 1.18,
+  "head_body": 374,
+  "tail_body": 328
+ },
+ "husky": {
+  "k": 1.522,
+  "head_len": 1.03,
+  "tail_len": 1.06,
+  "head_body": 355,
+  "tail_body": 320
+ }
+}
