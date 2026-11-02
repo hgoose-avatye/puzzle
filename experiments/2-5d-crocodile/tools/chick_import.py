@@ -26,6 +26,9 @@ WIDTH_CELLS = 1.02  # the old front cut-out: whole chick (with wings) per cell
 FEET_FORWARD = 0.3  # cells, the old cut-outs' anchor rule (feet in front of the centre)
 SAT_CORE = 0.35  # saturation that is surely chick (yellow, orange, pink)
 SAT_EDGE = (0.15, 0.40)  # ramp for the soft edge pixels blended with the grey ground
+WHITE_EDGE = (209, 215)  # lowest channel: ground ~203-210 → 0, eye white (214-228) → 1
+WARM_EDGE = (8, 16)  # r - b: ground 0-6 → 0, eye white 25-32 → 1
+DARK_EDGE = (120, 80)  # highest channel: ground → 0, pupil → 1
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -57,15 +60,24 @@ def find_chicks(sheet):
     return sorted(row)
 
 
-def cut(sheet, box, margin=8):
-    """One chick as RGBA float (alpha 0..1): alpha from saturation, edge colours un-blended from the ground colour."""
+def cut(sheet, box, margin=24):
+    """One chick as RGBA float (alpha 0..1): alpha from saturation (body), brightness (eye whites) and darkness (pupils)
+    next to the body, edge colours un-blended from the ground colour."""
     x0, y0, x1, y1 = box
     a = sheet[max(0, y0 - margin):y1 + margin, max(0, x0 - margin):x1 + margin].astype(float)
     rgb = a[:, :, :3]
     sat = saturation(rgb)
-    core = ndimage.binary_fill_holes(sat > SAT_CORE)
-    ground = np.median(rgb[sat < 0.08], axis=0)
-    soft = np.clip((sat - SAT_EDGE[0]) / (SAT_EDGE[1] - SAT_EDGE[0]), 0, 1) * ndimage.binary_dilation(core, iterations=3)
+    body = sat > SAT_CORE
+    # the eyes bulge past the yellow silhouette in the side views: white and dark pixels near the body belong to it
+    near = ndimage.binary_dilation(body, iterations=30)
+    # eye white: brighter than the ground and warm (r > b), the ground is neutral grey
+    warm = np.clip((rgb[:, :, 0] - rgb[:, :, 2] - WARM_EDGE[0]) / (WARM_EDGE[1] - WARM_EDGE[0]), 0, 1)
+    white = np.clip((rgb.min(2) - WHITE_EDGE[0]) / (WHITE_EDGE[1] - WHITE_EDGE[0]), 0, 1) * warm * near
+    dark = np.clip((DARK_EDGE[0] - rgb.max(2)) / (DARK_EDGE[0] - DARK_EDGE[1]), 0, 1) * near
+    core = ndimage.binary_fill_holes(body | (white >= 1) | (dark >= 1))
+    ground = np.median(rgb[(sat < 0.08) & ~near], axis=0)
+    soft = np.clip((sat - SAT_EDGE[0]) / (SAT_EDGE[1] - SAT_EDGE[0]), 0, 1)
+    soft = np.maximum.reduce([soft, white, dark]) * ndimage.binary_dilation(core, iterations=3)
     alpha = np.where(core, 1.0, soft)
     k = np.maximum(alpha, 1e-3)[:, :, None]
     unblended = np.clip((rgb - (1 - k) * ground) / k, 0, 255)
