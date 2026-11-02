@@ -11,6 +11,7 @@ import puppeteer from 'puppeteer-core';
 const ROOT = 'experiments/2-5d-game';
 const OUT = process.env.OUT ?? `${ROOT}/out-turn`;
 const ID = Number(process.env.ID ?? 6);
+const LEN = Number(process.env.LEN ?? 3);
 const ART = process.env.ART ?? 'candidate';
 const STEPS = (process.env.STEPS ?? '0,10,16,22,28,34').split(',').map(Number);
 const PORT = Number(process.env.PORT ?? 5436);
@@ -25,7 +26,7 @@ const errs = [];
 page.on('pageerror', (e) => errs.push(String(e)));
 await page.evaluateOnNewDocument(() => localStorage.setItem('animal-rescue-seen', JSON.stringify(['basic', 'arrow', 'obstacle', 'crate', 'long', 'hearts', 'key', 'sleep', 'bomb'])));
 for (const [from, to] of [['down', 'right'], ['up', 'left']]) {
-  await page.goto(`http://localhost:${PORT}/?demo=turn&from=${from}&to=${to}&len=3&id=${ID}${ART ? `&art=${ART}` : ''}`, { waitUntil: 'load', timeout: 30000 });
+  await page.goto(`http://localhost:${PORT}/?demo=turn&from=${from}&to=${to}&len=${LEN}&id=${ID}${ART ? `&art=${ART}` : ''}`, { waitUntil: 'load', timeout: 30000 });
   await page.waitForFunction(() => window.__game && window.__cards, { timeout: 20000 });
   await sleep(1000);
   const start = await page.evaluate((id) => window.__game.views().get(id).headStart, ID);

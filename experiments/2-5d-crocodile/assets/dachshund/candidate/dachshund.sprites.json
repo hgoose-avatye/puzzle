@@ -33,5 +33,9 @@
         "180": "dachshund_tail_180.png"
       }
     }
+  },
+  "joints": {
+    "upRight": "dachshund_elbow_up_right.png",
+    "downRight": "dachshund_elbow_down_right.png"
   }
 }

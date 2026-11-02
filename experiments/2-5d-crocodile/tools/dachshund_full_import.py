@@ -34,6 +34,16 @@ SIN58 = math.sin(math.radians(58))
 HERE = os.path.dirname(os.path.abspath(__file__))
 FEET_FORWARD = 0.45  # 90°: feet this many cells in front of the floor centre
 NOSE_OVER = 0.12  # 90°: how far the nose may stick out past the head cell's front edge, in cells
+ELBOW_OVERLAP = 0.05  # cells an elbow arm runs past the corner cell's edge under / over the straight card
+
+
+def load_cut(path):
+    """A delivered picture as RGBA float (alpha 0..1): its own alpha when it has a transparent ground, else keyed green."""
+    im = Image.open(path)
+    if im.mode == 'RGBA' and (np.array(im)[:, :, 3] < 128).any():
+        a = np.array(im).astype(float)
+        return np.dstack([a[:, :, :3], a[:, :, 3] / 255])
+    return key_green(np.array(im.convert('RGB')))
 
 
 def key_green(rgb):
@@ -169,6 +179,9 @@ def main():
     cells = [tail_cx, tail_cx + cell, tail_cx + 2 * cell]  # tail, body, head
     cy = ys[-1] - FEET_FORWARD * depth
     b_tb = cells[0] + cell / 2
+    # how far above the floor centre the straight body's band centre is (the elbow arms are placed at the same height)
+    band = np.where(f[:, int(cells[1])])[0]
+    body_band_lift = cy - (band[0] + band[-1]) / 2
     pics['tail_090'] = window(img, cells[0], cy, cols=(0, int(b_tb)))
     pics['body_090'] = window(img, cells[1], cy, cols=(int(b_tb), ear))
     pics['head_090'] = window(img, cells[2], cy, cols=(ear, img.shape[1]))
@@ -197,23 +210,38 @@ def main():
         path = os.path.join(root, 'received-v3', f'dachshund_elbow_{name}.png')
         if not os.path.exists(path):
             continue
-        img = key_green(np.array(Image.open(path).convert('RGB')))
+        img = load_cut(path)
         f = img[:, :, 3] > 0.5
         ys, xs = np.where(f.any(1))[0], np.where(f.any(0))[0]
-        # the vertical arm's width = the body width (columns of the rows away from the horizontal arm)
-        vert_rows = range(ys[0], ys[0] + (ys[-1] - ys[0]) // 4) if name == 'up_right' else range(ys[-1] - (ys[-1] - ys[0]) // 4, ys[-1])
+        # the vertical arm's width = the body width (rows of the arm away from the bend)
+        vert_rows = range(ys[0] + 20, ys[0] + (ys[-1] - ys[0]) // 3) if name == 'up_right' else range(ys[-1] - (ys[-1] - ys[0]) // 3, ys[-1] - 20)
         arm_w = np.median([f[y].sum() for y in vert_rows if f[y].any()])
         img = resize(img, args.body_width * cell / arm_w)
         f = img[:, :, 3] > 0.5
         ys, xs = np.where(f.any(1))[0], np.where(f.any(0))[0]
-        # the corner cell: the vertical arm's end on the cell's back / front edge, the horizontal arm's end on the right edge
-        vx = np.where(f[ys[0] + 5 if name == 'up_right' else ys[-1] - 5])[0]
-        cx = (vx[0] + vx[-1]) / 2 + 0  # vertical arm's centre line -> cell centre x
-        cy = (ys[0] + depth / 2) if name == 'up_right' else (ys[-1] - depth / 2)
+        # the corner cell: the vertical arm's centre line on x = 512, the horizontal arm's centre line at the height
+        # where the straight 90° body card has its band centre (same floor anchor convention)
+        probe = ys[0] + 40 if name == 'up_right' else ys[-1] - 40
+        vx = np.where(f[probe])[0]
+        cx = (vx[0] + vx[-1]) / 2
+        hy = np.where(f[:, xs[-1] - 40])[0]
+        cy = (hy[0] + hy[-1]) / 2 + body_band_lift
         elbows[key] = f'dachshund_elbow_{name}.png'
         frame = window(img, cx, cy)
+        # the arms end at the cell edges (plus a hair of overlap): the straight cards take over from there. The vertical
+        # arm is cut only in its own columns: the horizontal arm's top face rises above the cell's back edge too.
+        top, bottom, right = ANCHOR[1] - depth / 2, ANCHOR[1] + depth / 2, ANCHOR[0] + cell / 2
+        frame[:, int(right + ELBOW_OVERLAP * cell):] = 0
+        arm_cols = slice(0, int(ANCHOR[0] + args.body_width * cell / 2 + 12))
+        if name == 'up_right':
+            frame[:int(top - ELBOW_OVERLAP * depth), arm_cols] = 0
+        else:
+            frame[int(bottom + ELBOW_OVERLAP * depth):, arm_cols] = 0
         Image.fromarray(to8(frame)).save(os.path.join(out_dir, elbows[key]))
-        print(f'{elbows[key]}: arm width {arm_w:.0f} px -> {args.body_width} cell, horizontal arm reaches x {(xs[-1] - cx) / cell:+.2f} cells from the cell centre')
+        ff = frame[:, :, 3] > 0.5
+        fy, fx = np.where(ff.any(1))[0], np.where(ff.any(0))[0]
+        print(f'{elbows[key]}: arm width {arm_w:.0f} px -> {args.body_width} cell; in frame y{fy[0]}-{fy[-1]} x{fx[0]}-{fx[-1]} '
+              f'(cell edges: top {ANCHOR[1] - depth / 2:.0f}, bottom {ANCHOR[1] + depth / 2:.0f}, right {ANCHOR[0] + cell / 2:.0f})')
     if len(elbows) == 2:
         manifest['joints'] = elbows
     with open(os.path.join(out_dir, 'dachshund.sprites.json'), 'w') as fh:
