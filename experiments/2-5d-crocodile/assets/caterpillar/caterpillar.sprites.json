@@ -28,7 +28,7 @@
           ]
         },
         "180": {
-          "file": "received/caterpillar_head_180.png",
+          "file": "fixed/caterpillar_head_180.png",
           "anchor": [
             512,
             510
@@ -43,7 +43,7 @@
     "body": {
       "drawn": {
         "0": {
-          "file": "received/caterpillar_body_000.png",
+          "file": "fixed/caterpillar_body_000.png",
           "anchor": [
             512,
             510
@@ -61,7 +61,7 @@
           ]
         },
         "180": {
-          "file": "received/caterpillar_body_180.png",
+          "file": "fixed/caterpillar_body_180.png",
           "anchor": [
             512,
             510
@@ -76,7 +76,7 @@
     "tail": {
       "drawn": {
         "0": {
-          "file": "received/caterpillar_tail_000.png",
+          "file": "fixed/caterpillar_tail_000.png",
           "anchor": [
             512,
             510
@@ -102,5 +102,24 @@
         }
       }
     }
-  }
+  },
+  "extend": {
+    "caterpillar_head_180.png": {
+      "band": 590,
+      "rows": 46
+    },
+    "caterpillar_body_000.png": {
+      "band": 530,
+      "rows": 137
+    },
+    "caterpillar_body_180.png": {
+      "band": 530,
+      "rows": 218
+    },
+    "caterpillar_tail_000.png": {
+      "band": 530,
+      "rows": 121
+    }
+  },
+  "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: caterpillar_body_000.png, caterpillar_body_180.png, caterpillar_head_180.png, caterpillar_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
 }

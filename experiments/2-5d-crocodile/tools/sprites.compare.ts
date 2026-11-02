@@ -263,7 +263,7 @@ describe('batch 3 (3 cells): snake and caterpillar on provisional received/ mani
       for (const [h, pic] of Object.entries(c.parts[part]!.drawn)) {
         const mine = m.parts[part]!.drawn[h as keyof typeof c.parts.head.drawn]!;
         const file = (p: typeof pic) => (typeof p === 'string' ? p : p!.file);
-        expect(file(mine)).toBe(file(pic).replace('received/', 'variant/'));
+        expect(file(mine)).toBe(`variant/${file(pic).slice(file(pic).lastIndexOf('/') + 1)}`);
         if (typeof pic === 'object') expect(mine).toMatchObject({ anchor: pic!.anchor, ...(pic!.offset ? { offset: pic!.offset } : {}) });
       }
     }

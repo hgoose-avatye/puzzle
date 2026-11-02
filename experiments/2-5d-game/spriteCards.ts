@@ -157,7 +157,9 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     const img = tex.image as HTMLImageElement | undefined;
     if (shown !== url) { material.map = tex; material.needsUpdate = true; shown = url; }
     if (!img?.width) return;
-    const ext = candidate ? extensions[`${entry.dir}candidate/extend.json`]?.[pick.file.slice(pick.file.lastIndexOf('/') + 1)] : undefined;
+    // fold data: a candidate's from its folder's extend.json, an approved picture's from the manifest (`extend`)
+    const pictureName = pick.file.slice(pick.file.lastIndexOf('/') + 1);
+    const ext = candidate ? extensions[`${entry.dir}candidate/extend.json`]?.[pictureName] : entry.sprites.extend?.[pictureName];
     let fold: Fold | undefined;
     if (ext) {
       // the near part: toward the head at 0° (head nearest the camera), toward the tail at 180°

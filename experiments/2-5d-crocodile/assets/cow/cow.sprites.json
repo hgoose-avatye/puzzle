@@ -21,7 +21,7 @@
           ]
         },
         "90": {
-          "file": "approved/cow_head_090.png",
+          "file": "fixed/cow_head_090.png",
           "anchor": [
             512,
             510
@@ -50,7 +50,7 @@
           ]
         },
         "0": {
-          "file": "approved/cow_tail_000.png",
+          "file": "fixed/cow_tail_000.png",
           "anchor": [
             512,
             510
@@ -69,5 +69,12 @@
         }
       }
     }
-  }
+  },
+  "extend": {
+    "cow_tail_000.png": {
+      "band": 545,
+      "rows": 81
+    }
+  },
+  "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: cow_head_090.png, cow_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
 }

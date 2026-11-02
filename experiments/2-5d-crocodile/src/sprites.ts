@@ -40,6 +40,11 @@ export interface SpeciesSprites {
    * right of the screen, `downRight` toward the bottom and the right; left-hand corners mirror them. Same frame.
    */
   joints?: { upRight: string; downRight: string };
+  /**
+   * Pictures whose bottom was moved down behind the near part by repeating one row band (tools/polish_candidates.py),
+   * by picture file name: the renderer folds those rows away again while the two blocks turn apart.
+   */
+  extend?: Record<string, { band: number; rows: number }>;
 }
 
 /** Which part each block is, head first: 1 cell a single sprite, 2 cells head + tail, more cells head, bodies, tail. */
