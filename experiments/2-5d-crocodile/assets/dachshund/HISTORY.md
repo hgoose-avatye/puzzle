@@ -19,3 +19,6 @@
   (`tools/recolour_variant.py`, 초록 68–150° → +120° 파랑)으로 채웁니다: `variant/`(received 변형), `candidate/`(애벌레
   candidate 변형 + extend.json), `dachshund.sprites.json` = 애벌레 매니페스트 사본. Classic 3D·레벨·규칙은 그대로이며
   `speciesFor`는 여전히 "dachshund"를 돌려줍니다. 애벌레 2.5D가 승인되면 같은 명령으로 변형본을 다시 만들면 됩니다.
+
+- **승인 (2026-11-02)** — 파란 애벌레 변형을 2.5D 3칸 동물로 최종 승인. 3칸 구성: 뱀 · 연두 애벌레 · 파란 애벌레(닥스훈트 자리) · 악어.
+  닥스훈트 자체는 2.5D에 더 이상 등장하지 않으며(`speciesFor`의 이름만 남음), v4 에셋은 `held-v4-full-body/`에 보존.
