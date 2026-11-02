@@ -1,0 +1,18 @@
+{
+ "caterpillar_head_180.png": {
+  "band": 590,
+  "rows": 46
+ },
+ "caterpillar_body_000.png": {
+  "band": 530,
+  "rows": 137
+ },
+ "caterpillar_body_180.png": {
+  "band": 530,
+  "rows": 218
+ },
+ "caterpillar_tail_000.png": {
+  "band": 530,
+  "rows": 121
+ }
+}

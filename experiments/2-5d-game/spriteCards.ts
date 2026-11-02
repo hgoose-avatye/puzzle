@@ -34,6 +34,32 @@ const manifests = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.sprit
 const pictures = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
 const registry = new Map<string, { sprites: SpeciesSprites; dir: string }>();
 for (const [path, sprites] of Object.entries(manifests)) registry.set(sprites.species, { sprites, dir: path.slice(0, path.lastIndexOf('/') + 1) });
+/** candidates whose bottom was moved down behind the near part by repeating one row band (tools/polish_candidates.py) */
+const extensions = import.meta.glob('../2-5d-crocodile/assets/*/candidate/extend.json', { eager: true, import: 'default' }) as Record<string, Record<string, { band: number; rows: number }>>;
+/**
+ * The extension is only hidden while the near part (lower on screen) heads the same way. In a turn that part already
+ * shows its short side view, so the repeated rows are taken out again in step with the angle between the two blocks:
+ * all of them at FOLD_DEG apart, before this block's own picture changes at 45°.
+ */
+const FOLD_DEG = 30;
+/** map_fragment with the band shortened: rows below band + shown are read `rows - shown` further down the picture */
+const FOLD_FRAGMENT = /* glsl */ `
+#ifdef USE_MAP
+  vec2 foldUv = vMapUv;
+  float foldY = (1.0 - foldUv.y) * foldRows.w;
+  if (foldY > foldRows.x + foldRows.z) foldY += foldRows.y - foldRows.z;
+  foldUv.y = 1.0 - foldY / foldRows.w;
+  diffuseColor *= foldY < foldRows.w ? texture2D(map, foldUv) : vec4(0.0);
+#endif
+`;
+type Fold = { band: number; rows: number; shown: number; h: number };
+/** picture row for a texture v under a fold (null: past the picture's bottom), as FOLD_FRAGMENT reads it */
+function foldV(f: Fold | undefined, v: number): number | null {
+  if (!f?.rows) return v;
+  let y = (1 - v) * f.h;
+  if (y > f.band + f.shown) y += f.rows - f.shown;
+  return y < f.h ? 1 - y / f.h : null;
+}
 
 /** Species drawn as cards in this run (for the test hook and reports). */
 export const spriteSpecies = (): string[] => (USE_CARDS ? [...registry.keys()] : []);
@@ -84,15 +110,24 @@ function alphaRaycast(mesh: THREE.Mesh): void {
     const hits: THREE.Intersection[] = [];
     THREE.Mesh.prototype.raycast.call(mesh, raycaster, hits);
     const img = (mesh.material as THREE.MeshBasicMaterial).map?.image as HTMLImageElement | undefined;
-    for (const h of hits) if (img?.width && h.uv && alphaAt(img, h.uv.x, h.uv.y) > 127) intersects.push(h);
+    for (const h of hits) {
+      if (!img?.width || !h.uv) continue;
+      const v = foldV(mesh.userData.fold as Fold | undefined, h.uv.y);
+      if (v !== null && alphaAt(img, h.uv.x, v) > 127) intersects.push(h);
+    }
   };
 }
 
-function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: ReturnType<typeof partsFor>[number], index: number): THREE.Group {
+function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: ReturnType<typeof partsFor>[number], index: number, blocks: THREE.Group[]): THREE.Group {
   const root = new THREE.Group();
   const animated = new THREE.Group();
   root.add(animated);
   const material = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, toneMapped: false });
+  const foldRows = { value: new THREE.Vector4(0, 0, 0, 1) };
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.foldRows = foldRows;
+    shader.fragmentShader = `uniform vec4 foldRows;\n${shader.fragmentShader.replace('#include <map_fragment>', FOLD_FRAGMENT)}`;
+  };
   const card = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   card.userData.spriteCard = true;
   alphaRaycast(card);
@@ -116,6 +151,17 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     const img = tex.image as HTMLImageElement | undefined;
     if (shown !== url) { material.map = tex; material.needsUpdate = true; shown = url; }
     if (!img?.width) return;
+    const ext = candidate ? extensions[`${entry.dir}candidate/extend.json`]?.[pick.file.slice(pick.file.lastIndexOf('/') + 1)] : undefined;
+    let fold: Fold | undefined;
+    if (ext) {
+      // the near part: toward the head at 0° (head nearest the camera), toward the tail at 180°
+      const near = blocks[Math.cos((pick.heading * Math.PI) / 180) > 0 ? index - 1 : index + 1];
+      const d = near ? near.rotation.y - root.rotation.y : 0;
+      const apart = Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) * 180 / Math.PI;
+      fold = { ...ext, shown: ext.rows * Math.max(0, 1 - apart / FOLD_DEG), h: img.height };
+    }
+    foldRows.value.set(fold?.band ?? 0, fold?.rows ?? 0, fold?.shown ?? 0, img.height);
+    card.userData.fold = fold;
     // the visual offset moves the picture (y down = drawn lower), i.e. the effective anchor the other way
     // temporarily off at 0°/180°: those joining offsets pulled end cards onto the next cell, leaving its plate bare
     const ow = pick.offset && pick.heading % 180 !== 0 ? offsetWeight(entry.sprites, part, deg, pick.heading) : 0;
@@ -166,5 +212,7 @@ export function buildAnimal(species: string, cells: number): THREE.Group[] {
   built.push({ species, cells, as: entry ? 'cards' : '3d' });
   if (!entry) return build3d(species, cells);
   const parts = partsFor(n);
-  return parts.map((part, i) => cardBlock(entry, part, i));
+  const blocks: THREE.Group[] = [];
+  parts.forEach((part, i) => blocks.push(cardBlock(entry, part, i, blocks)));
+  return blocks;
 }
