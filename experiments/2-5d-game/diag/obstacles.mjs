@@ -7,8 +7,10 @@
 //    through its gate (the shrink), with a fixed crop. Writes out-diag/obstacles.json and out-diag/obst-*.png.
 import { createServer } from 'vite';
 import puppeteer from 'puppeteer-core';
-import { writeFileSync } from 'node:fs';
-const OUT = 'experiments/2-5d-game/out-diag';
+import { mkdirSync, writeFileSync } from 'node:fs';
+const OUT = process.env.OUT ?? 'experiments/2-5d-game/out-diag';
+// EXTRA='&art=candidate': more query parameters for every scene
+mkdirSync(OUT, { recursive: true });
 const server = await createServer({ configFile: 'experiments/2-5d-game/diag/vite.diag.config.ts', logLevel: 'error' });
 await server.listen();
 const browser = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], protocolTimeout: 180000 });
@@ -19,14 +21,16 @@ await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile
 page.on('pageerror', (e) => errs.push(String(e)));
 await page.evaluateOnNewDocument(() => localStorage.setItem('animal-rescue-seen', JSON.stringify(['basic','arrow','obstacle','crate','long','hearts','key','sleep','bomb'])));
 const open = async (lv, mode) => {
-  await page.goto(`http://localhost:5431/?level=${lv}&cardmode=${mode}`, { waitUntil: 'load', timeout: 30000 });
+  await page.goto(`http://localhost:5431/?level=${lv}&cardmode=${mode}${process.env.EXTRA ?? ''}`, { waitUntil: 'load', timeout: 30000 });
   await page.waitForFunction(() => window.__game && window.__diagCamera && window.__diagThree, { timeout: 20000 });
   await sleep(1200);
 };
 
 // 1. levels with obstacles or crates
 const found = [];
-for (let lv = 1; lv <= 180; lv += 2) {
+// LEVELS='47,49,51': skip the scan and use these levels
+if (process.env.LEVELS) for (const lv of process.env.LEVELS.split(',').map(Number)) found.push({ lv, n: 1 });
+else for (let lv = 1; lv <= 180; lv += 2) {
   try {
     await open(lv, 'A');
     const n = await page.evaluate(() => { const l = window.__game.views().values().next().value.level; return (l.obstacles?.length ?? 0) + (l.crates?.length ?? 0); });

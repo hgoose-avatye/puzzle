@@ -9,8 +9,9 @@
 // on some points where pick and visible differ and reads which animal started to run. Writes out-diag/touch.json.
 import { createServer } from 'vite';
 import puppeteer from 'puppeteer-core';
-import { writeFileSync } from 'node:fs';
-const OUT = 'experiments/2-5d-game/out-diag';
+import { mkdirSync, writeFileSync } from 'node:fs';
+const OUT = process.env.OUT ?? 'experiments/2-5d-game/out-diag';
+mkdirSync(OUT, { recursive: true });
 const [VW, VH] = (process.env.VIEW ?? '390x844').split('x').map(Number);
 const SCENES = (process.env.SCENES ?? 'demo=dirs,level=20,level=60,level=120').split(',');
 const VARIANTS = [['A', 0], ['A', 1], ['C', 0], ['C', 1]];
