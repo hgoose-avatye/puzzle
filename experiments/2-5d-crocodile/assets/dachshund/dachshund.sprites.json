@@ -1,6 +1,5 @@
 {
   "species": "dachshund",
-  "note": "approved 2026-11-02 (v4): head/body/tail cut per game cell from the whole-body pictures received-v3/dachshund_full_{000,090,180}.png (tools/dachshund_full_import.py), plus the two corner pieces (joints) drawn between blocks on different legs of a turn. 0, 90, 180 drawn; 270 mirrors 90; diagonals use the nearest. The original received/ parts stay beside this file unused.",
   "frame": {
     "size": 1024,
     "cellPx": 512,
@@ -12,12 +11,97 @@
   "scale": 1.2,
   "tuck": 0,
   "parts": {
-    "head": { "drawn": { "0": "approved/dachshund_head_000.png", "90": "approved/dachshund_head_090.png", "180": "approved/dachshund_head_180.png" } },
-    "body": { "drawn": { "0": "approved/dachshund_body_000.png", "90": "approved/dachshund_body_090.png", "180": "approved/dachshund_body_180.png" } },
-    "tail": { "drawn": { "0": "approved/dachshund_tail_000.png", "90": "approved/dachshund_tail_090.png", "180": "approved/dachshund_tail_180.png" } }
+    "head": {
+      "drawn": {
+        "0": {
+          "file": "variant/caterpillar_head_000.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "90": {
+          "file": "variant/caterpillar_head_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "180": {
+          "file": "variant/caterpillar_head_180.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            507
+          ]
+        }
+      }
+    },
+    "body": {
+      "drawn": {
+        "0": {
+          "file": "variant/caterpillar_body_000.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            184
+          ]
+        },
+        "90": {
+          "file": "variant/caterpillar_body_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "180": {
+          "file": "variant/caterpillar_body_180.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            243
+          ]
+        }
+      }
+    },
+    "tail": {
+      "drawn": {
+        "0": {
+          "file": "variant/caterpillar_tail_000.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            415
+          ]
+        },
+        "90": {
+          "file": "variant/caterpillar_tail_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "180": {
+          "file": "variant/caterpillar_tail_180.png",
+          "anchor": [
+            512,
+            510
+          ]
+        }
+      }
+    }
   },
-  "joints": {
-    "upRight": "approved/dachshund_elbow_up_right.png",
-    "downRight": "approved/dachshund_elbow_down_right.png"
-  }
+  "note": "colour variant of caterpillar (tools/recolour_variant.py: hue 68-150 turned by 120); same frame, anchors, offsets and candidates as caterpillar. "
 }

@@ -253,12 +253,19 @@ describe('batch 3 (3 cells): snake and caterpillar on provisional received/ mani
     });
   }
 
-  it('dachshund (approved 2026-11-02): standard frame, no per-picture anchors or offsets, two corner pieces present', () => {
-    const m = load('dachshund');
-    expect(m.frame).toEqual({ size: 1024, cellPx: 512, anchor: [512, 640] });
-    expect(m.tuck).toBe(0);
-    for (const part of ['head', 'body', 'tail'] as const) for (const pic of Object.values(m.parts[part]!.drawn)) expect(typeof pic).toBe('string');
-    expect(m.joints && Object.keys(m.joints).sort()).toEqual(['downRight', 'upRight']);
-    for (const f of Object.values(m.joints!)) expect(existsSync(new URL(`../assets/dachshund/${f}`, import.meta.url)), f).toBe(true);
+  it('dachshund = colour variant of the caterpillar (2026-11-02): same frame, anchors and offsets, pictures under variant/', () => {
+    const m = load('dachshund'), c = load('caterpillar');
+    expect(m.frame).toEqual(c.frame);
+    expect(m.scale).toBe(c.scale);
+    expect(m.tuck).toBe(c.tuck);
+    expect(m.joints).toBeUndefined();
+    for (const part of ['head', 'body', 'tail'] as const) {
+      for (const [h, pic] of Object.entries(c.parts[part]!.drawn)) {
+        const mine = m.parts[part]!.drawn[h as keyof typeof c.parts.head.drawn]!;
+        const file = (p: typeof pic) => (typeof p === 'string' ? p : p!.file);
+        expect(file(mine)).toBe(file(pic).replace('received/', 'variant/'));
+        if (typeof pic === 'object') expect(mine).toMatchObject({ anchor: pic!.anchor, ...(pic!.offset ? { offset: pic!.offset } : {}) });
+      }
+    }
   });
 });

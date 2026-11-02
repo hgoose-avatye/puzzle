@@ -13,3 +13,9 @@
 - **v4 (승인, 2026-11-02)** — v3 9장 + 코너 조각 2장(`received-v3/dachshund_elbow_sheet.png`)을 `approved/`로 승격하고
   기본 매니페스트가 이를 사용합니다(`joints`로 회전 중 코너 칸을 채움, `spriteCards.ts`). `received/`의 원래 부품 그림은
   보존만 되고 쓰이지 않습니다.
+
+- **v4 보류 → 색 변형 (2026-11-02, 현재)** — 다른 다칸 동물과 회전 문법을 맞추기 위해 통짜 분할 + elbow(v4)는 보류하고
+  `held-v4-full-body/`로 옮겼습니다(기본 매니페스트에서 제외, 기록용). 2.5D의 닥스훈트 자리는 **애벌레의 색 변형**
+  (`tools/recolour_variant.py`, 초록 68–150° → +120° 파랑)으로 채웁니다: `variant/`(received 변형), `candidate/`(애벌레
+  candidate 변형 + extend.json), `dachshund.sprites.json` = 애벌레 매니페스트 사본. Classic 3D·레벨·규칙은 그대로이며
+  `speciesFor`는 여전히 "dachshund"를 돌려줍니다. 애벌레 2.5D가 승인되면 같은 명령으로 변형본을 다시 만들면 됩니다.
