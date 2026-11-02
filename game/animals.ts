@@ -303,25 +303,30 @@ export class PieceView {
    * runs.
    */
   private buildAheadMarks(color: THREE.Color): void {
-    if (this.bodyLen !== 1) return;
     const dir = headDirection(this.piece);
     const v = directionVector(dir);
-    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
+    // 2.5D cards are taller than the blocks and the card of the animal on the next tile covers this tile's front edge, so
+    // a floor mark under them is hidden most of the time: for cards the V is drawn last, over everything but badges
+    const cards = this.segments[0]?.userData.spriteCards === true;
+    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5), ...(cards ? { transparent: true, depthTest: false } : {}) });
     // local frame: +z is the way it runs; the point is at tipZ and the arms end V_DEPTH behind it
     const tipZ = dir === 'up' ? -0.47 + V_DEPTH : 0.46;
     // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
     // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
     const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
-    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK);
-    const head = this.piece.cells[0];
-    this.aheadMarks.position.copy(this.world(head.x, head.y));
+    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK, cards);
+    // the V lies on the head's tile; facing up the board it sits at the edge nearest the camera instead, which for a
+    // long animal is the last tile's (the body would hide the head tile's)
+    const tile = dir === 'up' ? this.piece.cells[this.piece.cells.length - 1] : this.piece.cells[0];
+    this.aheadMarks.position.copy(this.world(tile.x, tile.y));
     this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
   }
 
   /** A flat bar on the floor from (x0, z0) to (x1, z1) in the mark's local frame (+z the way the animal runs). */
-  private addBar(tint: THREE.Material, x0: number, z0: number, x1: number, z1: number, thick: number): void {
+  private addBar(tint: THREE.Material, x0: number, z0: number, x1: number, z1: number, thick: number, onTop = false): void {
     const m = new THREE.Mesh(EDGE_BAR, tint);
     m.userData.sharedGeometry = true;
+    if (onTop) m.renderOrder = 9; // after the cards (transparent pass), under the badges (10+)
     m.scale.set(thick, 1, Math.hypot(x1 - x0, z1 - z0) + thick);
     m.position.set((x0 + x1) / 2, 0.104, (z0 + z1) / 2);
     m.rotation.y = Math.atan2(x1 - x0, z1 - z0);

@@ -125,6 +125,7 @@ function alphaRaycast(mesh: THREE.Mesh): void {
 
 function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: ReturnType<typeof partsFor>[number], index: number, blocks: THREE.Group[]): THREE.Group {
   const root = new THREE.Group();
+  root.userData.spriteCards = true; // PieceView: this animal is drawn as cards (its floor cue is drawn on top)
   const animated = new THREE.Group();
   root.add(animated);
   const material = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, toneMapped: false });
