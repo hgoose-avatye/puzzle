@@ -25,6 +25,8 @@ const USE_CARDS = query.get('render') !== '3d';
 const CARD_SCALE = Number(query.get('cardScale') ?? 1) || 1;
 /** comparison only: ?tuck=0 / 0.05 overrides the 0.10-cell visual tuck */
 const TUCK_OVERRIDE = query.has('tuck') ? Number(query.get('tuck')) : undefined;
+/** art review: ?art=candidate draws <species>/candidate/<same file name> where one exists (originals stay untouched) */
+const ART_CANDIDATE = query.get('art') === 'candidate';
 
 // every manifest in the experiment, keyed by species, with its pictures as URLs next to it
 const manifests = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.sprites.json', { eager: true, import: 'default' }) as Record<string, SpeciesSprites>;
@@ -102,7 +104,8 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     if (!pick) { cardsMissing++; card.visible = false; return; }
     cardsDrawn++;
     // the resolved file: a mirrored or front-back reused heading has no entry of its own in `drawn`
-    const url = pictures[entry.dir + pick.file];
+    const candidate = ART_CANDIDATE ? pictures[`${entry.dir}candidate/${pick.file.slice(pick.file.lastIndexOf('/') + 1)}`] : undefined;
+    const url = candidate ?? pictures[entry.dir + pick.file];
     const tex = texture(url);
     const img = tex.image as HTMLImageElement | undefined;
     if (shown !== url) { material.map = tex; material.needsUpdate = true; shown = url; }
