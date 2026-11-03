@@ -106,6 +106,25 @@ function alphaAt(img: HTMLImageElement, u: number, v: number): number {
   return m.a[(y * m.w + x) * 4 + 3];
 }
 
+/** the opaque part of a picture, in texture fractions from the top-left: where its drawn top and middle are */
+const opaqueBoxes = new Map<string, { top: number; mid: number }>();
+function opaqueBox(img: HTMLImageElement): { top: number; mid: number } {
+  let box = opaqueBoxes.get(img.src);
+  if (box) return box;
+  alphaAt(img, 0, 0); // fills alphaMaps for this picture
+  const m = alphaMaps.get(img.src)!;
+  let top = m.h, left = m.w, right = -1;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (m.a[(y * m.w + x) * 4 + 3] <= 127) continue;
+    if (y < top) top = y;
+    if (x < left) left = x;
+    if (x > right) right = x;
+  }
+  box = right < 0 ? { top: 0, mid: 0.5 } : { top: top / m.h, mid: (left + right + 1) / 2 / m.w };
+  opaqueBoxes.set(img.src, box);
+  return box;
+}
+
 /**
  * Mesh.raycast that drops hits on transparent texels. alphaTest hides them on screen, the default ray does not, so a
  * tap on another animal seen through a card's empty margin picked the card's animal (DIAGNOSIS.md, touch: 19~36% → 0%).
@@ -181,6 +200,11 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     tmp.pos.add(tmp.head);
     tmp.pos.y += PLATE_TOP;
     placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror);
+    // where this picture's drawn top is in the world, for the status badge to point at (PieceView reads it on the head)
+    const box = opaqueBox(img);
+    card.updateWorldMatrix(true, false);
+    const top = (root.userData.drawnTop as THREE.Vector3 | undefined) ?? (root.userData.drawnTop = new THREE.Vector3());
+    top.set(box.mid - 0.5, 0.5 - box.top, 0).applyMatrix4(card.matrixWorld);
   };
   return root;
 }
