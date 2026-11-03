@@ -95,7 +95,7 @@
    "role": "tough",
    "target": 30.661764705882355,
    "seed": 7,
-   "score": 38,
+   "score": 40,
    "pairs": 0,
    "onTarget": 0
   },
@@ -214,7 +214,7 @@
    "role": "tough",
    "target": 32.17436974789916,
    "seed": 5,
-   "score": 30.666666666666664,
+   "score": 30,
    "pairs": 0,
    "onTarget": 1
   },
@@ -313,17 +313,16 @@
   {
    "n": 30,
    "role": "finale",
-   "target": 43,
-   "seed": 2,
-   "score": 38.666666666666664,
+   "target": 45,
+   "seed": 19,
+   "score": 54.25,
    "pairs": 0,
-   "onTarget": 1,
+   "onTarget": 0,
    "finale": {
-    "wanted": 43,
-    "hardestTough": 38,
-    "issues": [
-     "below-tough-guard"
-    ]
+    "wanted": 45,
+    "guard": 45,
+    "hardestTough": 40,
+    "issues": []
    }
   },
   {
@@ -370,17 +369,17 @@
    "n": 36,
    "role": "ordinary",
    "target": 18.781512605042018,
-   "seed": 4,
-   "score": 15.333333333333332,
+   "seed": 7,
+   "score": 26,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 0
   },
   {
    "n": 37,
    "role": "ordinary",
    "target": 18.970588235294116,
-   "seed": 9,
-   "score": 10,
+   "seed": 10,
+   "score": 13.333333333333334,
    "pairs": 0,
    "onTarget": 0
   },
@@ -388,28 +387,40 @@
    "n": 38,
    "role": "ordinary",
    "target": 19.159663865546218,
-   "seed": 7,
-   "score": 23.333333333333332,
+   "seed": 10,
+   "score": 20.666666666666668,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 20,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2727272727272727,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 39,
    "role": "ordinary",
    "target": 19.34873949579832,
-   "seed": 7,
-   "score": 12,
+   "seed": 3,
+   "score": 18,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 3
   },
   {
    "n": 40,
    "role": "tough",
    "target": 34.44327731092437,
    "seed": 3,
-   "score": 27.333333333333332,
+   "score": 30.25,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 32,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.4,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 41,
@@ -525,10 +536,10 @@
    "n": 50,
    "role": "tough",
    "target": 35.955882352941174,
-   "seed": 1,
-   "score": 35.333333333333336,
+   "seed": 13,
+   "score": 36.75,
    "pairs": 0,
-   "onTarget": 2
+   "onTarget": 4
   },
   {
    "n": 51,
@@ -662,19 +673,20 @@
    "n": 60,
    "role": "finale",
    "target": 44.37394957983193,
-   "seed": 6,
-   "score": 49.333333333333336,
+   "seed": 17,
+   "score": 42.25,
    "pairs": 0,
-   "onTarget": 3,
+   "onTarget": 9,
    "preference": {
-    "nearestScore": 44.666666666666664,
+    "nearestScore": 43.25,
     "nearestMeaningful": 1,
-    "nearestBlockers": 1.4,
+    "nearestBlockers": 1.2666666666666666,
     "nearestPairs": 0
    },
    "finale": {
     "wanted": 44.37394957983193,
-    "hardestTough": 35.333333333333336,
+    "guard": 41.75,
+    "hardestTough": 36.75,
     "issues": []
    }
   },
@@ -722,15 +734,15 @@
    "n": 66,
    "role": "ordinary",
    "target": 22.563025210084035,
-   "seed": 4,
-   "score": 21.333333333333336,
+   "seed": 1,
+   "score": 18.666666666666668,
    "pairs": 0,
-   "onTarget": 2,
+   "onTarget": 6,
    "preference": {
-    "nearestScore": 22,
+    "nearestScore": 20,
     "nearestMeaningful": 1,
-    "nearestBlockers": 1,
-    "nearestPairs": 0
+    "nearestBlockers": 0.9230769230769231,
+    "nearestPairs": 1
    }
   },
   {
@@ -738,34 +750,40 @@
    "role": "ordinary",
    "target": 22.752100840336134,
    "seed": 1,
-   "score": 23.333333333333332,
+   "score": 20.666666666666668,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 22,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0769230769230769,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 68,
    "role": "ordinary",
    "target": 22.941176470588236,
-   "seed": 1,
-   "score": 20.666666666666668,
+   "seed": 7,
+   "score": 25.333333333333336,
    "pairs": 0,
-   "onTarget": 3
+   "onTarget": 1
   },
   {
    "n": 69,
    "role": "ordinary",
    "target": 23.130252100840337,
-   "seed": 10,
-   "score": 19.333333333333332,
+   "seed": 9,
+   "score": 26,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 3
   },
   {
    "n": 70,
    "role": "tough",
    "target": 38.22478991596638,
-   "seed": 10,
-   "score": 34.66666666666667,
+   "seed": 11,
+   "score": 33.5,
    "pairs": 0,
    "onTarget": 1
   },
@@ -871,10 +889,16 @@
    "n": 80,
    "role": "tough",
    "target": 39.73739495798319,
-   "seed": 5,
-   "score": 34.66666666666667,
+   "seed": 10,
+   "score": 35.25,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 38,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1538461538461537,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 81,
@@ -978,19 +1002,14 @@
    "n": 90,
    "role": "finale",
    "target": 48.15546218487395,
-   "seed": 3,
-   "score": 52,
+   "seed": 9,
+   "score": 47.5,
    "pairs": 0,
-   "onTarget": 4,
-   "preference": {
-    "nearestScore": 44.666666666666664,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1.3571428571428572,
-    "nearestPairs": 0
-   },
+   "onTarget": 1,
    "finale": {
     "wanted": 48.15546218487395,
-    "hardestTough": 34.66666666666667,
+    "guard": 40.25,
+    "hardestTough": 35.25,
     "issues": []
    }
   },
@@ -1074,16 +1093,10 @@
    "n": 100,
    "role": "tough",
    "target": 42.00630252100841,
-   "seed": 1,
-   "score": 40.666666666666664,
-   "pairs": 0,
-   "onTarget": 2,
-   "preference": {
-    "nearestScore": 41.333333333333336,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1.1333333333333333,
-    "nearestPairs": 0
-   }
+   "seed": 20,
+   "score": 43.5,
+   "pairs": 1,
+   "onTarget": 5
   },
   {
    "n": 101,
@@ -1181,10 +1194,16 @@
    "n": 110,
    "role": "tough",
    "target": 43.51890756302521,
-   "seed": 2,
-   "score": 42,
-   "pairs": 0,
-   "onTarget": 1
+   "seed": 10,
+   "score": 38.75,
+   "pairs": 1,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 42.5,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.5,
+    "nearestPairs": 2
+   }
   },
   {
    "n": 111,
@@ -1270,16 +1289,15 @@
    "n": 120,
    "role": "finale",
    "target": 51.936974789915965,
-   "seed": 7,
-   "score": 34,
-   "pairs": 0,
-   "onTarget": 0,
+   "seed": 16,
+   "score": 53.25,
+   "pairs": 1,
+   "onTarget": 2,
    "finale": {
     "wanted": 51.936974789915965,
-    "hardestTough": 42,
-    "issues": [
-     "not-above-tough"
-    ]
+    "guard": 48.5,
+    "hardestTough": 43.5,
+    "issues": []
    }
   },
   {
@@ -1327,43 +1345,49 @@
    "role": "ordinary",
    "target": 30.126050420168067,
    "seed": 9,
-   "score": 18.666666666666668,
+   "score": 26.666666666666668,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 1
   },
   {
    "n": 127,
    "role": "ordinary",
    "target": 30.31512605042017,
-   "seed": 7,
-   "score": 23.333333333333332,
+   "seed": 1,
+   "score": 27.333333333333332,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 31.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.8461538461538461,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 128,
    "role": "ordinary",
    "target": 30.504201680672267,
-   "seed": 10,
-   "score": 28.666666666666668,
+   "seed": 4,
+   "score": 23.333333333333332,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 0
   },
   {
    "n": 129,
    "role": "ordinary",
    "target": 30.69327731092437,
-   "seed": 2,
-   "score": 15.333333333333332,
+   "seed": 6,
+   "score": 28.000000000000004,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 1
   },
   {
    "n": 130,
    "role": "tough",
    "target": 45.78781512605042,
    "seed": 10,
-   "score": 38,
+   "score": 40.75,
    "pairs": 0,
    "onTarget": 0
   },
@@ -1371,44 +1395,32 @@
    "n": 131,
    "role": "ordinary",
    "target": 30.88235294117647,
-   "seed": 2,
-   "score": 28.000000000000004,
+   "seed": 1,
+   "score": 22,
    "pairs": 0,
-   "onTarget": 6,
-   "preference": {
-    "nearestScore": 30.666666666666664,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1.25,
-    "nearestPairs": 0
-   }
+   "onTarget": 0
   },
   {
    "n": 132,
    "role": "ordinary",
    "target": 31.071428571428573,
-   "seed": 5,
-   "score": 27.333333333333332,
+   "seed": 10,
+   "score": 28.000000000000004,
    "pairs": 0,
-   "onTarget": 3,
-   "preference": {
-    "nearestScore": 30.666666666666664,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1.125,
-    "nearestPairs": 0
-   }
+   "onTarget": 1
   },
   {
    "n": 133,
    "role": "ordinary",
    "target": 31.26050420168067,
-   "seed": 4,
-   "score": 35.333333333333336,
+   "seed": 3,
+   "score": 33.33333333333333,
    "pairs": 0,
-   "onTarget": 4,
+   "onTarget": 3,
    "preference": {
     "nearestScore": 31.333333333333336,
     "nearestMeaningful": 1,
-    "nearestBlockers": 1,
+    "nearestBlockers": 0.9375,
     "nearestPairs": 0
    }
   },
@@ -1416,16 +1428,10 @@
    "n": 134,
    "role": "ordinary",
    "target": 31.449579831932773,
-   "seed": 6,
-   "score": 29.333333333333332,
+   "seed": 3,
+   "score": 34.66666666666667,
    "pairs": 0,
-   "onTarget": 3,
-   "preference": {
-    "nearestScore": 30.666666666666664,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1.25,
-    "nearestPairs": 0
-   }
+   "onTarget": 1
   },
   {
    "n": 135,
@@ -1439,82 +1445,112 @@
    "n": 136,
    "role": "ordinary",
    "target": 31.638655462184875,
-   "seed": 3,
-   "score": 20,
-   "pairs": 0,
-   "onTarget": 0
+   "seed": 5,
+   "score": 26.666666666666668,
+   "pairs": 1,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 32,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0769230769230769,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 137,
    "role": "ordinary",
    "target": 31.827731092436974,
-   "seed": 2,
-   "score": 18.666666666666668,
+   "seed": 8,
+   "score": 28.000000000000004,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 33.33333333333333,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2307692307692308,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 138,
    "role": "ordinary",
    "target": 32.016806722689076,
-   "seed": 10,
-   "score": 30.666666666666664,
+   "seed": 3,
+   "score": 36.666666666666664,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 30.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0769230769230769,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 139,
    "role": "ordinary",
    "target": 32.205882352941174,
-   "seed": 4,
-   "score": 24.666666666666668,
-   "pairs": 0,
-   "onTarget": 0
+   "seed": 9,
+   "score": 35.333333333333336,
+   "pairs": 1,
+   "onTarget": 3
   },
   {
    "n": 140,
    "role": "tough",
    "target": 47.30042016806723,
-   "seed": 5,
-   "score": 32,
-   "pairs": 1,
+   "seed": 15,
+   "score": 35.25,
+   "pairs": 0,
    "onTarget": 0
   },
   {
    "n": 141,
    "role": "ordinary",
    "target": 32.39495798319328,
-   "seed": 2,
-   "score": 18.666666666666668,
+   "seed": 6,
+   "score": 33.33333333333333,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 1
   },
   {
    "n": 142,
    "role": "ordinary",
    "target": 32.58403361344538,
    "seed": 5,
-   "score": 18.666666666666668,
+   "score": 31.333333333333336,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 32.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.7142857142857143,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 143,
    "role": "ordinary",
    "target": 32.773109243697476,
-   "seed": 8,
-   "score": 23.333333333333332,
+   "seed": 3,
+   "score": 32,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 1
   },
   {
    "n": 144,
    "role": "ordinary",
    "target": 32.96218487394958,
-   "seed": 10,
-   "score": 26,
+   "seed": 3,
+   "score": 29.333333333333332,
    "pairs": 1,
-   "onTarget": 0
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 32.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2142857142857142,
+    "nearestPairs": 1
+   }
   },
   {
    "n": 145,
@@ -1529,13 +1565,13 @@
    "role": "ordinary",
    "target": 33.15126050420168,
    "seed": 3,
-   "score": 30,
+   "score": 36.666666666666664,
    "pairs": 0,
-   "onTarget": 2,
+   "onTarget": 4,
    "preference": {
-    "nearestScore": 33.33333333333333,
+    "nearestScore": 34,
     "nearestMeaningful": 1,
-    "nearestBlockers": 1.2666666666666666,
+    "nearestBlockers": 0.9333333333333333,
     "nearestPairs": 0
    }
   },
@@ -1543,46 +1579,47 @@
    "n": 147,
    "role": "ordinary",
    "target": 33.34033613445378,
-   "seed": 5,
-   "score": 18,
+   "seed": 1,
+   "score": 30,
    "pairs": 1,
-   "onTarget": 0
+   "onTarget": 2
   },
   {
    "n": 148,
    "role": "ordinary",
    "target": 33.529411764705884,
    "seed": 8,
-   "score": 32.666666666666664,
+   "score": 37.333333333333336,
    "pairs": 0,
-   "onTarget": 2,
-   "preference": {
-    "nearestScore": 33.33333333333333,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1,
-    "nearestPairs": 0
-   }
+   "onTarget": 1
   },
   {
    "n": 149,
    "role": "ordinary",
    "target": 33.71848739495798,
-   "seed": 3,
-   "score": 18,
+   "seed": 9,
+   "score": 29.333333333333332,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 29.333333333333332,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0666666666666667,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 150,
    "role": "finale",
    "target": 55.71848739495798,
-   "seed": 10,
-   "score": 56.666666666666664,
+   "seed": 19,
+   "score": 54.50000000000001,
    "pairs": 0,
-   "onTarget": 1,
+   "onTarget": 3,
    "finale": {
     "wanted": 55.71848739495798,
-    "hardestTough": 38,
+    "guard": 45.75,
+    "hardestTough": 40.75,
     "issues": []
    }
   },
@@ -1667,25 +1704,37 @@
    "role": "tough",
    "target": 49.569327731092436,
    "seed": 5,
-   "score": 48.66666666666667,
+   "score": 53.25,
    "pairs": 0,
-   "onTarget": 2
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 50.5,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.375,
+    "nearestPairs": 2
+   }
   },
   {
    "n": 161,
    "role": "ordinary",
    "target": 34.66386554621849,
-   "seed": 2,
-   "score": 36,
+   "seed": 4,
+   "score": 30.666666666666664,
    "pairs": 0,
-   "onTarget": 2
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 34,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.8666666666666667,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 162,
    "role": "ordinary",
    "target": 34.85294117647059,
-   "seed": 7,
-   "score": 38,
+   "seed": 10,
+   "score": 30,
    "pairs": 0,
    "onTarget": 1
   },
@@ -1694,7 +1743,7 @@
    "role": "ordinary",
    "target": 35.042016806722685,
    "seed": 5,
-   "score": 22.666666666666664,
+   "score": 41.333333333333336,
    "pairs": 0,
    "onTarget": 0
   },
@@ -1702,10 +1751,16 @@
    "n": 164,
    "role": "ordinary",
    "target": 35.23109243697479,
-   "seed": 7,
-   "score": 29.333333333333332,
+   "seed": 6,
+   "score": 37.333333333333336,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 37.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.7333333333333333,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 165,
@@ -1719,12 +1774,12 @@
    "n": 166,
    "role": "ordinary",
    "target": 35.42016806722689,
-   "seed": 9,
-   "score": 38.666666666666664,
-   "pairs": 0,
-   "onTarget": 2,
+   "seed": 2,
+   "score": 33.33333333333333,
+   "pairs": 1,
+   "onTarget": 4,
    "preference": {
-    "nearestScore": 38,
+    "nearestScore": 34.66666666666667,
     "nearestMeaningful": 1,
     "nearestBlockers": 1.0555555555555556,
     "nearestPairs": 0
@@ -1734,41 +1789,35 @@
    "n": 167,
    "role": "ordinary",
    "target": 35.60924369747899,
-   "seed": 4,
-   "score": 40,
+   "seed": 7,
+   "score": 36.666666666666664,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 3
   },
   {
    "n": 168,
    "role": "ordinary",
    "target": 35.79831932773109,
-   "seed": 4,
-   "score": 36.666666666666664,
+   "seed": 8,
+   "score": 37.333333333333336,
    "pairs": 0,
-   "onTarget": 2,
-   "preference": {
-    "nearestScore": 36.666666666666664,
-    "nearestMeaningful": 1,
-    "nearestBlockers": 1.1666666666666667,
-    "nearestPairs": 0
-   }
+   "onTarget": 2
   },
   {
    "n": 169,
    "role": "ordinary",
    "target": 35.98739495798319,
    "seed": 6,
-   "score": 36,
+   "score": 40,
    "pairs": 0,
-   "onTarget": 2
+   "onTarget": 1
   },
   {
    "n": 170,
    "role": "tough",
    "target": 51.081932773109244,
    "seed": 3,
-   "score": 39.33333333333333,
+   "score": 35.5,
    "pairs": 0,
    "onTarget": 0
   },
@@ -1785,19 +1834,25 @@
    "n": 172,
    "role": "ordinary",
    "target": 36.365546218487395,
-   "seed": 9,
-   "score": 36.666666666666664,
+   "seed": 2,
+   "score": 38,
    "pairs": 0,
-   "onTarget": 1
+   "onTarget": 2
   },
   {
    "n": 173,
    "role": "ordinary",
    "target": 36.5546218487395,
-   "seed": 5,
-   "score": 20.666666666666668,
+   "seed": 10,
+   "score": 33.33333333333333,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 34,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1,
+    "nearestPairs": 0
+   }
   },
   {
    "n": 174,
@@ -1820,10 +1875,10 @@
    "n": 176,
    "role": "ordinary",
    "target": 36.9327731092437,
-   "seed": 4,
-   "score": 42,
+   "seed": 5,
+   "score": 32.666666666666664,
    "pairs": 0,
-   "onTarget": 0
+   "onTarget": 2
   },
   {
    "n": 177,
@@ -1838,8 +1893,8 @@
    "n": 178,
    "role": "ordinary",
    "target": 37.310924369747895,
-   "seed": 1,
-   "score": 32,
+   "seed": 5,
+   "score": 43.333333333333336,
    "pairs": 0,
    "onTarget": 0
   },
@@ -1847,8 +1902,8 @@
    "n": 179,
    "role": "ordinary",
    "target": 37.5,
-   "seed": 9,
-   "score": 36,
+   "seed": 8,
+   "score": 38.666666666666664,
    "pairs": 0,
    "onTarget": 1
   },
@@ -1856,23 +1911,24 @@
    "n": 180,
    "role": "finale",
    "target": 59.5,
-   "seed": 6,
-   "score": 38,
+   "seed": 3,
+   "score": 61.25000000000001,
    "pairs": 0,
-   "onTarget": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 61,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.380952380952381,
+    "nearestPairs": 0
+   },
    "finale": {
     "wanted": 59.5,
-    "hardestTough": 48.66666666666667,
-    "issues": [
-     "not-above-tough"
-    ]
+    "guard": 58.25,
+    "hardestTough": 53.25,
+    "issues": []
    }
   }
  ],
  "missing": [],
- "finaleProblems": [
-  30,
-  120,
-  180
- ]
+ "finaleProblems": []
 }
