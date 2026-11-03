@@ -227,11 +227,16 @@ export class Stage {
     tile.position.y = 0.05;
     tile.receiveShadow = true;
     g.add(tile);
-    const tri = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.55, 3), new THREE.MeshStandardMaterial({ color: 0x8c7b4f }));
-    tri.rotation.x = Math.PI / 2;
-    tri.position.y = 0.11;
+    const mark = new THREE.MeshStandardMaterial({ color: ARROW_MARK.color });
+    const frame = new THREE.Mesh(new THREE.ExtrudeGeometry(arrowTileFrame(), { depth: ARROW_MARK.frameDepth, bevelEnabled: false }), mark);
+    frame.rotation.x = Math.PI / 2;
+    frame.position.y = ARROW_MARK.tileTop + ARROW_MARK.frameDepth;
+    g.add(frame);
+    const arrow = new THREE.Mesh(new THREE.ExtrudeGeometry(arrowShape(), { depth: ARROW_MARK.arrowDepth, bevelEnabled: false }), mark);
+    arrow.rotation.x = Math.PI / 2;
+    arrow.position.y = ARROW_MARK.tileTop + ARROW_MARK.arrowDepth;
     const holder = new THREE.Group();
-    holder.add(tri);
+    holder.add(arrow);
     const v = directionVector(dir);
     holder.rotation.y = Math.atan2(v.x, v.y);
     g.add(holder);
@@ -357,4 +362,47 @@ export class Stage {
   render(): void {
     this.composer.render();
   }
+}
+
+/**
+ * Arrow tile mark, in cells: a flat arrow with a short shaft and a big head (tip forward) and a thin frame just inside the
+ * tile's rim, both embossed on the tile top in one colour. The frame still shows when an animal hides the arrow.
+ */
+const ARROW_MARK = {
+  color: 0x8c7b4f,
+  tileTop: 0.09,
+  arrowDepth: 0.03,
+  shaft: 0.13,
+  head: 0.34,
+  headLength: 0.4,
+  length: 0.62,
+  frameOuter: 0.44,
+  frameBand: 0.06,
+  frameDepth: 0.012,
+};
+
+/** The arrow outline in the shape plane, tip along +Y (+Z once laid flat by rotating X a quarter turn). */
+function arrowShape(): THREE.Shape {
+  const { shaft, head, headLength, length } = ARROW_MARK;
+  const tail = -length / 2;
+  const neck = length / 2 - headLength;
+  const s = new THREE.Shape();
+  s.moveTo(-shaft, tail);
+  s.lineTo(shaft, tail);
+  s.lineTo(shaft, neck);
+  s.lineTo(head, neck);
+  s.lineTo(0, length / 2);
+  s.lineTo(-head, neck);
+  s.lineTo(-shaft, neck);
+  s.closePath();
+  return s;
+}
+
+/** A square ring just inside the tile's rounded rim. */
+function arrowTileFrame(): THREE.Shape {
+  const o = ARROW_MARK.frameOuter;
+  const i = o - ARROW_MARK.frameBand;
+  const s = new THREE.Shape([new THREE.Vector2(-o, -o), new THREE.Vector2(o, -o), new THREE.Vector2(o, o), new THREE.Vector2(-o, o)]);
+  s.holes.push(new THREE.Path([new THREE.Vector2(-i, -i), new THREE.Vector2(-i, i), new THREE.Vector2(i, i), new THREE.Vector2(i, -i)]));
+  return s;
 }
