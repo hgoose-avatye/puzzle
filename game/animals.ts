@@ -51,6 +51,13 @@ const BADGE_NUMBER_FONT = "700 70px Pretendard, system-ui, -apple-system, 'Apple
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
+/**
+ * 2.5D cards: the badge hangs from a pointer whose tip sits on the top of its own animal's picture. A badge floating
+ * over the head lands on the animal behind once the camera tilts, so on a crowded board it read as that animal's.
+ */
+const CARD_BADGE_H = 200;
+/** small lift of the pointer tip above spriteCards' badgeTip, in world units */
+const CARD_BADGE_LIFT = 0.04;
 const LAUNCH_TIME = 0.2;
 const GATE_TIME = 0.4;
 /** cells past the gate over which a block shrinks away */
@@ -70,10 +77,10 @@ export const fuseTone = (n: number): { line: string; text: string } =>
  * A cream speech-bubble pill over the head: icons, then the bomb's remaining taps in big digits. The light fill keeps
  * a black bomb readable on a dark animal (penguin, husky).
  */
-function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
+function badgeTexture(items: string[], number?: number, pointer = false): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 320;
-  c.height = 128;
+  c.height = pointer ? CARD_BADGE_H : 128;
   const ctx = c.getContext('2d')!;
   const tone = number === undefined ? { line: '#8a7a5c', text: '#3b3a36' } : fuseTone(number);
   const iconW = 76;
@@ -82,6 +89,20 @@ function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
   const x0 = (320 - w) / 2;
   const paint = (): void => {
     ctx.clearRect(0, 0, c.width, c.height);
+    if (pointer) {
+      // a tapering stem from the bubble down to a dot on the animal's head (the sprite's anchor is the dot)
+      ctx.fillStyle = tone.line;
+      ctx.beginPath();
+      ctx.moveTo(149, 100);
+      ctx.lineTo(171, 100);
+      ctx.lineTo(163, CARD_BADGE_H - 12);
+      ctx.lineTo(157, CARD_BADGE_H - 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(160, CARD_BADGE_H - 10, 9, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = '#fff8e8';
     ctx.strokeStyle = tone.line;
     ctx.lineWidth = 10;
@@ -212,6 +233,13 @@ export class PieceView {
   private pulseT = 0;
   readonly bodyLen: number;
   private gatePos = new THREE.Vector3();
+  /** drawn as 2.5D picture cards (the Classic 3D blocks keep their own badge and Zzz) */
+  readonly cards: boolean;
+  /** 2.5D: the badge's items and whether the animal sleeps, so either change repaints one badge */
+  private badgeItems: string[] = [];
+  private asleep = false;
+  /** badge height over width */
+  private badgeRatio = 0.4;
 
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
@@ -226,6 +254,7 @@ export class PieceView {
     // Plate under each cell, following the path: Classic 3D in the animal's colour so the whole animal reads as one
     // colour; 2.5D cards as a neutral shadow pad (the pictures carry the identity, the gate and the V keep the colour).
     const cards = this.segments[0]?.userData.spriteCards === true;
+    this.cards = cards;
     const plateMaterial = (): THREE.Material =>
       cards
         ? new THREE.MeshStandardMaterial({ color: CARD_PLATE.color, transparent: true, opacity: CARD_PLATE.opacity, roughness: 1 })
@@ -238,7 +267,11 @@ export class PieceView {
     }
 
     this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false }));
-    this.badge.scale.set(BADGE_W, BADGE_W * 0.4, 1);
+    if (cards) {
+      this.badgeRatio = CARD_BADGE_H / 320;
+      this.badge.center.set(0.5, 0); // anchored at the pointer's tip
+    }
+    this.badge.scale.set(BADGE_W, BADGE_W * this.badgeRatio, 1);
     this.badge.renderOrder = 10;
     this.badge.visible = false;
     this.group.add(this.badge);
@@ -285,7 +318,10 @@ export class PieceView {
       plate.rotation.y = q.angle;
     });
     const h = this.segments[0].position;
-    this.badge.position.set(h.x, 2.1, h.z);
+    // 2.5D: the pointer's tip just inside the top of the head picture as last drawn (spriteCards sets badgeTip each frame)
+    const tip = this.cards ? (this.segments[0].userData.badgeTip as THREE.Vector3 | undefined) : undefined;
+    if (tip) this.badge.position.set(tip.x, tip.y + CARD_BADGE_LIFT, tip.z);
+    else this.badge.position.set(h.x, 2.1, h.z);
     this.zzz.position.set(h.x, 0, h.z);
   }
 
@@ -387,6 +423,18 @@ export class PieceView {
   }
 
   setBadges(items: string[], number?: number): void {
+    if (this.cards) {
+      this.badgeItems = items;
+      this.badgeCount = number;
+      this.showBadge(this.asleep ? [...items, '💤'] : items, number);
+      return;
+    }
+    this.showBadge(items, number);
+  }
+
+  private badgeCount: number | undefined;
+
+  private showBadge(items: string[], number?: number): void {
     if (items.length === 0) {
       this.badge.visible = false;
       return;
@@ -399,7 +447,7 @@ export class PieceView {
     this.badgeNumber = number;
     const mat = this.badge.material as THREE.SpriteMaterial;
     mat.map?.dispose();
-    mat.map = badgeTexture(items, number);
+    mat.map = badgeTexture(items, number, this.cards);
     mat.needsUpdate = true;
     this.badge.visible = true;
   }
@@ -413,7 +461,7 @@ export class PieceView {
       k += Math.sin((1 - this.badgePopT / BADGE_POP) * Math.PI) * 0.35;
     }
     if (this.badgeNumber !== undefined && this.badgeNumber <= 2) k += Math.max(0, Math.sin(this.clock * 7)) * 0.12;
-    this.badge.scale.set(BADGE_W * k, BADGE_W * 0.4 * k, 1);
+    this.badge.scale.set(BADGE_W * k, BADGE_W * this.badgeRatio * k, 1);
   }
 
   /** Three Z's rise from the head one after another, growing and fading out. */
@@ -443,8 +491,38 @@ export class PieceView {
 
   get color(): number { return pieceColor(this.piece.id).getHex(); }
 
+  /** Classic 3D: Z's rising from the body. 2.5D: a 💤 on the head badge, so it points at its sleeper like the others. */
   setAsleep(asleep: boolean): void {
-    this.zzz.visible = asleep;
+    if (!this.cards) {
+      this.zzz.visible = asleep;
+      return;
+    }
+    this.zzz.visible = false;
+    if (asleep === this.asleep) return;
+    this.asleep = asleep;
+    this.showBadge(asleep ? [...this.badgeItems, '💤'] : this.badgeItems, this.badgeCount);
+  }
+
+  /**
+   * 2.5D tap test on the badge as drawn: distance along the ray when it hits an opaque pixel of the visible badge
+   * (pointer included), else null. The badge is drawn over everything, so the caller tries it before the cards.
+   */
+  badgeHitDistance(ray: THREE.Raycaster): number | null {
+    if (!this.badge.visible || !this.group.visible) return null;
+    const hit = ray.intersectObject(this.badge, false)[0];
+    const canvas = (this.badge.material as THREE.SpriteMaterial).map?.image as HTMLCanvasElement | undefined;
+    if (!hit?.uv || !canvas) return null;
+    const x = Math.min(canvas.width - 1, Math.floor(hit.uv.x * canvas.width));
+    const y = Math.min(canvas.height - 1, Math.floor((1 - hit.uv.y) * canvas.height));
+    return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 127 ? hit.distance : null;
+  }
+
+  /** 2.5D tap test on the picture cards: distance to the nearest opaque card pixel under the ray (spriteCards drops transparent texels), else null. */
+  cardHitDistance(ray: THREE.Raycaster): number | null {
+    if (!this.group.visible) return null;
+    const drawn = (o: THREE.Object3D | null): boolean => { for (; o && o !== this.group; o = o.parent) if (!o.visible) return false; return true; };
+    const hit = ray.intersectObjects(this.segments, true).find((h) => h.object.userData.spriteCard === true && drawn(h.object));
+    return hit ? hit.distance : null;
   }
 
   /** `onExit` fires once when the head crosses the board edge (the gate); `onDone` when the whole body is gone. */
