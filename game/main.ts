@@ -7,7 +7,8 @@ import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
-import { TitleScreen, titleBoard } from './screens';
+import { TitleScreen, titleBoard, type BoardBand } from './screens';
+import { Modal, para, ruleRow, type RuleText } from './modal';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -19,6 +20,7 @@ import * as THREE from 'three';
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const stage = new Stage($('app'));
 const fx = new Fx(stage.scene);
+const modal = new Modal();
 /** The level in play: rules, animals running out, touch input. Null while a level loads. */
 // the cast keeps TypeScript from narrowing this to null inside the render loop that starts right away
 let flow = null as PlayFlow | null;
@@ -28,6 +30,8 @@ let levelNumber = 1;
 /** Hearts the level started with, for the empty-heart outlines in the HUD. */
 let maxHearts = 0;
 let loadToken = 0;
+/** Running speed for the board in view when it is not the game's own (the title's slow runner); null: the game's. */
+let loopSpeed: number | null = null;
 /** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
 /** Animals that were sent out and have not crossed their gate yet. */
 const pendingExits = new Set<number>();
@@ -130,6 +134,7 @@ function clearBoard(): number {
   const token = ++loadToken;
   $('popup').hidden = true;
   $('banner').hidden = true;
+  loopSpeed = null;
   $('msg').textContent = '';
   fx.clear();
   sound.stopAll();
@@ -307,17 +312,22 @@ const SEEN_KEY = 'animal-rescue-seen';
 const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); } catch { return []; } };
 const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch { /* ignore */ } };
 
+/**
+ * First-time rule tips: id (kept in the seen list), short name, text, and whether the level uses the rule. The 🔒 🔑 💣
+ * left in the texts are the badges drawn over those animals, so the text points at what is on the board.
+ */
 const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolean]> = [
-  ['basic', '👆', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르면 가는 길이 보여요.', () => true],
-  ['arrow', '➡️', '바닥의 화살표 칸을 지나면 그 방향으로 꺾여요. 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
-  ['obstacle', '🪵', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
-  ['crate', '📦', '상자나 건초더미가 길을 막고 있어요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
-  ['long', '🐛', '몸이 긴 친구는 몸 전체가 지나갈 길이 비어 있어야 해요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
-  ['hearts', '♥', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
-  ['key', '🔑', '🔒 잠긴 친구는 🔑 열쇠를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
-  ['sleep', '💤', 'Zzz 자는 친구는 옆 친구가 나가면 깨어나요. 깨어나기 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
-  ['bomb', '💣', '💣 폭탄 친구 머리 위와 화면 오른쪽 위의 숫자는 "다른 친구가 몇 번 더 나가면 터지는지"예요. 1이 되면 빨갛게 알려 줘요. 폭탄 친구 앞을 먼저 비워서 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
+  ['basic', '친구 보내기', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르고 있으면 가는 길이 보여요.', () => true],
+  ['arrow', '화살표 칸', '화살표 칸을 지나면 그 방향으로 꺾이고, 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
+  ['obstacle', '장애물', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
+  ['crate', '상자', '상자와 건초더미는 길을 막아요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
+  ['long', '몸이 긴 친구', '몸 전체가 지나갈 길이 비어 있어야 나갈 수 있어요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
+  ['hearts', '하트', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
+  ['key', '열쇠와 자물쇠', '자물쇠(🔒)가 달린 친구는 열쇠(🔑)를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
+  ['sleep', '자는 친구', 'Zzz 표시가 있는 친구는 옆 친구가 나가면 깨어나요. 그 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
+  ['bomb', '폭탄', '폭탄(💣) 위의 숫자는 다른 친구가 몇 번 더 나가면 터지는지예요. 터지기 전에 폭탄 친구 앞을 비워서 먼저 구해 주세요.', (l) => l.pieces.some((p) => p.fuse !== undefined)],
 ];
+const ruleOf = ([, title, text]: (typeof TIPS)[number]): RuleText => ({ title, text });
 
 function showIntro(level: Level, hearts: boolean): void {
   if (DEMO) return;
@@ -332,13 +342,8 @@ function showIntro(level: Level, hearts: boolean): void {
   $('popupTitle').textContent = `레벨 ${levelNumber}`;
   const sub = $('popupSub');
   sub.innerHTML = '';
-  for (const [, icon, text] of fresh) {
-    const row = document.createElement('div');
-    row.className = 'tip';
-    row.textContent = `${icon}  ${text}`;
-    sub.appendChild(row);
-  }
-  $('popupBtn').textContent = '시작!';
+  for (const tip of fresh) sub.appendChild(ruleRow(ruleOf(tip)));
+  $('popupBtn').textContent = '알겠어요';
   $('popupBtn').onclick = () => { $('popup').hidden = true; };
   $('popupHome').hidden = true;
 }
@@ -381,25 +386,26 @@ async function playInterludes(list: Interlude[]): Promise<void> {
       const pal = PALETTES[theme];
       const box = $('interlude');
       box.style.background = `linear-gradient(180deg, #${new THREE.Color(pal.sky).getHexString()} 0%, #${new THREE.Color(pal.ground).getHexString()} 100%)`;
-      const set = (icon: string, kicker: string, title: string, sub: string, btn: string): void => {
+      // one short line under the title; the friends saved go in their own small tray (empty: no tray)
+      const set = (icon: string, kicker: string, title: string, sub: string, stat: string, btn: string): void => {
         $('ilIcon').textContent = icon;
         $('ilKicker').textContent = kicker;
         $('ilTitle').textContent = title;
         $('ilSub').textContent = sub;
+        $('ilStat').textContent = stat;
         $('ilBtn').textContent = btn;
       };
-      const saved = `지금까지 구한 친구 ${readRescued()}마리`;
+      const saved = `구한 친구 ${readRescued()}마리`;
       if (it.kind === 'stage-done') {
         const d = splitName(it.done);
-        const nx = splitName(it.next);
-        set(stageIcon(it.done), `${d.region}`, `${d.place} 완료!`, `${saved}\n다음은 ${stageIcon(it.next)} ${nx.place}`, '다음 스테이지');
+        set(stageIcon(it.done), d.region, `${d.place} 완료!`, `다음은 ${splitName(it.next).place}`, saved, '다음 스테이지');
       } else if (it.kind === 'chapter-done') {
-        set('🏅', '여행 기록', `${splitName(it.done).region} 여행 완료!`, `${saved}\n이 지역의 친구들을 모두 구했어요`, '계속');
+        set('🏅', '여행 기록', `${splitName(it.done).region}\n여행 완료!`, '이 지역 친구들을 모두 구했어요', saved, '계속');
       } else if (it.kind === 'chapter-intro') {
         const nx = splitName(it.next);
-        set(stageIcon(it.next), `챕터 ${it.next.chapter}`, `${nx.region}에 도착했어요!`, `첫 번째 장소는 ${nx.place}\n새로운 친구들이 기다리고 있어요`, '출발!');
+        set(stageIcon(it.next), `챕터 ${it.next.chapter}`, `${nx.region}에 도착!`, `첫 장소는 ${nx.place}`, '', '출발!');
       } else {
-        set('🎉', '세계 일주 완료', '모든 친구를 구했어요!', `${saved}\n함께해 주셔서 고마워요`, '처음부터 다시');
+        set('🎉', '세계 일주 완료', '모든 친구를\n구했어요!', '함께해 주셔서 고마워요', saved, '처음부터 다시');
       }
       sound.play('clear');
       box.hidden = false;
@@ -419,7 +425,10 @@ function showEnd(won: boolean): void {
   $('msg').textContent = '';
   $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
-  $('popupHearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
+  // a bomb ends the level whatever the hearts are, so the bomb card shows no hearts
+  $('popupHearts').innerHTML = state.hearts === undefined || (!won && state.exploded) ? '' : heartsMarkup(state.hearts, maxHearts);
+  // the level is over: a retry question still open is moot
+  if (modal.kind === 'retry') modal.close();
   $('popupBtn').className = won ? 'primary' : 'yellow';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
@@ -465,7 +474,19 @@ canvas.addEventListener('pointercancel', (e) => {
   release(released);
   touchDebug?.log({ kind: 'cancel', e, picked: released, result: 'cancelled by the browser' });
 });
-$('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
+/**
+ * Retry from the bottom bar. Once something has been tapped it first asks, so a slip of the finger next to the hint
+ * button does not throw the board away; "취소" leaves the level exactly as it was. Nothing tapped yet: retry at once.
+ */
+$('retry').addEventListener('click', () => {
+  sound.unlock();
+  const state = current();
+  if (!state || state.taps === 0) { void loadLevel(levelNumber); return; }
+  modal.open('retry', '다시 할까요?', [para('지금까지 푼 것이 처음 상태로 돌아가요.')], [
+    { id: 'retryYes', label: '다시 하기', kind: 'yellow', onClick: () => { modal.close(); void loadLevel(levelNumber); } },
+    { id: 'retryNo', label: '취소', kind: 'secondary', onClick: () => modal.close() },
+  ]);
+});
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 // skipping levels without clearing them is a testing aid only
 $('next').hidden = !params.has('dev');
@@ -499,7 +520,7 @@ const clock = new THREE.Clock();
   dustT += dt;
   const dust = dustT > 0.07;
   if (dust) dustT = 0;
-  for (const e of flow?.step(dt, runSpeed()) ?? []) {
+  for (const e of flow?.step(dt, loopSpeed ?? runSpeed()) ?? []) {
     const v = views.get(e.id);
     if (e.type === 'wait' && !e.quiet && v) collide(e.id, v);
   }
@@ -527,30 +548,96 @@ const paintMute = (): void => {
 paintMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
 
-/** Home: the title over a small board of the game's animals facing the camera. Leaves the saved progress alone. */
+/** Home: the title over a small board where the front animal runs out on a loop. Leaves the saved progress alone. */
 function goHome(): void {
-  clearBoard();
+  const token = clearBoard();
   speciesOverride.clear();
   const board = titleBoard();
   for (const [id, name] of board.species) speciesOverride.set(id, name);
   stage.setBoard(board.level, 'village', 1, 1);
-  addViews(board.level);
-  // the title shows the animals themselves, without the play aids (colour plates, gates, floor V)
-  for (const v of views.values()) { v.hideMarkers(); for (const m of v.markParts()) m.visible = false; }
   const saved = readProgress();
   title.show(hasSavedProgress(saved) ? { level: saved, place: stageFor(saved).name } : null);
+  layoutTitle(board.level);
+  titleRun(board.level, board.runner, token);
 }
+
+/** Screen band of a board: from above its back row's animals down to its front gates (CSS pixels). */
+function boardBand(level: Level): BoardBand {
+  const rect = stage.renderer.domElement.getBoundingClientRect();
+  const y = (p: THREE.Vector3): number => rect.top + ((1 - p.project(stage.camera).y) / 2) * rect.height;
+  const h = level.height / 2;
+  return { top: y(new THREE.Vector3(0, 0.9, -h)), bottom: y(new THREE.Vector3(0, 0, h + 0.7)) };
+}
+
+/** Height of the title's two-button block (64 px 이어하기 + 14 px gap + 56 px 처음부터). */
+const TITLE_BUTTONS = 134;
+/** Room kept free above the logo and below the buttons. */
+const TITLE_MARGIN = 16;
+/** Gaps between the logo and the board, and between the board and the buttons (as in the title's CSS). */
+const TITLE_GAPS = 4 + 16;
+
+/**
+ * Hang the logo above the board and the buttons below it, and frame the board so that whole block sits in the middle
+ * of the screen: smaller when the screen is too short for it (a landscape window), never larger than fitted. Room for
+ * both buttons (이어하기 + 처음부터) is kept even when only 게임 시작 shows, so the logo and board never move between the two.
+ */
+function layoutTitle(level: Level): void {
+  stage.frame(1, 0);
+  title.layout(boardBand(level));
+  const head = document.querySelector('#title .tHead')!.getBoundingClientRect().height;
+  const buttons = Math.max(document.querySelector('#title .tButtons')!.getBoundingClientRect().height, TITLE_BUTTONS);
+  const fitted = boardBand(level);
+  const room = innerHeight - 2 * TITLE_MARGIN - head - buttons - TITLE_GAPS;
+  const zoom = Math.max(0.4, Math.min(1, room / (fitted.bottom - fitted.top)));
+  stage.frame(zoom, 0);
+  const band = boardBand(level);
+  const top = band.top - 4 - head;
+  const bottom = band.bottom + 16 + buttons;
+  stage.frame(zoom, Math.round((innerHeight - top - bottom) / 2));
+  title.layout(boardBand(level));
+}
+
+/** The title loop, in ms from a fresh board: the runner's hop and path, the run, then the board again. */
+const TITLE_RUN = { mark: 700, go: 1300, again: 3800 };
+/** The title's runner goes at about a third of the game's pace, so its way to the gate can be followed. */
+const TITLE_RUN_SPEED = 2.4;
+
+/**
+ * One round of the title loop: a fresh board, the runner hops and shows its way, runs out through its gate, then the
+ * same again. Quiet (no sounds). Stops by itself once anything else loads (the token moves on).
+ */
+function titleRun(level: Level, runner: number, token: number): void {
+  const live = (): boolean => token === loadToken;
+  for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
+  views = new Map();
+  addViews(level);
+  // the gates and plates stay (they show where each friend goes out); the V over the heads is a play aid
+  for (const v of views.values()) for (const m of v.markParts()) m.visible = false;
+  flow = new PlayFlow(level);
+  loopSpeed = TITLE_RUN_SPEED;
+  window.setTimeout(() => {
+    const view = views.get(runner);
+    if (!live() || !view) return;
+    view.pulse();
+    view.showPath(true);
+  }, TITLE_RUN.mark);
+  window.setTimeout(() => {
+    const view = views.get(runner);
+    if (!live() || !view || flow?.tap(runner, performance.now())?.type !== 'exited') return;
+    view.showPath(false);
+    fx.launch(view.headWorld());
+    view.runOut(() => {}, () => { fx.burst(view.gateWorld(), view.color); fx.sparkle(view.gateWorld(), view.color); });
+  }, TITLE_RUN.go);
+  window.setTimeout(() => { if (live()) titleRun(level, runner, token); }, TITLE_RUN.again);
+}
+window.addEventListener('resize', () => { if (title.visible && flow) layoutTitle(flow.level); });
 
 function startLevel(n: number): void {
   title.hide();
   void loadLevel(n);
 }
 
-const title = new TitleScreen(
-  { start: () => startLevel(1), resume: () => startLevel(readProgress()), restart: () => startLevel(1) },
-  // now and then one animal on the title board gives a little hop
-  () => { const all = [...views.values()]; all[Math.floor(Math.random() * all.length)]?.pulse(); },
-);
+const title = new TitleScreen({ start: () => startLevel(1), resume: () => startLevel(readProgress()), restart: () => startLevel(1) });
 $('home').addEventListener('click', goHome);
 
 // dev entry points (?level, ?demo) go straight into play; a build has no parameters and always opens on the title

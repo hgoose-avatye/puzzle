@@ -1,22 +1,34 @@
 import type { Level } from '../src/core/types';
 
 /**
- * The title screen: an overlay over the 3D board, which shows a few of the game's own animals facing the camera.
- * main.ts builds that board and starts levels; this file only owns the overlay and its buttons.
+ * The title screen: an overlay over the 3D board, the logo above it and the buttons below it.
+ * main.ts builds that board, runs its loop and starts levels; this file only owns the overlay and its buttons.
  */
 
-/** Animals on the title board, all facing the camera so their faces show; species pinned per id. */
-export function titleBoard(): { level: Level; species: Map<number, string> } {
-  const rows: Array<[number, string, Array<[number, number]>]> = [
-    [1, 'penguin', [[0, 1]]], [2, 'chick', [[2, 1]]], [3, 'parrot', [[4, 1]]],
-    [4, 'fox', [[1, 3], [1, 2]]], [5, 'pig', [[3, 3], [3, 2]]],
+/**
+ * The title board: 3 x 3, where only the chick at the front can leave; everyone else is blocked by another animal.
+ * Each animal has its own gate, so the gates show where friends go out; main.ts sends the chick out on a loop.
+ *   . . P      P pig (head below, facing down)
+ *   F F P      F fox (head right, facing right)
+ *   r c n      r parrot (right), c chick (down, the one that runs out), n penguin (left)
+ */
+export function titleBoard(): { level: Level; species: Map<number, string>; runner: number } {
+  const rows: Array<[number, string, Array<[number, number]>, 'down' | 'left' | 'right' | undefined]> = [
+    [1, 'chick', [[1, 2]], 'down'], [2, 'fox', [[1, 1], [0, 1]], undefined], [3, 'pig', [[2, 1], [2, 0]], undefined],
+    [4, 'penguin', [[2, 2]], 'left'], [5, 'parrot', [[0, 2]], 'right'],
   ];
   const species = new Map<number, string>();
-  const pieces: Level['pieces'] = rows.map(([id, name, cells]) => {
+  const pieces: Level['pieces'] = rows.map(([id, name, cells, dir]) => {
     species.set(id, name);
-    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(cells.length === 1 ? { dir: 'down' as const } : {}) };
+    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(dir ? { dir } : {}) };
   });
-  return { level: { width: 5, height: 4, pieces }, species };
+  return { level: { width: 3, height: 3, pieces }, species, runner: 1 };
+}
+
+/** Where the title board is drawn on screen, in CSS pixels: the top of its animals and the bottom of its gates. */
+export interface BoardBand {
+  top: number;
+  bottom: number;
 }
 
 export interface TitleChoice {
@@ -28,13 +40,10 @@ export interface TitleChoice {
   restart: () => void;
 }
 
-const HOP_MS = 1400;
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
 export class TitleScreen {
-  private hopTimer: number | undefined;
-
-  constructor(choice: TitleChoice, private readonly hop: () => void) {
+  constructor(choice: TitleChoice) {
     $('tStart').onclick = choice.start;
     $('tContinue').onclick = choice.resume;
     $('tRestart').onclick = choice.restart;
@@ -48,14 +57,18 @@ export class TitleScreen {
     $('tContinue').hidden = saved === null;
     $('tRestart').hidden = saved === null;
     $('tWhere').textContent = saved ? `레벨 ${saved.level} · ${saved.place}` : '';
-    window.clearInterval(this.hopTimer);
-    this.hopTimer = window.setInterval(this.hop, HOP_MS);
+  }
+
+  /** Hang the logo above and the buttons below where the board is drawn. */
+  layout(band: BoardBand): void {
+    const t = $('title');
+    t.style.setProperty('--board-top', `${Math.round(band.top)}px`);
+    t.style.setProperty('--board-bottom', `${Math.round(band.bottom)}px`);
   }
 
   hide(): void {
     document.body.classList.remove('on-title');
     $('title').hidden = true;
-    window.clearInterval(this.hopTimer);
   }
 
   get visible(): boolean {

@@ -153,6 +153,7 @@ export async function runP0Checks(browser, base, report) {
     for (let k = 0; k < 300 && (await p.evaluate(() => window.__game.traffic?.get(2)?.state)) !== 'waiting'; k++) await sleep(10);
     const waiting = await p.evaluate(() => window.__game.traffic.get(2)?.state);
     await p.click('#retry');
+    await p.click('#retryYes'); // something was tapped, so retry asks first
     await sleep(50);
     const s0 = await settled(p), a = await st(p);
     await sleep(3000);
