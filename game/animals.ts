@@ -56,7 +56,7 @@ const BADGE_POP = 0.35;
  * over the head lands on the animal behind once the camera tilts, so on a crowded board it read as that animal's.
  */
 const CARD_BADGE_H = 200;
-/** gap between the pointer tip and the picture's top, in world units */
+/** small lift of the pointer tip above spriteCards' badgeTip, in world units */
 const CARD_BADGE_LIFT = 0.04;
 const LAUNCH_TIME = 0.2;
 const GATE_TIME = 0.4;
@@ -318,9 +318,9 @@ export class PieceView {
       plate.rotation.y = q.angle;
     });
     const h = this.segments[0].position;
-    // 2.5D: the pointer's tip on the top of the head picture as last drawn (spriteCards sets drawnTop each frame)
-    const top = this.cards ? (this.segments[0].userData.drawnTop as THREE.Vector3 | undefined) : undefined;
-    if (top) this.badge.position.set(top.x, top.y + CARD_BADGE_LIFT, top.z);
+    // 2.5D: the pointer's tip just inside the top of the head picture as last drawn (spriteCards sets badgeTip each frame)
+    const tip = this.cards ? (this.segments[0].userData.badgeTip as THREE.Vector3 | undefined) : undefined;
+    if (tip) this.badge.position.set(tip.x, tip.y + CARD_BADGE_LIFT, tip.z);
     else this.badge.position.set(h.x, 2.1, h.z);
     this.zzz.position.set(h.x, 0, h.z);
   }

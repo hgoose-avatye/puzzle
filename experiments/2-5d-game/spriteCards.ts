@@ -106,6 +106,13 @@ function alphaAt(img: HTMLImageElement, u: number, v: number): number {
   return m.a[(y * m.w + x) * 4 + 3];
 }
 
+/**
+ * How far below the top of the drawn picture the badge pointer ends, in picture heights. On levels 116, 117 and 120
+ * (2026-11-03) a tip on the very top landed on another animal or the floor for 8 of 12 badges; from 0.15 down every
+ * one was on its own animal.
+ */
+const BADGE_TIP_DROP = 0.25;
+
 /** the opaque part of a picture, in texture fractions from the top-left: where its drawn top and middle are */
 const opaqueBoxes = new Map<string, { top: number; mid: number }>();
 function opaqueBox(img: HTMLImageElement): { top: number; mid: number } {
@@ -200,11 +207,12 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     tmp.pos.add(tmp.head);
     tmp.pos.y += PLATE_TOP;
     placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror);
-    // where this picture's drawn top is in the world, for the status badge to point at (PieceView reads it on the head)
+    // where the status badge's pointer ends, in the world (PieceView reads it on the head): a little inside the top of
+    // the drawn picture, not on its edge, where ear tips and outlines let the animal behind or the floor show through
     const box = opaqueBox(img);
     card.updateWorldMatrix(true, false);
-    const top = (root.userData.drawnTop as THREE.Vector3 | undefined) ?? (root.userData.drawnTop = new THREE.Vector3());
-    top.set(box.mid - 0.5, 0.5 - box.top, 0).applyMatrix4(card.matrixWorld);
+    const tip = (root.userData.badgeTip as THREE.Vector3 | undefined) ?? (root.userData.badgeTip = new THREE.Vector3());
+    tip.set(box.mid - 0.5, Math.max(-0.4, 0.5 - box.top - BADGE_TIP_DROP), 0).applyMatrix4(card.matrixWorld);
   };
   return root;
 }
