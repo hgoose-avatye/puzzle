@@ -8,6 +8,7 @@ import { PieceView, runSpeed, speciesOverride } from './animals';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { TitleScreen, titleBoard } from './screens';
+import { Modal, para, ruleRow, type RuleText } from './modal';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -19,6 +20,7 @@ import * as THREE from 'three';
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const stage = new Stage($('app'));
 const fx = new Fx(stage.scene);
+const modal = new Modal();
 /** The level in play: rules, animals running out, touch input. Null while a level loads. */
 // the cast keeps TypeScript from narrowing this to null inside the render loop that starts right away
 let flow = null as PlayFlow | null;
@@ -307,17 +309,22 @@ const SEEN_KEY = 'animal-rescue-seen';
 const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); } catch { return []; } };
 const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch { /* ignore */ } };
 
+/**
+ * First-time rule tips: id (kept in the seen list), short name, text, and whether the level uses the rule. The 🔒 🔑 💣
+ * left in the texts are the badges drawn over those animals, so the text points at what is on the board.
+ */
 const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolean]> = [
-  ['basic', '👆', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르면 가는 길이 보여요.', () => true],
-  ['arrow', '➡️', '바닥의 화살표 칸을 지나면 그 방향으로 꺾여요. 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
-  ['obstacle', '🪵', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
-  ['crate', '📦', '상자나 건초더미가 길을 막고 있어요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
-  ['long', '🐛', '몸이 긴 친구는 몸 전체가 지나갈 길이 비어 있어야 해요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
-  ['hearts', '♥', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
-  ['key', '🔑', '🔒 잠긴 친구는 🔑 열쇠를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
-  ['sleep', '💤', 'Zzz 자는 친구는 옆 친구가 나가면 깨어나요. 깨어나기 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
-  ['bomb', '💣', '💣 폭탄 친구 머리 위와 화면 오른쪽 위의 숫자는 "다른 친구가 몇 번 더 나가면 터지는지"예요. 1이 되면 빨갛게 알려 줘요. 폭탄 친구 앞을 먼저 비워서 구해 주세요!', (l) => l.pieces.some((p) => p.fuse !== undefined)],
+  ['basic', '친구 보내기', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르고 있으면 가는 길이 보여요.', () => true],
+  ['arrow', '화살표 칸', '화살표 칸을 지나면 그 방향으로 꺾이고, 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
+  ['obstacle', '장애물', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
+  ['crate', '상자', '상자와 건초더미는 길을 막아요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
+  ['long', '몸이 긴 친구', '몸 전체가 지나갈 길이 비어 있어야 나갈 수 있어요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
+  ['hearts', '하트', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
+  ['key', '열쇠와 자물쇠', '자물쇠(🔒)가 달린 친구는 열쇠(🔑)를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
+  ['sleep', '자는 친구', 'Zzz 표시가 있는 친구는 옆 친구가 나가면 깨어나요. 그 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
+  ['bomb', '폭탄', '폭탄(💣) 위의 숫자는 다른 친구가 몇 번 더 나가면 터지는지예요. 터지기 전에 폭탄 친구 앞을 비워서 먼저 구해 주세요.', (l) => l.pieces.some((p) => p.fuse !== undefined)],
 ];
+const ruleOf = ([, title, text]: (typeof TIPS)[number]): RuleText => ({ title, text });
 
 function showIntro(level: Level, hearts: boolean): void {
   if (DEMO) return;
@@ -332,13 +339,8 @@ function showIntro(level: Level, hearts: boolean): void {
   $('popupTitle').textContent = `레벨 ${levelNumber}`;
   const sub = $('popupSub');
   sub.innerHTML = '';
-  for (const [, icon, text] of fresh) {
-    const row = document.createElement('div');
-    row.className = 'tip';
-    row.textContent = `${icon}  ${text}`;
-    sub.appendChild(row);
-  }
-  $('popupBtn').textContent = '시작!';
+  for (const tip of fresh) sub.appendChild(ruleRow(ruleOf(tip)));
+  $('popupBtn').textContent = '알겠어요';
   $('popupBtn').onclick = () => { $('popup').hidden = true; };
   $('popupHome').hidden = true;
 }
@@ -419,7 +421,10 @@ function showEnd(won: boolean): void {
   $('msg').textContent = '';
   $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
-  $('popupHearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
+  // a bomb ends the level whatever the hearts are, so the bomb card shows no hearts
+  $('popupHearts').innerHTML = state.hearts === undefined || (!won && state.exploded) ? '' : heartsMarkup(state.hearts, maxHearts);
+  // the level is over: a retry question still open is moot
+  if (modal.kind === 'retry') modal.close();
   $('popupBtn').className = won ? 'primary' : 'yellow';
   $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
@@ -465,7 +470,19 @@ canvas.addEventListener('pointercancel', (e) => {
   release(released);
   touchDebug?.log({ kind: 'cancel', e, picked: released, result: 'cancelled by the browser' });
 });
-$('retry').addEventListener('click', () => { sound.unlock(); void loadLevel(levelNumber); });
+/**
+ * Retry from the bottom bar. Once something has been tapped it first asks, so a slip of the finger next to the hint
+ * button does not throw the board away; "취소" leaves the level exactly as it was. Nothing tapped yet: retry at once.
+ */
+$('retry').addEventListener('click', () => {
+  sound.unlock();
+  const state = current();
+  if (!state || state.taps === 0) { void loadLevel(levelNumber); return; }
+  modal.open('retry', '다시 할까요?', [para('지금까지 푼 것이 처음 상태로 돌아가요.')], [
+    { id: 'retryYes', label: '다시 하기', kind: 'yellow', onClick: () => { modal.close(); void loadLevel(levelNumber); } },
+    { id: 'retryNo', label: '취소', kind: 'secondary', onClick: () => modal.close() },
+  ]);
+});
 $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 // skipping levels without clearing them is a testing aid only
 $('next').hidden = !params.has('dev');

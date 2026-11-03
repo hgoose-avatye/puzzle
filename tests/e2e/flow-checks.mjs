@@ -38,7 +38,7 @@ export async function runFlowChecks(browser, base, report) {
   });
   /** Close the first-time rule tips if they are showing. */
   const closeTips = async (p) => {
-    if (await p.evaluate(() => !document.getElementById('popup').hidden && document.getElementById('popupBtn').textContent === '시작!')) await p.click('#popupBtn');
+    if (await p.evaluate(() => !document.getElementById('popup').hidden && document.getElementById('popupBtn').textContent === '알겠어요')) await p.click('#popupBtn');
     await sleep(100);
   };
   /** Send out every animal (rules decide at once); returns the number of taps. */
@@ -120,7 +120,7 @@ export async function runFlowChecks(browser, base, report) {
     await closeTips(p);
     await clearAll(p);
     const a = await waitPopup(p);
-    check('flow: success popup with 다음 레벨 and 처음으로; level 2 saved', a.popup === '구출 성공!' && a.popupHome && a.saved === '2', JSON.stringify(a));
+    check('flow: success popup with 다음 레벨 and 홈으로; level 2 saved', a.popup === '구출 성공!' && a.popupHome && a.saved === '2', JSON.stringify(a));
     await p.click('#popupBtn');
     await sleep(600);
     const b = await ui(p);
@@ -136,7 +136,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#popupHome');
     await sleep(400);
     const a = await ui(p);
-    check('flow: 처음으로 on the success popup -> title offering 이어하기 at level 2', a.title && a.popup === null && a.resume && a.where.startsWith('레벨 2'), JSON.stringify(a));
+    check('flow: 홈으로 on the success popup -> title offering 이어하기 at level 2', a.title && a.popup === null && a.resume && a.where.startsWith('레벨 2'), JSON.stringify(a));
   });
 
   await scenario('fail -> retry and home', '7', async (p) => {
@@ -149,12 +149,16 @@ export async function runFlowChecks(browser, base, report) {
       await sleep(450);
     }
     const a = await ui(p);
-    check('flow: fail popup with 다시 하기 and 처음으로', a.popup === '하트가 모두 떨어졌어요' && a.popupHome, JSON.stringify(a));
+    check('flow: fail popup with 다시 하기 and 홈으로', a.popup === '하트가 모두 떨어졌어요' && a.popupHome, JSON.stringify(a));
+    const shown = await p.evaluate(() => document.querySelectorAll('#popupHearts .heart.empty').length);
+    check('flow: hearts-out popup shows the used (empty) hearts', shown === 3, `empty hearts ${shown}`);
+    // the fail popup's 다시 하기 retries at once: the retry question is only for the bottom bar
     await p.click('#popupBtn');
     await sleep(500);
     const b = await ui(p);
     const hearts = await p.evaluate(() => window.__game.state().hearts);
-    check('flow: 다시 하기 -> the same level 7, three hearts', b.label === '레벨 7' && b.popup === null && hearts === 3, `${JSON.stringify(b)}, hearts ${hearts}`);
+    const asked = await p.evaluate(() => !document.getElementById('modal').hidden);
+    check('flow: 다시 하기 -> the same level 7, three hearts, no retry question', b.label === '레벨 7' && b.popup === null && hearts === 3 && !asked, `${JSON.stringify(b)}, hearts ${hearts}, asked ${asked}`);
     for (let k = 0; k < 3; k++) {
       await p.evaluate(() => { const g = window.__game; const free = g.free(); const blocked = g.ids().filter((i) => !free.includes(i)); g.tap(blocked[0]); });
       await sleep(450);
@@ -163,7 +167,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#popupHome');
     await sleep(400);
     const c = await ui(p);
-    check('flow: 처음으로 on the fail popup -> title, save still 7', c.title && c.popup === null && c.saved === '7', JSON.stringify(c));
+    check('flow: 홈으로 on the fail popup -> title, save still 7', c.title && c.popup === null && c.saved === '7', JSON.stringify(c));
   });
 
   // the last level: clearing it starts the journey over (the save goes back to 1, as the game always did)
@@ -183,6 +187,65 @@ export async function runFlowChecks(browser, base, report) {
     await sleep(500);
     check('flow: 게임 시작 after the last level -> level 1', (await ui(p)).label === '레벨 1');
   });
+
+  const modalUi = (p) => p.evaluate(() => ({
+    open: !document.getElementById('modal').hidden, title: document.getElementById('modalTitle').textContent,
+    state: JSON.stringify(window.__game.state()),
+  }));
+
+  await scenario('retry asks once something was tapped', '7', async (p) => {
+    await p.click('#tContinue');
+    await sleep(400);
+    await closeTips(p);
+    await p.click('#retry');
+    await sleep(200);
+    const fresh = await modalUi(p);
+    check('retry: nothing tapped yet -> restarts at once, no question', !fresh.open, JSON.stringify(fresh));
+    await p.evaluate(() => { const g = window.__game; g.tap(g.free()[0]); });
+    const before = await p.evaluate(() => JSON.stringify(window.__game.state()));
+    await p.click('#retry');
+    await sleep(200);
+    const asked = await modalUi(p);
+    check('retry: after a tap the bottom 다시 하기 asks first', asked.open && asked.title === '다시 할까요?', JSON.stringify(asked));
+    await p.click('#retryNo');
+    await sleep(300);
+    const kept = await modalUi(p);
+    check('retry: 취소 closes the question and keeps the board as it was', !kept.open && kept.state === before, `${before} -> ${kept.state}`);
+    await p.click('#retry');
+    await sleep(200);
+    await p.click('#retryYes');
+    await sleep(400);
+    const reset = await p.evaluate(() => window.__game.state());
+    check('retry: 다시 하기 in the question restarts level 7', !(await modalUi(p)).open && reset.taps === 0 && reset.hearts === 3 && (await ui(p)).label === '레벨 7', JSON.stringify(reset));
+  });
+
+  await scenario('sound button on the title and in play', null, async (p) => {
+    const onTitle = await p.evaluate(() => { const m = document.getElementById('mute'); return !document.getElementById('title').hidden && getComputedStyle(m).display !== 'none'; });
+    await p.click('#mute');
+    await sleep(100);
+    const off = await p.evaluate(() => ({ stored: localStorage.getItem('animal-rescue-muted'), muted: document.getElementById('mute').classList.contains('muted') }));
+    check('sound: the title shows the sound button and one tap switches the sound off (saved)', onTitle && off.stored === '1' && off.muted, JSON.stringify(off));
+    await p.click('#tStart');
+    await sleep(500);
+    await closeTips(p);
+    const inPlay = await p.evaluate(() => getComputedStyle(document.getElementById('mute')).display !== 'none' && document.getElementById('mute').classList.contains('muted'));
+    await p.click('#mute');
+    await sleep(100);
+    const on = await p.evaluate(() => localStorage.getItem('animal-rescue-muted'));
+    check('sound: in play the same button shows the setting and switches it back on', inPlay && on === '0', `inPlay ${inPlay}, stored ${on}`);
+  });
+
+  await scenario('bomb fail', null, async (p) => {
+    for (let k = 0; k < 40 && !(await ui(p)).popup; k++) {
+      const id = await p.evaluate(() => { const g = window.__game; const s = g.state(); return g.free().find((i) => s.fuses[i] === undefined) ?? null; });
+      if (id === null) break;
+      await p.evaluate((i) => window.__game.tap(i), id);
+      await sleep(300);
+    }
+    const a = await waitPopup(p, 4000);
+    const hearts = await p.evaluate(() => document.querySelectorAll('#popupHearts .heart').length);
+    check('bomb fail: the popup names the bomb and shows no hearts', a.popup === '펑! 폭탄이 터졌어요' && hearts === 0, `${JSON.stringify(a)}, hearts ${hearts}`);
+  }, '?demo=bomb');
 
   await scenario('dev entry', null, async (p) => {
     const a = await ui(p);
