@@ -244,11 +244,25 @@ export class Stage {
     return g;
   }
 
-  /** Move the camera back until the whole board fits the viewport. */
+  /** Move the camera back until the whole board fits the viewport. Drops any frame(), which is fitted afresh. */
   fit(): void {
     if (!this.level) return;
+    this.camera.clearViewOffset();
     const d = this.fitDistance(this.keepZoom ? 58 : this.elevation);
     this.place(this.elevation, d);
+  }
+
+  /**
+   * Title framing: draw the fitted picture `zoom` times its size (below 1 it shrinks, around the screen's centre) and
+   * `shift` CSS pixels lower, so the title's logo, board and buttons fit as one block. Picking follows, as it goes
+   * through the same camera. The next fit() (a new board, a resize) clears it.
+   */
+  frame(zoom: number, shift: number): void {
+    const w = this.container.clientWidth;
+    const h = this.container.clientHeight;
+    if (zoom === 1 && shift === 0) this.camera.clearViewOffset();
+    else this.camera.setViewOffset(w, h, (w - w / zoom) / 2, (h - h / zoom) / 2 - shift / zoom, w / zoom, h / zoom);
+    this.camera.updateProjectionMatrix();
   }
 
   private place(elevationDeg: number, d: number): void {
