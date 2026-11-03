@@ -82,7 +82,7 @@ function texture(url: string): THREE.Texture {
   return t;
 }
 
-const tmp = { pos: new THREE.Vector3(), cam: new THREE.Vector3(), fwd: new THREE.Vector3(), q: new THREE.Quaternion(), head: new THREE.Vector3(), centre: new THREE.Vector3(), at: new THREE.Vector3(), plane: new THREE.Plane(), ray: new THREE.Ray() };
+const tmp = { pos: new THREE.Vector3(), cam: new THREE.Vector3(), fwd: new THREE.Vector3(), q: new THREE.Quaternion(), head: new THREE.Vector3(), centre: new THREE.Vector3(), depth: new THREE.Vector3(), at: new THREE.Vector3(), plane: new THREE.Plane(), ray: new THREE.Ray() };
 let cardsDrawn = 0;
 let cardsMissing = 0;
 export const cardStats = (): { drawn: number; missing: number } => ({ drawn: cardsDrawn, missing: cardsMissing });
@@ -91,6 +91,11 @@ export const cardStats = (): { drawn: number; missing: number } => ({ drawn: car
 const PLATE_TOP = 0.1;
 /** height of the block centre above the plate top, in cells: the depth the card is drawn at */
 const CARD_DEPTH_LIFT = 0.45;
+/**
+ * Depth step per block from the head, in cells (positive: the head in front). Only decides blocks side by side, at the
+ * same depth; neighbours one above the other are ~0.5 cell apart in depth.
+ */
+const PART_DEPTH_STEP = 0.01;
 
 /** opaque-texel lookup per picture, for the alpha-aware hit test */
 const alphaMaps = new Map<string, { w: number; h: number; a: Uint8ClampedArray }>();
@@ -206,7 +211,12 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     tmp.head.set(Math.sin(root.rotation.y), 0, Math.cos(root.rotation.y)).multiplyScalar(index * tuck * root.scale.x);
     tmp.pos.add(tmp.head);
     tmp.pos.y += PLATE_TOP;
-    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror);
+    // depth from the block's place on the track alone (root, not animated): the hop/sway (each block bobs on its own
+    // phase), the launch squash and the gate shrink moved the plane, which swapped head and body side by side; a fixed
+    // step per block decides blocks at the same depth
+    root.getWorldPosition(tmp.depth).addScaledVector(tmp.head.normalize(), index * tuck);
+    tmp.depth.y += PLATE_TOP + CARD_DEPTH_LIFT;
+    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror, tmp.depth.addScaledVector(camera.getWorldDirection(tmp.fwd), index * PART_DEPTH_STEP));
     // where the status badge's pointer ends, in the world (PieceView reads it on the head): a little inside the top of
     // the drawn picture, not on its edge, where ear tips and outlines let the animal behind or the floor show through
     const box = opaqueBox(img);
@@ -221,13 +231,14 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
  * Placement C for one card: a camera-facing plane through the block centre above the world floor point `floor` (plate
  * top included), the picture's anchor pixel (ax, ay) on that point, sized from the projected cell width there.
  */
-function placeCard(card: THREE.Mesh, animated: THREE.Object3D, floor: THREE.Vector3, scaleX: number, camera: THREE.Camera, img: HTMLImageElement, cellPx: number, ax: number, ay: number, mirror: boolean): void {
+function placeCard(card: THREE.Mesh, animated: THREE.Object3D, floor: THREE.Vector3, scaleX: number, camera: THREE.Camera, img: HTMLImageElement, cellPx: number, ax: number, ay: number, mirror: boolean, centre?: THREE.Vector3): void {
   const w = img.width / cellPx, h = img.height / cellPx;
   const anchorX = mirror ? img.width - ax : ax;
-  // camera-facing plane through the block centre; the anchor goes where the ray to the floor point meets it
+  // camera-facing plane through the block centre (or `centre`); the anchor goes where the ray to the floor point meets it
   camera.getWorldPosition(tmp.cam);
   camera.getWorldDirection(tmp.fwd);
-  tmp.centre.copy(floor).setY(floor.y + CARD_DEPTH_LIFT * scaleX);
+  if (centre) tmp.centre.copy(centre);
+  else tmp.centre.copy(floor).setY(floor.y + CARD_DEPTH_LIFT * scaleX);
   tmp.plane.setFromNormalAndCoplanarPoint(tmp.fwd.clone().negate(), tmp.centre);
   tmp.ray.set(tmp.cam, floor.clone().sub(tmp.cam).normalize());
   if (!tmp.ray.intersectPlane(tmp.plane, tmp.at)) tmp.at.copy(floor);
