@@ -1,0 +1,1878 @@
+{
+ "runs": 150,
+ "baseCandidates": 10,
+ "picks": [
+  {
+   "n": 1,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 2,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 3,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 4,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 5,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 6,
+   "role": "ordinary",
+   "target": 15,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 7,
+   "role": "ordinary",
+   "target": 15.1890756302521,
+   "seed": 6,
+   "score": 14.000000000000002,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 8,
+   "role": "ordinary",
+   "target": 15.378151260504202,
+   "seed": 9,
+   "score": 11.333333333333332,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 16.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.9090909090909091,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 9,
+   "role": "ordinary",
+   "target": 15.567226890756302,
+   "seed": 7,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 14.666666666666666,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 10,
+   "role": "tough",
+   "target": 30.661764705882355,
+   "seed": 7,
+   "score": 38,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 11,
+   "role": "ordinary",
+   "target": 15.756302521008404,
+   "seed": 10,
+   "score": 20.666666666666668,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 18,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0833333333333333,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 12,
+   "role": "ordinary",
+   "target": 15.945378151260504,
+   "seed": 4,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 13,
+   "role": "ordinary",
+   "target": 16.134453781512605,
+   "seed": 10,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 3
+  },
+  {
+   "n": 14,
+   "role": "ordinary",
+   "target": 16.323529411764707,
+   "seed": 10,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 16,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1666666666666667,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 15,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 16,
+   "role": "ordinary",
+   "target": 16.51260504201681,
+   "seed": 6,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 14.666666666666666,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2142857142857142,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 17,
+   "role": "ordinary",
+   "target": 16.701680672268907,
+   "seed": 6,
+   "score": 16,
+   "pairs": 0,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 16.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1428571428571428,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 18,
+   "role": "ordinary",
+   "target": 16.89075630252101,
+   "seed": 9,
+   "score": 19.333333333333332,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 19,
+   "role": "ordinary",
+   "target": 17.07983193277311,
+   "seed": 2,
+   "score": 20,
+   "pairs": 0,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 17.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2857142857142858,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 20,
+   "role": "tough",
+   "target": 32.17436974789916,
+   "seed": 5,
+   "score": 30.666666666666664,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 21,
+   "role": "ordinary",
+   "target": 17.26890756302521,
+   "seed": 1,
+   "score": 16.666666666666664,
+   "pairs": 0,
+   "onTarget": 5
+  },
+  {
+   "n": 22,
+   "role": "ordinary",
+   "target": 17.45798319327731,
+   "seed": 10,
+   "score": 16,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 17.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.4166666666666667,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 23,
+   "role": "ordinary",
+   "target": 17.647058823529413,
+   "seed": 6,
+   "score": 18,
+   "pairs": 0,
+   "onTarget": 4
+  },
+  {
+   "n": 24,
+   "role": "ordinary",
+   "target": 17.83613445378151,
+   "seed": 2,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 4
+  },
+  {
+   "n": 25,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 26,
+   "role": "ordinary",
+   "target": 18.025210084033613,
+   "seed": 8,
+   "score": 18,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 27,
+   "role": "ordinary",
+   "target": 18.214285714285715,
+   "seed": 1,
+   "score": 14.666666666666666,
+   "pairs": 0,
+   "onTarget": 6,
+   "preference": {
+    "nearestScore": 19.333333333333332,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1428571428571428,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 28,
+   "role": "ordinary",
+   "target": 18.403361344537814,
+   "seed": 4,
+   "score": 22,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 29,
+   "role": "ordinary",
+   "target": 18.592436974789916,
+   "seed": 3,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 30,
+   "role": "finale",
+   "target": 43,
+   "seed": 2,
+   "score": 38.666666666666664,
+   "pairs": 0,
+   "onTarget": 1,
+   "finale": {
+    "wanted": 43,
+    "hardestTough": 38,
+    "issues": [
+     "below-tough-guard"
+    ]
+   }
+  },
+  {
+   "n": 31,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 32,
+   "role": "intro",
+   "target": null,
+   "seed": 2,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 33,
+   "role": "intro",
+   "target": null,
+   "seed": 2,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 34,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 4.666666666666667,
+   "pairs": 0
+  },
+  {
+   "n": 35,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 36,
+   "role": "ordinary",
+   "target": 18.781512605042018,
+   "seed": 4,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 37,
+   "role": "ordinary",
+   "target": 18.970588235294116,
+   "seed": 9,
+   "score": 10,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 38,
+   "role": "ordinary",
+   "target": 19.159663865546218,
+   "seed": 7,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 39,
+   "role": "ordinary",
+   "target": 19.34873949579832,
+   "seed": 7,
+   "score": 12,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 40,
+   "role": "tough",
+   "target": 34.44327731092437,
+   "seed": 3,
+   "score": 27.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 41,
+   "role": "ordinary",
+   "target": 19.53781512605042,
+   "seed": 9,
+   "score": 14.666666666666666,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 19.333333333333332,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.3571428571428572,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 42,
+   "role": "ordinary",
+   "target": 19.72689075630252,
+   "seed": 4,
+   "score": 19.333333333333332,
+   "pairs": 0,
+   "onTarget": 3
+  },
+  {
+   "n": 43,
+   "role": "ordinary",
+   "target": 19.915966386554622,
+   "seed": 8,
+   "score": 17.333333333333336,
+   "pairs": 0,
+   "onTarget": 6,
+   "preference": {
+    "nearestScore": 20.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2142857142857142,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 44,
+   "role": "ordinary",
+   "target": 20.10504201680672,
+   "seed": 8,
+   "score": 17.333333333333336,
+   "pairs": 0,
+   "onTarget": 3
+  },
+  {
+   "n": 45,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 46,
+   "role": "ordinary",
+   "target": 20.294117647058822,
+   "seed": 10,
+   "score": 21.333333333333336,
+   "pairs": 0,
+   "onTarget": 5
+  },
+  {
+   "n": 47,
+   "role": "ordinary",
+   "target": 20.483193277310924,
+   "seed": 3,
+   "score": 20.666666666666668,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 20.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.9230769230769231,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 48,
+   "role": "ordinary",
+   "target": 20.672268907563026,
+   "seed": 4,
+   "score": 22.666666666666664,
+   "pairs": 0,
+   "onTarget": 6,
+   "preference": {
+    "nearestScore": 19.333333333333332,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0769230769230769,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 49,
+   "role": "ordinary",
+   "target": 20.861344537815125,
+   "seed": 6,
+   "score": 18,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 20.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2307692307692308,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 50,
+   "role": "tough",
+   "target": 35.955882352941174,
+   "seed": 1,
+   "score": 35.333333333333336,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 51,
+   "role": "ordinary",
+   "target": 21.050420168067227,
+   "seed": 3,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 20,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1538461538461537,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 52,
+   "role": "ordinary",
+   "target": 21.23949579831933,
+   "seed": 7,
+   "score": 18,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 20.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1538461538461537,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 53,
+   "role": "ordinary",
+   "target": 21.42857142857143,
+   "seed": 1,
+   "score": 24.666666666666668,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 23.333333333333332,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.3076923076923077,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 54,
+   "role": "ordinary",
+   "target": 21.61764705882353,
+   "seed": 10,
+   "score": 24,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 20.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.3846153846153846,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 55,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 56,
+   "role": "ordinary",
+   "target": 21.80672268907563,
+   "seed": 9,
+   "score": 26.666666666666668,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 18.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0769230769230769,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 57,
+   "role": "ordinary",
+   "target": 21.995798319327733,
+   "seed": 9,
+   "score": 17.333333333333336,
+   "pairs": 0,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 22,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1333333333333333,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 58,
+   "role": "ordinary",
+   "target": 22.18487394957983,
+   "seed": 10,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 7,
+   "preference": {
+    "nearestScore": 22.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.4615384615384615,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 59,
+   "role": "ordinary",
+   "target": 22.373949579831933,
+   "seed": 8,
+   "score": 18,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 25.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 60,
+   "role": "finale",
+   "target": 44.37394957983193,
+   "seed": 6,
+   "score": 49.333333333333336,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 44.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.4,
+    "nearestPairs": 0
+   },
+   "finale": {
+    "wanted": 44.37394957983193,
+    "hardestTough": 35.333333333333336,
+    "issues": []
+   }
+  },
+  {
+   "n": 61,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 62,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 63,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 64,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 1.3333333333333335,
+   "pairs": 0
+  },
+  {
+   "n": 65,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 66,
+   "role": "ordinary",
+   "target": 22.563025210084035,
+   "seed": 4,
+   "score": 21.333333333333336,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 22,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 67,
+   "role": "ordinary",
+   "target": 22.752100840336134,
+   "seed": 1,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 68,
+   "role": "ordinary",
+   "target": 22.941176470588236,
+   "seed": 1,
+   "score": 20.666666666666668,
+   "pairs": 0,
+   "onTarget": 3
+  },
+  {
+   "n": 69,
+   "role": "ordinary",
+   "target": 23.130252100840337,
+   "seed": 10,
+   "score": 19.333333333333332,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 70,
+   "role": "tough",
+   "target": 38.22478991596638,
+   "seed": 10,
+   "score": 34.66666666666667,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 71,
+   "role": "ordinary",
+   "target": 23.319327731092436,
+   "seed": 5,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 3
+  },
+  {
+   "n": 72,
+   "role": "ordinary",
+   "target": 23.508403361344538,
+   "seed": 4,
+   "score": 14.666666666666666,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 73,
+   "role": "ordinary",
+   "target": 23.69747899159664,
+   "seed": 3,
+   "score": 26.666666666666668,
+   "pairs": 0,
+   "onTarget": 6,
+   "preference": {
+    "nearestScore": 26,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.9333333333333333,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 74,
+   "role": "ordinary",
+   "target": 23.886554621848738,
+   "seed": 8,
+   "score": 26,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 75,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 76,
+   "role": "ordinary",
+   "target": 24.07563025210084,
+   "seed": 10,
+   "score": 22.666666666666664,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 77,
+   "role": "ordinary",
+   "target": 24.264705882352942,
+   "seed": 2,
+   "score": 27.333333333333332,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 23.333333333333332,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.9230769230769231,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 78,
+   "role": "ordinary",
+   "target": 24.45378151260504,
+   "seed": 10,
+   "score": 22,
+   "pairs": 0,
+   "onTarget": 4
+  },
+  {
+   "n": 79,
+   "role": "ordinary",
+   "target": 24.642857142857142,
+   "seed": 5,
+   "score": 29.333333333333332,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 24,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1538461538461537,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 80,
+   "role": "tough",
+   "target": 39.73739495798319,
+   "seed": 5,
+   "score": 34.66666666666667,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 81,
+   "role": "ordinary",
+   "target": 24.831932773109244,
+   "seed": 10,
+   "score": 28.000000000000004,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 82,
+   "role": "ordinary",
+   "target": 25.021008403361343,
+   "seed": 3,
+   "score": 29.333333333333332,
+   "pairs": 0,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 24.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.3125,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 83,
+   "role": "ordinary",
+   "target": 25.210084033613445,
+   "seed": 6,
+   "score": 24.666666666666668,
+   "pairs": 0,
+   "onTarget": 3
+  },
+  {
+   "n": 84,
+   "role": "ordinary",
+   "target": 25.399159663865547,
+   "seed": 2,
+   "score": 28.000000000000004,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 85,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 86,
+   "role": "ordinary",
+   "target": 25.588235294117645,
+   "seed": 5,
+   "score": 20.666666666666668,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 25.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2142857142857142,
+    "nearestPairs": 1
+   }
+  },
+  {
+   "n": 87,
+   "role": "ordinary",
+   "target": 25.77731092436975,
+   "seed": 8,
+   "score": 24.666666666666668,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 88,
+   "role": "ordinary",
+   "target": 25.96638655462185,
+   "seed": 10,
+   "score": 28.666666666666668,
+   "pairs": 0,
+   "onTarget": 4
+  },
+  {
+   "n": 89,
+   "role": "ordinary",
+   "target": 26.155462184873947,
+   "seed": 9,
+   "score": 30.666666666666664,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 28.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 0.8571428571428571,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 90,
+   "role": "finale",
+   "target": 48.15546218487395,
+   "seed": 3,
+   "score": 52,
+   "pairs": 0,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 44.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.3571428571428572,
+    "nearestPairs": 0
+   },
+   "finale": {
+    "wanted": 48.15546218487395,
+    "hardestTough": 34.66666666666667,
+    "issues": []
+   }
+  },
+  {
+   "n": 91,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 92,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 93,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 94,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 95,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 96,
+   "role": "ordinary",
+   "target": 26.344537815126053,
+   "seed": 4,
+   "score": 19.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 97,
+   "role": "ordinary",
+   "target": 26.53361344537815,
+   "seed": 5,
+   "score": 14.666666666666666,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 98,
+   "role": "ordinary",
+   "target": 26.72268907563025,
+   "seed": 1,
+   "score": 25.333333333333336,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 99,
+   "role": "ordinary",
+   "target": 26.911764705882355,
+   "seed": 6,
+   "score": 19.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 100,
+   "role": "tough",
+   "target": 42.00630252100841,
+   "seed": 1,
+   "score": 40.666666666666664,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 41.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1333333333333333,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 101,
+   "role": "ordinary",
+   "target": 27.100840336134453,
+   "seed": 9,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 102,
+   "role": "ordinary",
+   "target": 27.289915966386555,
+   "seed": 2,
+   "score": 14.666666666666666,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 103,
+   "role": "ordinary",
+   "target": 27.478991596638657,
+   "seed": 9,
+   "score": 24.666666666666668,
+   "pairs": 1,
+   "onTarget": 1
+  },
+  {
+   "n": 104,
+   "role": "ordinary",
+   "target": 27.668067226890756,
+   "seed": 6,
+   "score": 28.000000000000004,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 105,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 106,
+   "role": "ordinary",
+   "target": 27.857142857142858,
+   "seed": 7,
+   "score": 27.333333333333332,
+   "pairs": 1,
+   "onTarget": 1
+  },
+  {
+   "n": 107,
+   "role": "ordinary",
+   "target": 28.04621848739496,
+   "seed": 3,
+   "score": 32.666666666666664,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 30.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.3529411764705883,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 108,
+   "role": "ordinary",
+   "target": 28.235294117647058,
+   "seed": 1,
+   "score": 28.666666666666668,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 109,
+   "role": "ordinary",
+   "target": 28.42436974789916,
+   "seed": 4,
+   "score": 33.33333333333333,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 24.666666666666668,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1764705882352942,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 110,
+   "role": "tough",
+   "target": 43.51890756302521,
+   "seed": 2,
+   "score": 42,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 111,
+   "role": "ordinary",
+   "target": 28.613445378151262,
+   "seed": 9,
+   "score": 13.333333333333334,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 112,
+   "role": "ordinary",
+   "target": 28.80252100840336,
+   "seed": 10,
+   "score": 14.000000000000002,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 113,
+   "role": "ordinary",
+   "target": 28.991596638655462,
+   "seed": 1,
+   "score": 21.333333333333336,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 114,
+   "role": "ordinary",
+   "target": 29.180672268907564,
+   "seed": 1,
+   "score": 13.333333333333334,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 115,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 116,
+   "role": "ordinary",
+   "target": 29.369747899159663,
+   "seed": 1,
+   "score": 24,
+   "pairs": 2,
+   "onTarget": 0
+  },
+  {
+   "n": 117,
+   "role": "ordinary",
+   "target": 29.558823529411764,
+   "seed": 1,
+   "score": 26,
+   "pairs": 2,
+   "onTarget": 2
+  },
+  {
+   "n": 118,
+   "role": "ordinary",
+   "target": 29.747899159663866,
+   "seed": 3,
+   "score": 28.666666666666668,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 119,
+   "role": "ordinary",
+   "target": 29.936974789915965,
+   "seed": 6,
+   "score": 26,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 120,
+   "role": "finale",
+   "target": 51.936974789915965,
+   "seed": 7,
+   "score": 34,
+   "pairs": 0,
+   "onTarget": 0,
+   "finale": {
+    "wanted": 51.936974789915965,
+    "hardestTough": 42,
+    "issues": [
+     "not-above-tough"
+    ]
+   }
+  },
+  {
+   "n": 121,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 3.3333333333333335,
+   "pairs": 0
+  },
+  {
+   "n": 122,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 2.666666666666667,
+   "pairs": 0
+  },
+  {
+   "n": 123,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 8.666666666666668,
+   "pairs": 0
+  },
+  {
+   "n": 124,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 125,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 126,
+   "role": "ordinary",
+   "target": 30.126050420168067,
+   "seed": 9,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 127,
+   "role": "ordinary",
+   "target": 30.31512605042017,
+   "seed": 7,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 128,
+   "role": "ordinary",
+   "target": 30.504201680672267,
+   "seed": 10,
+   "score": 28.666666666666668,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 129,
+   "role": "ordinary",
+   "target": 30.69327731092437,
+   "seed": 2,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 130,
+   "role": "tough",
+   "target": 45.78781512605042,
+   "seed": 10,
+   "score": 38,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 131,
+   "role": "ordinary",
+   "target": 30.88235294117647,
+   "seed": 2,
+   "score": 28.000000000000004,
+   "pairs": 0,
+   "onTarget": 6,
+   "preference": {
+    "nearestScore": 30.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.25,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 132,
+   "role": "ordinary",
+   "target": 31.071428571428573,
+   "seed": 5,
+   "score": 27.333333333333332,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 30.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.125,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 133,
+   "role": "ordinary",
+   "target": 31.26050420168067,
+   "seed": 4,
+   "score": 35.333333333333336,
+   "pairs": 0,
+   "onTarget": 4,
+   "preference": {
+    "nearestScore": 31.333333333333336,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 134,
+   "role": "ordinary",
+   "target": 31.449579831932773,
+   "seed": 6,
+   "score": 29.333333333333332,
+   "pairs": 0,
+   "onTarget": 3,
+   "preference": {
+    "nearestScore": 30.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.25,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 135,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 136,
+   "role": "ordinary",
+   "target": 31.638655462184875,
+   "seed": 3,
+   "score": 20,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 137,
+   "role": "ordinary",
+   "target": 31.827731092436974,
+   "seed": 2,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 138,
+   "role": "ordinary",
+   "target": 32.016806722689076,
+   "seed": 10,
+   "score": 30.666666666666664,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 139,
+   "role": "ordinary",
+   "target": 32.205882352941174,
+   "seed": 4,
+   "score": 24.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 140,
+   "role": "tough",
+   "target": 47.30042016806723,
+   "seed": 5,
+   "score": 32,
+   "pairs": 1,
+   "onTarget": 0
+  },
+  {
+   "n": 141,
+   "role": "ordinary",
+   "target": 32.39495798319328,
+   "seed": 2,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 142,
+   "role": "ordinary",
+   "target": 32.58403361344538,
+   "seed": 5,
+   "score": 18.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 143,
+   "role": "ordinary",
+   "target": 32.773109243697476,
+   "seed": 8,
+   "score": 23.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 144,
+   "role": "ordinary",
+   "target": 32.96218487394958,
+   "seed": 10,
+   "score": 26,
+   "pairs": 1,
+   "onTarget": 0
+  },
+  {
+   "n": 145,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 146,
+   "role": "ordinary",
+   "target": 33.15126050420168,
+   "seed": 3,
+   "score": 30,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 33.33333333333333,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.2666666666666666,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 147,
+   "role": "ordinary",
+   "target": 33.34033613445378,
+   "seed": 5,
+   "score": 18,
+   "pairs": 1,
+   "onTarget": 0
+  },
+  {
+   "n": 148,
+   "role": "ordinary",
+   "target": 33.529411764705884,
+   "seed": 8,
+   "score": 32.666666666666664,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 33.33333333333333,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 149,
+   "role": "ordinary",
+   "target": 33.71848739495798,
+   "seed": 3,
+   "score": 18,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 150,
+   "role": "finale",
+   "target": 55.71848739495798,
+   "seed": 10,
+   "score": 56.666666666666664,
+   "pairs": 0,
+   "onTarget": 1,
+   "finale": {
+    "wanted": 55.71848739495798,
+    "hardestTough": 38,
+    "issues": []
+   }
+  },
+  {
+   "n": 151,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 152,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 1.3333333333333335,
+   "pairs": 0
+  },
+  {
+   "n": 153,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 154,
+   "role": "intro",
+   "target": null,
+   "seed": 1,
+   "score": 0.6666666666666667,
+   "pairs": 0
+  },
+  {
+   "n": 155,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 156,
+   "role": "ordinary",
+   "target": 33.90756302521008,
+   "seed": 9,
+   "score": 15.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 157,
+   "role": "ordinary",
+   "target": 34.096638655462186,
+   "seed": 3,
+   "score": 21.333333333333336,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 158,
+   "role": "ordinary",
+   "target": 34.285714285714285,
+   "seed": 3,
+   "score": 20,
+   "pairs": 1,
+   "onTarget": 0
+  },
+  {
+   "n": 159,
+   "role": "ordinary",
+   "target": 34.47478991596638,
+   "seed": 4,
+   "score": 24.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 160,
+   "role": "tough",
+   "target": 49.569327731092436,
+   "seed": 5,
+   "score": 48.66666666666667,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 161,
+   "role": "ordinary",
+   "target": 34.66386554621849,
+   "seed": 2,
+   "score": 36,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 162,
+   "role": "ordinary",
+   "target": 34.85294117647059,
+   "seed": 7,
+   "score": 38,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 163,
+   "role": "ordinary",
+   "target": 35.042016806722685,
+   "seed": 5,
+   "score": 22.666666666666664,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 164,
+   "role": "ordinary",
+   "target": 35.23109243697479,
+   "seed": 7,
+   "score": 29.333333333333332,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 165,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 166,
+   "role": "ordinary",
+   "target": 35.42016806722689,
+   "seed": 9,
+   "score": 38.666666666666664,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 38,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.0555555555555556,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 167,
+   "role": "ordinary",
+   "target": 35.60924369747899,
+   "seed": 4,
+   "score": 40,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 168,
+   "role": "ordinary",
+   "target": 35.79831932773109,
+   "seed": 4,
+   "score": 36.666666666666664,
+   "pairs": 0,
+   "onTarget": 2,
+   "preference": {
+    "nearestScore": 36.666666666666664,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.1666666666666667,
+    "nearestPairs": 0
+   }
+  },
+  {
+   "n": 169,
+   "role": "ordinary",
+   "target": 35.98739495798319,
+   "seed": 6,
+   "score": 36,
+   "pairs": 0,
+   "onTarget": 2
+  },
+  {
+   "n": 170,
+   "role": "tough",
+   "target": 51.081932773109244,
+   "seed": 3,
+   "score": 39.33333333333333,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 171,
+   "role": "ordinary",
+   "target": 36.17647058823529,
+   "seed": 4,
+   "score": 28.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 172,
+   "role": "ordinary",
+   "target": 36.365546218487395,
+   "seed": 9,
+   "score": 36.666666666666664,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 173,
+   "role": "ordinary",
+   "target": 36.5546218487395,
+   "seed": 5,
+   "score": 20.666666666666668,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 174,
+   "role": "ordinary",
+   "target": 36.74369747899159,
+   "seed": 7,
+   "score": 30,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 175,
+   "role": "rest",
+   "target": null,
+   "seed": 1,
+   "score": 0,
+   "pairs": 0
+  },
+  {
+   "n": 176,
+   "role": "ordinary",
+   "target": 36.9327731092437,
+   "seed": 4,
+   "score": 42,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 177,
+   "role": "ordinary",
+   "target": 37.1218487394958,
+   "seed": 9,
+   "score": 30,
+   "pairs": 1,
+   "onTarget": 0
+  },
+  {
+   "n": 178,
+   "role": "ordinary",
+   "target": 37.310924369747895,
+   "seed": 1,
+   "score": 32,
+   "pairs": 0,
+   "onTarget": 0
+  },
+  {
+   "n": 179,
+   "role": "ordinary",
+   "target": 37.5,
+   "seed": 9,
+   "score": 36,
+   "pairs": 0,
+   "onTarget": 1
+  },
+  {
+   "n": 180,
+   "role": "finale",
+   "target": 59.5,
+   "seed": 6,
+   "score": 38,
+   "pairs": 0,
+   "onTarget": 0,
+   "finale": {
+    "wanted": 59.5,
+    "hardestTough": 48.66666666666667,
+    "issues": [
+     "not-above-tough"
+    ]
+   }
+  }
+ ],
+ "missing": [],
+ "finaleProblems": [
+  30,
+  120,
+  180
+ ]
+}
