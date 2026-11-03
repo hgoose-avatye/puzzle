@@ -2,10 +2,22 @@ import { describe, expect, it } from 'vitest';
 import type { Level } from '../core/types';
 import {
   badgePairs, CAP, candidatesFor, choose, chooseFinale, finaleAim, finaleBase, LINE_END, LINE_START, lineAt, meaningfulShare, ordinaryLevels,
-  runsFor, toughTarget, type Candidate,
+  runsFor, SEED_OVERRIDES, toughTarget, type Candidate,
 } from './seedSelect';
+import { levelSpec } from './curve';
+import pickedSeeds from './seeds.json';
 
 const ordinary = ordinaryLevels(180);
+
+describe('hand-set seeds', () => {
+  it('are the seeds the game ships, on levels that are neither intro, rest nor finale', () => {
+    const seeds = pickedSeeds as Record<string, number>;
+    for (const [n, { seed }] of Object.entries(SEED_OVERRIDES)) {
+      expect(seeds[n]).toBe(seed);
+      expect(['ordinary', 'tough']).toContain(levelSpec(Number(n)).role);
+    }
+  });
+});
 
 describe('the shared target line', () => {
   it('runs from the first ordinary level to the last without jumping back at chapter boundaries', () => {
