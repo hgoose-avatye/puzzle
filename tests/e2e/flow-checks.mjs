@@ -33,7 +33,8 @@ export async function runFlowChecks(browser, base, report) {
       title: vis('title'), start: vis('tStart'), resume: vis('tContinue'), restart: vis('tRestart'), where: document.getElementById('tWhere').textContent,
       hud: vis('hud'), popup: vis('popup') ? document.getElementById('popupTitle').textContent : null, popupHome: vis('popupHome'),
       label: document.getElementById('levelLabel').textContent, saved: localStorage.getItem('animal-rescue-progress'),
-      playing: window.__game.state() !== null,
+      // a level is in play (the title runs its own little board, which does not count)
+      playing: window.__game.state() !== null && document.getElementById('title').hidden,
     };
   });
   /** Close the first-time rule tips if they are showing. */
@@ -246,6 +247,37 @@ export async function runFlowChecks(browser, base, report) {
     const hearts = await p.evaluate(() => document.querySelectorAll('#popupHearts .heart').length);
     check('bomb fail: the popup names the bomb and shows no hearts', a.popup === '펑! 폭탄이 터졌어요' && hearts === 0, `${JSON.stringify(a)}, hearts ${hearts}`);
   }, '?demo=bomb');
+
+  // the title's front animal runs out on a loop; nothing of that loop may reach the game
+  await scenario('title loop', null, async (p) => {
+    const alive = () => p.evaluate(() => window.__game.ids().length);
+    const start = await alive();
+    let left = start;
+    for (let t = 0; t < 40 && left === start; t++) { await sleep(100); left = await alive(); }
+    let back = left;
+    for (let t = 0; t < 50 && back !== start; t++) { await sleep(100); back = await alive(); }
+    const band = await p.evaluate(() => getComputedStyle(document.getElementById('title')).getPropertyValue('--board-top'));
+    check('title: one animal runs out, then the board starts over', start === 5 && left === 4 && back === 5 && band !== '', `start ${start}, after the run ${left}, again ${back}, board top ${band}`);
+    await p.click('#tStart');
+    await sleep(600);
+    await closeTips(p);
+    const s = await p.evaluate(() => window.__game.state());
+    await sleep(3000); // longer than a title round: no title timer may touch the level
+    const later = await p.evaluate(() => window.__game.state());
+    check('title: 게임 시작 -> level 1 untouched by the title loop', (await ui(p)).label === '레벨 1' && s.taps === 0 && later.taps === 0 && later.alive.length === s.alive.length, `${JSON.stringify(s)} -> ${JSON.stringify(later)}`);
+  });
+
+  await scenario('title keeps the logo and board in place with a save', '7', async (p) => {
+    const withSave = await p.evaluate(() => getComputedStyle(document.getElementById('title')).getPropertyValue('--board-top'));
+    const q = await browser.newPage();
+    await q.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    await q.evaluateOnNewDocument(() => { try { localStorage.clear(); } catch { /* about:blank */ } });
+    await q.goto(base, { waitUntil: 'networkidle0' });
+    await sleep(400);
+    const fresh = await q.evaluate(() => getComputedStyle(document.getElementById('title')).getPropertyValue('--board-top'));
+    await q.close();
+    check('title: the board sits at the same height with one button or two', withSave !== '' && withSave === fresh, `with a save ${withSave}, fresh ${fresh}`);
+  });
 
   await scenario('dev entry', null, async (p) => {
     const a = await ui(p);
