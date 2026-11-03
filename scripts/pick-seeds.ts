@@ -5,9 +5,10 @@
  * Score = fail rate (%) of the 'average' simulated player with the level's own hearts, so lost hearts and bombs that
  * go off both count. The policy lives in src/curve/seedSelect.ts: ordinary levels follow one rising line across the
  * whole game, tough levels aim PEAK above it, and each finale aims FINALE above its chapter's last ordinary level and
- * at least FINALE_OVER_TOUGH above the hardest tough level picked in its chapter. Among candidates within TOLERANCE of
- * the aim, preferences decide in order: locks and sleepers that matter, more blocking, fewer touching badges. Intro and
- * rest levels keep the first seed that works. The chapter 6 finale draws FINALE_6_CANDIDATES candidates.
+ * at least FINALE_OVER_TOUGH above the hardest tough level picked in its chapter (a floor: chooseFinale). Among
+ * candidates within TOLERANCE of the aim, preferences decide in order: locks and sleepers that matter, more blocking,
+ * fewer touching badges. Intro and rest levels keep the first seed that works. Tough and finale levels draw
+ * PEAK_CANDIDATES candidates scored with PEAK_RUNS runs.
  *
  * Writes src/curve/seeds.json, docs/sim/seed-pool.json (every candidate's score, blocking, mechanics that matter and
  * touching badges) and docs/sim/seed-selection.json (aims, picks, preference changes, finale issues and levels without
@@ -19,8 +20,8 @@ import { createRng } from '../src/core/rng';
 import { CHAPTER_LENGTH, generateLevelFor, levelSpec } from '../src/curve/curve';
 import { PROFILES, simulate } from '../src/sim/player';
 import {
-  badgePairs, CAP, candidatesFor, choose, finaleAim, finaleIssues, lineAt, meaningfulShare, ordinaryLevels, toughTarget, type Candidate,
-  type FinaleIssue,
+  badgePairs, CAP, candidatesFor, choose, chooseFinale, FINALE_OVER_TOUGH, finaleAim, lineAt, meaningfulShare, ordinaryLevels, runsFor, toughTarget,
+  type Candidate, type Choice, type FinaleIssue,
 } from '../src/curve/seedSelect';
 
 const last = Number(process.argv[2] ?? 180);
@@ -34,7 +35,7 @@ for (let n = 1; n <= last; n++) {
   for (let seed = 1; seed <= candidatesFor(n, baseCandidates); seed++) {
     const r = generateLevelFor(n, seed);
     if (!r) continue;
-    const score = simulate(r.level, average, createRng(n * 31 + seed), runs, r.spec.hearts).failRate * 100;
+    const score = simulate(r.level, average, createRng(n * 31 + seed), runsFor(n, runs), r.spec.hearts).failRate * 100;
     list.push({ seed, score, pairs: badgePairs(r.level), blockers: r.metrics.avgBlockers, meaningful: meaningfulShare(r.level) });
   }
   pool.set(n, list);
@@ -51,7 +52,7 @@ interface Picked {
   onTarget?: number;
   /** the preferences moved the pick: what difficulty alone would have picked */
   preference?: { nearestScore: number; nearestMeaningful: number; nearestBlockers: number; nearestPairs: number };
-  finale?: { wanted: number; hardestTough: number | null; issues: FinaleIssue[] };
+  finale?: { wanted: number; guard: number | null; hardestTough: number | null; issues: FinaleIssue[] };
 }
 
 const ordinary = ordinaryLevels(last);
@@ -75,7 +76,8 @@ for (let c = 0; c < chapters; c++) {
     }
     const aim = role === 'finale' ? finaleAim(n, ordinary, toughScores) : null;
     const target = aim ? aim.target : role === 'tough' ? toughTarget(n, ordinary) : Math.min(CAP, lineAt(n, ordinary));
-    const choice = choose(list, target);
+    const finale = aim ? chooseFinale(list, aim, toughScores) : null;
+    const choice: Choice = finale ?? choose(list, target);
     seeds[n] = choice.pick.seed;
     const entry: Picked = { n, role, target, seed: choice.pick.seed, score: choice.pick.score, pairs: choice.pick.pairs, onTarget: choice.onTarget };
     if (choice.preferenceApplied) {
@@ -83,8 +85,9 @@ for (let c = 0; c < chapters; c++) {
       entry.preference = { nearestScore: score, nearestMeaningful: meaningful, nearestBlockers: blockers, nearestPairs: pairs };
     }
     if (role === 'tough') toughScores.push(choice.pick.score);
-    if (aim) {
-      entry.finale = { wanted: aim.wanted, hardestTough: toughScores.length ? Math.max(...toughScores) : null, issues: finaleIssues(aim, choice.pick.score, toughScores) };
+    if (aim && finale) {
+      const hardestTough = toughScores.length ? Math.max(...toughScores) : null;
+      entry.finale = { wanted: aim.wanted, guard: hardestTough === null ? null : hardestTough + FINALE_OVER_TOUGH, hardestTough, issues: finale.issues };
     }
     picks.push(entry);
   }

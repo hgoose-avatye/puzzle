@@ -44,22 +44,25 @@ type BoardRow = Record<Slot, [number, number, BoardShape[]]>;
 const BOARDS: BoardRow[] = [
   // 1 village
   { s1a: [7, 10, ['rect', 'rounded']], s1b: [7, 11, ['rect', 'rounded']], t10: [8, 12, ['rect']], s2a: [7, 11, ['rounded']], s2b: [8, 11, ['rounded']], t20: [8, 12, ['rounded']], s3a: [8, 11, ['octagon']], s3b: [8, 12, ['octagon']], fin: [8, 12, ['rect']] },
-  // 2 forest
-  { s1a: [7, 11, ['ellipse']], s1b: [7, 11, ['ellipse']], t10: [8, 12, ['rounded']], s2a: [8, 11, ['rounded']], s2b: [8, 12, ['ellipse']], t20: [8, 12, ['ellipse']], s3a: [8, 11, ['rounded']], s3b: [8, 12, ['ellipse', 'rounded']], fin: [8, 12, ['ellipse']] },
+  // 2 forest (7 x 11 and 8 x 11 ellipses come out exactly like the octagon, so stage one is rounded)
+  { s1a: [7, 11, ['rounded']], s1b: [7, 11, ['rounded']], t10: [8, 12, ['rounded']], s2a: [8, 11, ['rounded']], s2b: [8, 12, ['ellipse']], t20: [8, 12, ['ellipse']], s3a: [8, 11, ['rounded']], s3b: [8, 12, ['ellipse', 'rounded']], fin: [8, 12, ['ellipse']] },
   // 3 pirate
-  { s1a: [8, 11, ['ellipse']], s1b: [8, 11, ['ellipse']], t10: [8, 12, ['rounded']], s2a: [8, 11, ['rounded']], s2b: [8, 12, ['hexagon']], t20: [8, 12, ['hexagon']], s3a: [8, 12, ['rounded']], s3b: [8, 12, ['ellipse']], fin: [8, 12, ['hexagon']] },
+  { s1a: [8, 11, ['rounded']], s1b: [8, 11, ['rounded']], t10: [8, 12, ['rounded']], s2a: [8, 11, ['rounded']], s2b: [8, 12, ['hexagon']], t20: [8, 12, ['hexagon']], s3a: [8, 12, ['rounded']], s3b: [8, 12, ['ellipse']], fin: [8, 12, ['hexagon']] },
   // 4 jungle
-  { s1a: [8, 11, ['octagon']], s1b: [8, 11, ['octagon']], t10: [8, 12, ['octagon']], s2a: [8, 12, ['plus']], s2b: [8, 12, ['rect']], t20: [8, 12, ['octagon']], s3a: [8, 12, ['plus']], s3b: [8, 12, ['octagon']], fin: [8, 12, ['plus']] },
+  { s1a: [8, 11, ['octagon']], s1b: [8, 11, ['octagon']], t10: [8, 12, ['octagon']], s2a: [8, 12, ['plus']], s2b: [8, 12, ['rect']], t20: [8, 12, ['octagon']], s3a: [8, 12, ['plus']], s3b: [8, 12, ['octagon']], fin: [8, 12, ['rect']] },
   // 5 haunted
   { s1a: [8, 11, ['tee']], s1b: [8, 11, ['tee']], t10: [8, 12, ['octagon']], s2a: [8, 12, ['octagon']], s2b: [8, 12, ['plus']], t20: [8, 12, ['tee']], s3a: [8, 12, ['plus']], s3b: [8, 12, ['tee']], fin: [8, 12, ['tee']] },
   // 6 winter
-  { s1a: [8, 12, ['rounded']], s1b: [8, 12, ['rounded']], t10: [8, 12, ['octagon']], s2a: [8, 12, ['ellipse']], s2b: [8, 12, ['rect']], t20: [8, 12, ['tee']], s3a: [8, 12, ['rounded', 'ellipse']], s3b: [8, 12, ['rect', 'rounded']], fin: [8, 12, ['hexagon']] },
+  { s1a: [8, 12, ['rounded']], s1b: [8, 12, ['rounded']], t10: [8, 12, ['octagon']], s2a: [8, 12, ['ellipse']], s2b: [8, 12, ['rect']], t20: [8, 12, ['tee']], s3a: [8, 12, ['rounded', 'ellipse']], s3b: [8, 12, ['rect', 'rounded']], fin: [8, 12, ['rect']] },
 ];
+// Finales of chapters 4 and 6 sit on rect: on plus and hexagon (72 cells, 15 animals) no candidate was harder than
+// the chapter's tough levels (2026-11-03 isolated experiment, 10 seeds per setup).
 
 /** Intro levels learn on a small plain board; rest levels breathe on the chapter's second outline. */
 export function boardFor(chapter: number, level: number, role: Role, own: readonly BoardShape[]): Board {
   if (role === 'intro') return { width: 6, height: 9, shape: level <= 2 ? 'rect' : 'rounded' };
-  if (role === 'rest') return { width: 7, height: 10, shape: own[1] };
+  // a 7 x 10 ellipse comes out exactly like the octagon, so a rest level that would get one is rounded instead
+  if (role === 'rest') return { width: 7, height: 10, shape: own[1] === 'ellipse' ? 'rounded' : own[1] };
   const [width, height, shapes] = BOARDS[chapter - 1][slotOf(level)];
   return { width, height, shape: shapes[level % shapes.length] };
 }
@@ -94,7 +97,8 @@ export function mechanicsFor(chapter: number, level: number, role: Role): Mechan
   if (role === 'intro') return [mech(1, 0, 0), mech(0, 1, 0), mech(0, 0, 1)][level % 3];
   if (slot === 's1a' || slot === 's1b' || slot === 't10') return mech(1, 1, 0);
   if (slot === 's2a' || slot === 't20') return mech(0, 1, 1);
-  if (slot === 's2b' || slot === 'fin') return mech(1, 0, 1);
+  if (slot === 's2b') return mech(1, 0, 1);
+  if (slot === 'fin') return mech(1, 1, 0);
   return [mech(1, 1, 0), mech(0, 1, 1), mech(1, 0, 1)][level % 3]; // stage three
 }
 
@@ -160,9 +164,22 @@ export function animalCount(board: Board, crates: number, arrows: number, occupa
 }
 
 /** Finale settings beyond its mechanics that make it the chapter's peak (all from the 2026-11-03 probes). */
-export function finaleExtras(chapter: number): { initialFreeRatio?: [number, number]; bombSlack?: number } {
+export function finaleExtras(chapter: number): { initialFreeRatio?: [number, number] } {
   if (chapter === 2) return { initialFreeRatio: [0, 0.27] };
   if (chapter === 3) return { initialFreeRatio: [0, 0.2] };
-  if (chapter === 5) return { bombSlack: 2 };
   return {};
+}
+
+/** Tighter bomb fuse (the generator's default slack is 3) where bombs were too forgiving to reach the curve. */
+export const TIGHT_BOMB_SLACK = 2;
+
+/**
+ * The chapter 5 finale and the ordinary levels of chapters 5 and 6 that carry bombs get TIGHT_BOMB_SLACK: in the
+ * 2026-11-03 isolated experiment it lifted those ordinary levels by 10-14 fail points without changing their structure.
+ */
+export function bombSlackFor(chapter: number, role: Role, x: Mechanics): number | undefined {
+  if (x.bombCount === 0) return undefined;
+  if (role === 'finale' && chapter === 5) return TIGHT_BOMB_SLACK;
+  if (role === 'ordinary' && chapter >= 5) return TIGHT_BOMB_SLACK;
+  return undefined;
 }

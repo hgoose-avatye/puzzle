@@ -21,8 +21,13 @@ export const CAP = 80;
 /** Candidates this close to the aim count as on target; among them the preferences decide (see choose). */
 export const TOLERANCE = 5;
 export const DEFAULT_CANDIDATES = 10;
-/** The chapter 6 finale had one usable candidate in ten (2026-11-03), so it draws twenty. */
-export const FINALE_6_CANDIDATES = 20;
+/**
+ * Tough and finale levels draw more candidates, scored with more simulated runs: the finale guard compares picks a few
+ * points apart, and with ten candidates at 150 runs some chapters had no finale above their tough levels (2026-11-03:
+ * 150 runs vary by 6.8 points between repeats, 400 runs by 4.0).
+ */
+export const PEAK_CANDIDATES = 20;
+export const PEAK_RUNS = 400;
 
 const roleOf = (n: number): Role => levelSpec(n).role;
 const chapterOf = (n: number): number => Math.floor((n - 1) / CHAPTER_LENGTH) + 1;
@@ -68,9 +73,13 @@ export function finaleAim(n: number, ordinary: readonly number[], toughScores: r
   return { target: Math.min(CAP, wanted), wanted, capExceeded: wanted > CAP };
 }
 
+const isPeak = (n: number): boolean => roleOf(n) === 'tough' || roleOf(n) === 'finale';
+
 /** How many candidate seeds a level draws. */
-export const candidatesFor = (n: number, base = DEFAULT_CANDIDATES): number =>
-  chapterOf(n) === 6 && roleOf(n) === 'finale' ? Math.max(base, FINALE_6_CANDIDATES) : base;
+export const candidatesFor = (n: number, base = DEFAULT_CANDIDATES): number => (isPeak(n) ? Math.max(base, PEAK_CANDIDATES) : base);
+
+/** How many simulated runs score each candidate of a level. */
+export const runsFor = (n: number, base: number): number => (isPeak(n) ? Math.max(base, PEAK_RUNS) : base);
 
 /** Pairs of animals carrying a badge (lock, key, bomb) or sleeping whose heads touch, diagonals included. */
 export function badgePairs(level: Level): number {
@@ -145,14 +154,33 @@ export function choose(candidates: readonly Candidate[], target: number): Choice
   return { pick, nearest, onTarget: near.length, preferenceApplied: pick !== nearest };
 }
 
-export type FinaleIssue = 'cap-exceeded' | 'below-tough-guard' | 'not-above-tough';
+/** below-guard: under the hardest tough + FINALE_OVER_TOUGH; not-above-tough: not even above it; cap-exceeded: over CAP. */
+export type FinaleIssue = 'below-guard' | 'not-above-tough' | 'cap-exceeded';
 
-/** What is wrong with a picked finale, if anything: reported, never silently accepted. */
-export function finaleIssues(aim: FinaleAim, picked: number, toughScores: readonly number[]): FinaleIssue[] {
-  const issues: FinaleIssue[] = [];
+export interface FinaleChoice extends Choice {
+  issues: FinaleIssue[];
+}
+
+/**
+ * The finale guard is a floor, not an aim. Candidates at or above it and at most CAP are chosen from as usual (nearest
+ * the aim, preferences within TOLERANCE). With none at or above it, the candidate nearest the aim; with some above it
+ * but all over CAP, the lowest of those. Whatever the pick breaks is reported, never shown as met.
+ */
+export function chooseFinale(candidates: readonly Candidate[], aim: FinaleAim, toughScores: readonly number[]): FinaleChoice {
   const hardest = toughScores.length ? Math.max(...toughScores) : -Infinity;
-  if (aim.capExceeded) issues.push('cap-exceeded');
-  if (picked <= hardest) issues.push('not-above-tough');
-  else if (picked < hardest + FINALE_OVER_TOUGH) issues.push('below-tough-guard');
-  return issues;
+  const guard = hardest + FINALE_OVER_TOUGH;
+  const passing = candidates.filter((c) => c.score >= guard);
+  const allowed = passing.filter((c) => c.score <= CAP);
+  let choice: Choice;
+  if (allowed.length) choice = choose(allowed, aim.target);
+  else if (passing.length) {
+    const lowest = passing.reduce((best, c) => (c.score < best.score ? c : best));
+    choice = { pick: lowest, nearest: lowest, onTarget: 0, preferenceApplied: false };
+  } else choice = choose(candidates, aim.target);
+  const score = choice.pick.score;
+  const issues: FinaleIssue[] = [];
+  if (score < guard) issues.push('below-guard');
+  if (score <= hardest) issues.push('not-above-tough');
+  if (score > CAP) issues.push('cap-exceeded');
+  return { ...choice, issues };
 }

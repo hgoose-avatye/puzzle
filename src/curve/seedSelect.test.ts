@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Level } from '../core/types';
 import {
-  badgePairs, CAP, candidatesFor, choose, finaleAim, finaleBase, finaleIssues, LINE_END, LINE_START, lineAt, meaningfulShare, ordinaryLevels,
-  toughTarget, type Candidate,
+  badgePairs, CAP, candidatesFor, choose, chooseFinale, finaleAim, finaleBase, LINE_END, LINE_START, lineAt, meaningfulShare, ordinaryLevels,
+  runsFor, toughTarget, type Candidate,
 } from './seedSelect';
 
 const ordinary = ordinaryLevels(180);
@@ -35,22 +35,47 @@ describe('the finale guard', () => {
     expect(finaleAim(60, ordinary, [30, 35]).target).toBeCloseTo(base, 6);
     expect(finaleAim(60, ordinary, [30, 70]).target).toBe(75);
   });
-  it('never aims above the cap and says so when the guard cannot be met under it', () => {
+  it('never aims above the cap', () => {
     const aim = finaleAim(60, ordinary, [78]);
     expect(aim.target).toBe(CAP);
     expect(aim.wanted).toBe(83);
     expect(aim.capExceeded).toBe(true);
-    expect(finaleIssues(aim, 80, [78])).toEqual(['cap-exceeded', 'below-tough-guard']);
-  });
-  it('reports a finale that is not above its tough levels instead of accepting it', () => {
-    const aim = finaleAim(60, ordinary, [50]);
-    expect(finaleIssues(aim, 49, [50])).toEqual(['not-above-tough']);
-    expect(finaleIssues(aim, 53, [50])).toEqual(['below-tough-guard']);
-    expect(finaleIssues(aim, 56, [50])).toEqual([]);
   });
 });
 
 const cand = (seed: number, score: number, extra: Partial<Candidate> = {}): Candidate => ({ seed, score, pairs: 0, blockers: 1, meaningful: 1, ...extra });
+const pool = (...scores: number[]): Candidate[] => scores.map((s, i) => cand(i + 1, s));
+
+describe('choosing a finale: the guard is a floor', () => {
+  it('picks only among candidates at or above the guard, nearest the aim (level 30 of 2026-11-03)', () => {
+    const aim = finaleAim(30, ordinary, [38]); // guard 43 is above the base aim, so it becomes the aim
+    const c = chooseFinale(pool(33.3, 38.7, 60.7, 61.3, 74.7, 75.3), aim, [38]);
+    expect(c.pick.score).toBe(60.7); // 38.7 is nearer the aim but under the guard
+    expect(c.issues).toEqual([]);
+  });
+  it('applies the usual preferences among guard-passing candidates only', () => {
+    const aim = finaleAim(60, ordinary, [38]);
+    const c = chooseFinale([cand(1, 42, { blockers: 3 }), cand(2, 44, { blockers: 2 }), cand(3, 47, { blockers: 1 })], aim, [38]);
+    expect(c.pick.seed).toBe(2); // seed 1 blocks most but is under the guard of 43
+  });
+  it('with no candidate at the guard, takes the one nearest the aim and reports it', () => {
+    const aim = finaleAim(60, ordinary, [50]);
+    const c = chooseFinale(pool(30, 35, 52), aim, [50]);
+    expect(c.pick.score).toBe(52);
+    expect(c.issues).toEqual(['below-guard']);
+    expect(chooseFinale(pool(30, 35), aim, [50]).issues).toEqual(['below-guard', 'not-above-tough']);
+  });
+  it('with guard-passing candidates all over the cap, takes the lowest of them and reports it', () => {
+    const aim = finaleAim(60, ordinary, [78]);
+    const c = chooseFinale(pool(40, 90, 85), aim, [78]);
+    expect(c.pick.score).toBe(85);
+    expect(c.issues).toEqual(['cap-exceeded']);
+  });
+  it('reports both when the pick is under the guard and over the cap', () => {
+    const aim = finaleAim(60, ordinary, [80]);
+    expect(chooseFinale(pool(82), aim, [80]).issues).toEqual(['below-guard', 'cap-exceeded']);
+  });
+});
 
 describe('choosing a candidate', () => {
   it('ranks on-target candidates by mechanics that matter, then blocking, then touching badges', () => {
@@ -105,9 +130,17 @@ describe('locks and sleepers that matter', () => {
 });
 
 describe('candidates and badges', () => {
-  it('draws twenty candidates for the chapter 6 finale only', () => {
-    expect(candidatesFor(180)).toBe(20);
-    for (const n of [30, 150, 160, 170, 179]) expect(candidatesFor(n)).toBe(10);
+  it('draws twenty candidates at 400 runs for every tough and finale level, ten at the base runs elsewhere', () => {
+    for (let c = 0; c < 6; c++) {
+      for (const l of [10, 20, 30]) {
+        expect(candidatesFor(c * 30 + l)).toBe(20);
+        expect(runsFor(c * 30 + l, 150)).toBe(400);
+      }
+    }
+    for (const n of [1, 5, 6, 29, 155, 179]) {
+      expect(candidatesFor(n)).toBe(10);
+      expect(runsFor(n, 150)).toBe(150);
+    }
   });
   it('counts touching badge heads, diagonals included', () => {
     const level: Level = {

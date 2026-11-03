@@ -3,7 +3,7 @@ import type { Level } from '../core/types';
 import { generateMatching, type DifficultyTarget, type GenParams } from '../generator/generate';
 import type { Metrics } from '../solver/metrics';
 import type { BoardShape } from '../core/shapes';
-import { animalCount, arrowsAllowed, boardFor, cratesFor, finaleExtras, mechanicsFor, occupancyTarget, type Mechanics } from './chapterPlan';
+import { animalCount, arrowsAllowed, boardFor, bombSlackFor, cratesFor, finaleExtras, mechanicsFor, occupancyTarget, type Mechanics } from './chapterPlan';
 import pickedSeeds from './seeds.json';
 import bakedLevels from './levels.json';
 
@@ -181,10 +181,11 @@ function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mecha
   const mechanics = mechanicsFor(chapter, level, role);
   const crateCount = cratesFor(obstaclesFor(chapter, level, role), board, mechanics);
   const extras = role === 'finale' ? finaleExtras(chapter) : {};
+  const bombSlack = bombSlackFor(chapter, role, mechanics);
   // crates are taught with a single crack on intro levels, two everywhere else
   const params: GenParams = {
     ...raw.params, ...board, crateCount, crateHits: role === 'intro' ? 1 : 2, ...mechanicParams(mechanics),
-    ...(role === 'intro' ? { teach: true } : {}), ...(extras.bombSlack !== undefined ? { bombSlack: extras.bombSlack } : {}),
+    ...(role === 'intro' ? { teach: true } : {}), ...(bombSlack !== undefined ? { bombSlack } : {}),
   };
   if (chapter === 1) return { spec: { ...raw, chapter, params }, mechanics };
   const hearts = role !== 'rest' && level >= 4 ? heartsFor(params.pieceCount) : undefined;
