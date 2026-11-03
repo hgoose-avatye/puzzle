@@ -3,6 +3,7 @@ import type { Level } from '../core/types';
 import { generateMatching, type DifficultyTarget, type GenParams } from '../generator/generate';
 import type { Metrics } from '../solver/metrics';
 import type { BoardShape } from '../core/shapes';
+import { animalCount, arrowsAllowed, boardFor, cratesFor, finaleExtras, mechanicsFor, occupancyTarget, type Mechanics } from './chapterPlan';
 import pickedSeeds from './seeds.json';
 import bakedLevels from './levels.json';
 
@@ -23,13 +24,13 @@ export const CHAPTER_LENGTH = 30;
 
 /**
  * Difficulty knobs, applied on top of the chapter structure below (2026-10-29). Hearts are fixed at three on every
- * level that has them; the rest of the difficulty comes from how many animals and arrows a level has. With these the
- * simulated average player fails roughly a third of ordinary levels (it assumes more misreading than real players may
- * do); change one number and rerun scripts/pick-seeds.ts and scripts/build-levels.ts to retune.
+ * level that has them. Since the 2.5D redesign (2026-11-03) the animal count of ordinary, tough and finale levels
+ * comes from the board's effective cells (chapterPlan.ts animalCount); change a number and rerun
+ * scripts/pick-seeds.ts and scripts/build-levels.ts to retune.
  */
 export const HEARTS = 3;
-/** share of the base animal count kept on ordinary, tough and finale levels */
-export const DENSITY = 0.6;
+/** scale of the depth (rounds) targets on ordinary, tough and finale levels, kept from when it also scaled the animal count */
+export const DEPTH_SCALE = 0.6;
 /** share of the base arrow count kept (at least one where any were planned) */
 export const ARROW_SHARE = 0.5;
 
@@ -77,15 +78,12 @@ function chapterOneSpec(level: number): Omit<LevelSpec, 'chapter'> {
 }
 
 /**
- * The board grows through a chapter: small boards to learn on, the full 8 x 12 (the most a phone shows readably) for
- * the second half and the tough levels.
+ * Chapter 1's board for a level: small boards to learn on, the full 8 x 12 (the most a phone shows readably) for the
+ * tough levels and the end of the chapter. Later chapters reach 8 x 12 sooner (chapterPlan.ts boardFor).
  */
 export function boardSize(level: number, role: Role): { width: number; height: number } {
-  if (role === 'intro') return { width: 6, height: 9 };
-  if (role === 'rest') return { width: 7, height: 10 };
-  if (role === 'tough' || role === 'finale' || level >= 16) return { width: 8, height: 12 };
-  if (level < 10) return { width: 7, height: 11 };
-  return { width: 8, height: 11 };
+  const { width, height } = boardFor(1, level, role, CHAPTER_SHAPES.village);
+  return { width, height };
 }
 
 /**
@@ -138,61 +136,66 @@ export const CHAPTER_SHAPES: Record<Theme, [BoardShape, BoardShape, BoardShape]>
   haunted: ['tee', 'octagon', 'plus'],
   winter: ['rounded', 'ellipse', 'rect'],
 };
-/** The biggest levels need the roomy outlines to fit 26-28 animals. */
-const ROOMY: BoardShape[] = ['rect', 'rounded', 'octagon'];
-
-export function shapeFor(level: number, role: Role, theme: Theme = 'village'): BoardShape {
-  const own = CHAPTER_SHAPES[theme];
-  if (role === 'intro') return level <= 2 ? 'rect' : 'rounded';
-  if (role === 'rest') return own[1];
-  if (role === 'tough' || role === 'finale') {
-    const roomy = own.filter((s) => ROOMY.includes(s));
-    return roomy.length ? roomy[level % roomy.length] : ROOMY[level % 3];
-  }
-  return own[level % 3];
+/** Only the mechanics a level switches on, so a level without bombs carries no bombCount at all. */
+function mechanicParams(x: Mechanics): Partial<GenParams> {
+  return {
+    ...(x.lockCount > 0 ? { lockCount: x.lockCount } : {}),
+    ...(x.sleepCount > 0 ? { sleepCount: x.sleepCount } : {}),
+    ...(x.bombCount > 0 ? { bombCount: x.bombCount } : {}),
+  };
 }
 
-/** Fewer animals and arrows on the main levels (DENSITY, ARROW_SHARE), with the depth targets scaled to match. */
-function tune(spec: LevelSpec): LevelSpec {
+/**
+ * Main levels: depth targets scaled (DEPTH_SCALE), arrows thinned (ARROW_SHARE) and left out where two mechanics are on,
+ * and the animal count taken from the board's effective cells. Intro and rest levels keep their own easy setup.
+ */
+function tune(spec: LevelSpec, mechanics: Mechanics): LevelSpec {
   if (spec.role === 'intro' || spec.role === 'rest') return spec;
   const p = spec.params;
-  const scale = (r?: [number, number]): [number, number] | undefined => (r ? [Math.max(2, Math.round(r[0] * DENSITY)), Math.max(3, Math.round(r[1] * DENSITY))] : r);
+  const scale = (r?: [number, number]): [number, number] | undefined => (r ? [Math.max(2, Math.round(r[0] * DEPTH_SCALE)), Math.max(3, Math.round(r[1] * DEPTH_SCALE))] : r);
+  const planned = p.arrowCount ? Math.max(1, Math.round(p.arrowCount * ARROW_SHARE)) : 0;
+  const arrowCount = arrowsAllowed(mechanics) ? planned : 0;
+  const board = { width: p.width, height: p.height, shape: p.shape ?? 'rect' };
+  const occupancy = occupancyTarget(spec.chapter, spec.level, spec.role);
+  const { count } = animalCount(board, p.crateCount ?? 0, arrowCount, occupancy, p.maxLength, mechanics);
   return {
     ...spec,
-    params: { ...p, pieceCount: Math.round(p.pieceCount * DENSITY), arrowCount: p.arrowCount ? Math.max(1, Math.round(p.arrowCount * ARROW_SHARE)) : 0 },
+    params: { ...p, pieceCount: count, arrowCount },
     target: { ...spec.target, rounds: scale(spec.target.rounds) },
   };
 }
 
-/** Chapter 2 stretches animals, 3 adds keys, 4 sleepers, 5 bombs, 6 rotates through all three (spec 6.1). */
+/** Chapter 2 deepens crates, 3 adds a key, 4 sleepers, 5 bombs, 6 pairs them up (chapterPlan.ts). */
 export function levelSpec(levelNumber: number): LevelSpec {
-  return tune(baseLevelSpec(levelNumber));
+  const { spec, mechanics } = baseLevelSpec(levelNumber);
+  return tune(spec, mechanics);
 }
 
-function baseLevelSpec(levelNumber: number): LevelSpec {
+function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mechanics } {
   if (!Number.isInteger(levelNumber) || levelNumber < 1) throw new Error(`invalid level number ${levelNumber}`);
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
   const level = ((levelNumber - 1) % CHAPTER_LENGTH) + 1;
   const raw = chapterOneSpec(level);
+  const { role } = raw;
+  const board = boardFor(chapter, level, role, CHAPTER_SHAPES[CHAPTER_THEMES[chapter - 1]]);
+  const mechanics = mechanicsFor(chapter, level, role);
+  const crateCount = cratesFor(obstaclesFor(chapter, level, role), board, mechanics);
+  const extras = role === 'finale' ? finaleExtras(chapter) : {};
   // crates are taught with a single crack on intro levels, two everywhere else
-  const base = { ...raw, params: { ...raw.params, ...boardSize(level, raw.role), shape: shapeFor(level, raw.role, CHAPTER_THEMES[chapter - 1]), crateCount: obstaclesFor(chapter, level, raw.role), crateHits: raw.role === 'intro' ? 1 : 2, ...(raw.role === 'intro' ? { teach: true } : {}) } };
-  if (chapter === 1) return { ...base, chapter };
-  const params = { ...base.params };
-  const { role } = base;
-  const count = role === 'rest' ? 0 : role === 'intro' || level < 10 ? 1 : role === 'tough' || role === 'finale' ? 3 : 2;
-  const mechanic = chapter === 3 ? 'lock' : chapter === 4 ? 'sleep' : chapter === 5 ? 'bomb' : chapter === 6 ? (['lock', 'sleep', 'bomb'] as const)[level % 3] : null;
-  if (role === 'intro') params.teach = true;
-  if (mechanic === 'lock') params.lockCount = count;
-  if (mechanic === 'sleep') params.sleepCount = count;
-  if (mechanic === 'bomb') params.bombCount = count;
+  const params: GenParams = {
+    ...raw.params, ...board, crateCount, crateHits: role === 'intro' ? 1 : 2, ...mechanicParams(mechanics),
+    ...(role === 'intro' ? { teach: true } : {}), ...(extras.bombSlack !== undefined ? { bombSlack: extras.bombSlack } : {}),
+  };
+  if (chapter === 1) return { spec: { ...raw, chapter, params }, mechanics };
   const hearts = role !== 'rest' && level >= 4 ? heartsFor(params.pieceCount) : undefined;
   // Longer animals and extra mechanics make the tightest targets of chapter 1 unreachable, so loosen them a little.
   // A crate that matters always adds a step (its neighbours, then the crate, then the animal behind it), so intro
   // levels that teach crates get a little more depth.
-  const target = role === 'tough' || role === 'finale' ? { rounds: [10, 20] as [number, number], initialFreeRatio: [0, 0.38] as [number, number] }
-    : role === 'intro' && (params.crateCount ?? 0) > 0 ? { rounds: [2, 5] as [number, number], initialFreeRatio: [0.3, 1] as [number, number] }
-    : base.target;
-  return { ...base, chapter, params, target, hearts };
+  const base = role === 'tough' || role === 'finale' ? { rounds: [10, 20] as [number, number], initialFreeRatio: [0, 0.38] as [number, number] }
+    : role === 'intro' && crateCount > 0 ? { rounds: [2, 5] as [number, number], initialFreeRatio: [0.3, 1] as [number, number] }
+    : raw.target;
+  const target = extras.initialFreeRatio ? { ...base, initialFreeRatio: extras.initialFreeRatio } : base;
+  return { spec: { ...raw, chapter, params, target, hearts }, mechanics };
 }
 
 /** Deterministic: the same (levelNumber, baseSeed) always yields the same level. */
