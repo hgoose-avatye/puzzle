@@ -1,19 +1,27 @@
 /**
- * One modal card over everything (title, board, popups), used for the retry question. It only covers the screen, so
- * taps cannot reach the board while it is open; the level in play, its hearts and the save are not touched by it.
+ * One modal card over everything (title, board, popups), used for the retry question and the settings. It only covers
+ * the screen, so taps cannot reach the board while it is open; the level in play, its hearts and the save are not
+ * touched by it.
  */
+
+/** A GameButton role (ui.css): green goes on, blue tries again, yellow is the hint, cream steps back. */
+export type ButtonRole = 'primary' | 'retry' | 'special' | 'secondary';
 
 export interface ModalButton {
   id: string;
   label: string;
-  kind: 'primary' | 'yellow' | 'secondary';
+  kind: ButtonRole;
   onClick: () => void;
 }
+
+/** GameButton classes for a dialog button: the main action large, a step back medium. */
+export const dialogButton = (role: ButtonRole): string =>
+  role === 'secondary' ? 'gb gb-m gb-secondary' : role === 'retry' ? 'gb gb-l gb-primary retry' : `gb gb-l gb-${role}`;
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
 export class Modal {
-  /** What the modal shows now ('retry'), or null when closed. */
+  /** What the modal shows now ('retry', 'settings'), or null when closed. */
   kind: string | null = null;
 
   open(kind: string, title: string, body: Node[], buttons: ModalButton[]): void {
@@ -23,7 +31,7 @@ export class Modal {
     $('modalBtns').replaceChildren(...buttons.map((b) => {
       const el = document.createElement('button');
       el.id = b.id;
-      el.className = b.kind;
+      el.className = dialogButton(b.kind);
       el.textContent = b.label;
       el.onclick = b.onClick;
       return el;
