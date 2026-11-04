@@ -33,7 +33,7 @@ let loadToken = 0;
 /** Running speed for the board in view when it is not the game's own (the title's slow runner); null: the game's. */
 let loopSpeed: number | null = null;
 /** One-shot guards so a result sound plays once per level, even if the end is detected more than once. */
-/** Animals that were sent out and have not crossed their gate yet. */
+/** Animals that were sent out and have not crossed the board edge yet. */
 const pendingExits = new Set<number>();
 let clearPlayed = false;
 let failPlayed = false;
@@ -316,7 +316,7 @@ const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, 
  * left in the texts are the badges drawn over those animals, so the text points at what is on the board.
  */
 const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolean]> = [
-  ['basic', '친구 보내기', '친구를 누르면 문 쪽으로 달려가요. 길이 막혀 있으면 못 나가요. 꾹 누르고 있으면 가는 길이 보여요.', () => true],
+  ['basic', '친구 보내기', '친구를 누르면 바라보는 쪽으로 판 밖까지 달려 나가요. 길이 막혀 있으면 못 나가요. 꾹 누르고 있으면 가는 길이 보여요.', () => true],
   ['arrow', '화살표 칸', '화살표 칸을 지나면 그 방향으로 꺾이고, 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
   ['obstacle', '장애물', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
   ['crate', '상자', '상자와 건초더미는 길을 막아요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
@@ -594,7 +594,7 @@ function goHome(): void {
   titleRun(board.level, board.runner, token);
 }
 
-/** Screen band of a board: from above its back row's animals down to its front gates (CSS pixels). */
+/** Screen band of a board: from above its back row's animals down to just past its front edge (CSS pixels). */
 function boardBand(level: Level): BoardBand {
   const rect = stage.renderer.domElement.getBoundingClientRect();
   const y = (p: THREE.Vector3): number => rect.top + ((1 - p.project(stage.camera).y) / 2) * rect.height;
@@ -632,11 +632,11 @@ function layoutTitle(level: Level): void {
 
 /** The title loop, in ms from a fresh board: the runner's hop and path, the run, then the board again. */
 const TITLE_RUN = { mark: 700, go: 1300, again: 3800 };
-/** The title's runner goes at about a third of the game's pace, so its way to the gate can be followed. */
+/** The title's runner goes at about a third of the game's pace, so its way off the board can be followed. */
 const TITLE_RUN_SPEED = 2.4;
 
 /**
- * One round of the title loop: a fresh board, the runner hops and shows its way, runs out through its gate, then the
+ * One round of the title loop: a fresh board, the runner hops and shows its way, runs off the board edge, then the
  * same again. Quiet (no sounds). Stops by itself once anything else loads (the token moves on).
  */
 function titleRun(level: Level, runner: number, token: number): void {
@@ -644,7 +644,7 @@ function titleRun(level: Level, runner: number, token: number): void {
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
   addViews(level);
-  // the gates and plates stay (they show where each friend goes out); the V over the heads is a play aid
+  // the plates stay; the V over the heads is a play aid
   for (const v of views.values()) for (const m of v.markParts()) m.visible = false;
   flow = new PlayFlow(level);
   loopSpeed = TITLE_RUN_SPEED;

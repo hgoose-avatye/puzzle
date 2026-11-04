@@ -189,7 +189,7 @@ export async function runP0Checks(browser, base, report) {
       return c;
     });
     const n = t.ok + t.wrong + t.miss;
-    // what is left is mostly the gate markers on the board edge, drawn as part of an animal but not tappable
+    // what is left is mostly the floor marks and plate edges, drawn as part of an animal but not tappable
     check('tap picks the animal drawn there (level 10): at least 90%, another animal at most 3%', t.ok / n >= 0.9 && t.wrong / n <= 0.03, `ok ${(100 * t.ok / n).toFixed(1)}%, wrong ${(100 * t.wrong / n).toFixed(1)}%, miss ${(100 * t.miss / n).toFixed(1)}% of ${n} points`);
   });
 
