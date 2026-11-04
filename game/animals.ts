@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { directionVector, exitCell, exitDirection, headDirection, traceExit } from '../src/core/rules';
+import { directionVector, exitCell, exitDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
 import { routeOf } from '../src/game/flow';
 import { trackAt, type Track } from '../src/game/smooth';
@@ -36,16 +36,6 @@ const ALERT_OUT = 0.15;
 const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
 const FLINCH_TIME = 0.12;
 /** unit bar for the floor mark at the front edge of a one-cell animal's tile, scaled per use */
-const EDGE_BAR = new THREE.BoxGeometry(1, 0.008, 1);
-/** the direction V: half width, depth from point to arm ends, line thickness (cells) */
-const V_HALF = 0.12;
-const V_DEPTH = 0.12;
-const V_THICK = 0.045;
-/** how far a sideways-facing animal's V slides along its front edge towards the camera */
-const V_SIDE_SHIFT = 0.34;
-/** 2.5D cards: height of the direction V over the head's tile (level with the top of the head block) */
-const CARD_MARK_HEIGHT = 0.98;
-
 /** Bomb count on the badge: Pretendard Bold like the HUD numbers, the system font until it has loaded. */
 const BADGE_NUMBER_FONT = "700 70px Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif";
 /** Badge width in cells, and how long a count change pops it. */
@@ -253,7 +243,7 @@ export class PieceView {
     for (const seg of this.segments) this.group.add(seg);
 
     // Plate under each cell, following the path: Classic 3D in the animal's colour so the whole animal reads as one
-    // colour; 2.5D cards as a neutral shadow pad (the pictures carry the identity, the V keeps the colour).
+    // colour; 2.5D cards as a neutral shadow pad (the pictures carry the identity).
     const cards = this.segments[0]?.userData.spriteCards === true;
     this.cards = cards;
     const plateMaterial = (): THREE.Material =>
@@ -287,7 +277,6 @@ export class PieceView {
     this.group.add(this.zzz);
 
     this.buildChevrons(color);
-    this.buildAheadMarks(color);
     this.group.add(this.aheadMarks);
     this.group.add(this.chevrons);
     // no gate is drawn: any board edge lets an animal out (rules.ts traceExit), so a door at one spot would suggest a
@@ -343,54 +332,7 @@ export class PieceView {
     this.chevrons.visible = false;
   }
 
-  /**
-   * One small, pale V lying on the colour plate of a one-cell animal's own tile, its point showing the way it will run.
-   * A cube animal looks alike front and back from the camera. The V sits at the tile's front edge, except for an animal
-   * facing up the board: that edge is hidden behind its body, so the same V sits at the edge nearest the camera, still
-   * pointing up. Same shape, size, colour and thickness in every direction; no outline, glow or shadow. Hidden once it
-   * runs.
-   */
-  private buildAheadMarks(color: THREE.Color): void {
-    // Classic 3D: the floor V of one-cell animals only, as before. 2.5D cards: every animal (see below).
-    const cards = this.segments[0]?.userData.spriteCards === true;
-    if (this.bodyLen !== 1 && !cards) return;
-    const dir = headDirection(this.piece);
-    const v = directionVector(dir);
-    const head = this.piece.cells[0];
-    if (cards) {
-      // The cards are taller than the blocks and the card of the animal on the tile nearer the camera covers this tile's
-      // front edge, so a floor V is hidden most of the time; drawn on top instead, it lands on other animals' bodies.
-      // So for cards the same V sits level with the top of the head block, centred on the head's tile: no card from a
-      // neighbouring tile reaches there, and being just in front of this animal's own card plane it is drawn over this
-      // animal (no depth test) but still behind any animal that really stands in front of it.
-      const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5), transparent: true, depthTest: false });
-      for (const side of [-1, 1]) this.addBar(tint, side * V_HALF, -V_DEPTH / 2, 0, V_DEPTH / 2, V_THICK);
-      this.aheadMarks.position.copy(this.world(head.x, head.y)).setY(CARD_MARK_HEIGHT);
-      this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
-      return;
-    }
-    const tint = new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.5) });
-    // local frame: +z is the way it runs; the point is at tipZ and the arms end V_DEPTH behind it
-    const tipZ = dir === 'up' ? -0.47 + V_DEPTH : 0.46;
-    // facing sideways, the middle of the front edge is under the body; slide the V along that edge to its end nearest
-    // the camera, where the floor shows below the body (local +x points at the camera when facing left, -x when right)
-    const along = dir === 'left' ? V_SIDE_SHIFT : dir === 'right' ? -V_SIDE_SHIFT : 0;
-    for (const side of [-1, 1]) this.addBar(tint, along + side * V_HALF, tipZ - V_DEPTH, along, tipZ, V_THICK);
-    this.aheadMarks.position.copy(this.world(head.x, head.y));
-    this.aheadMarks.rotation.y = Math.atan2(v.x, v.y);
-  }
-
-  /** A flat bar on the floor from (x0, z0) to (x1, z1) in the mark's local frame (+z the way the animal runs). */
-  private addBar(tint: THREE.Material, x0: number, z0: number, x1: number, z1: number, thick: number): void {
-    const m = new THREE.Mesh(EDGE_BAR, tint);
-    m.userData.sharedGeometry = true;
-    m.scale.set(thick, 1, Math.hypot(x1 - x0, z1 - z0) + thick);
-    m.position.set((x0 + x1) / 2, 0.104, (z0 + z1) / 2);
-    m.rotation.y = Math.atan2(x1 - x0, z1 - z0);
-    this.aheadMarks.add(m);
-  }
-
-  /** The floor cue's parts, for dev measurements of how much of it is hidden. */
+  /** The floor cue's parts (none since the direction V was removed; kept for the dev measurements). */
   markParts(): THREE.Object3D[] {
     return [...this.aheadMarks.children];
   }

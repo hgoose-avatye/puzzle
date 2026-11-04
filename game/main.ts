@@ -832,7 +832,7 @@ function titleRun(level: Level, runner: number, token: number): void {
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
   addViews(level);
-  // the plates stay; the V over the heads is a play aid
+  // the plates stay
   for (const v of views.values()) for (const m of v.markParts()) m.visible = false;
   flow = new PlayFlow(level);
   loopSpeed = TITLE_RUN_SPEED;
