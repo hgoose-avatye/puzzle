@@ -4,6 +4,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { FullScreenQuad, Pass } from 'three/examples/jsm/postprocessing/Pass.js';
 import { VerticalTiltShiftShader } from 'three/examples/jsm/shaders/VerticalTiltShiftShader.js';
 import type { Crate, Level } from '../src/core/types';
 import { crateCracks, directionVector, exitCell, exitDirection, onBoard } from '../src/core/rules';
@@ -102,6 +103,13 @@ export class Stage {
   private crates: Array<{ crate: Crate; obj: THREE.Object3D; crack: THREE.Object3D; pips: THREE.Sprite; cracks: number; shakeT: number }> = [];
   /** Miniature look of the reference: the board stays sharp, the scenery above and below softens. */
   private composer!: EffectComposer;
+  /** The chick tutorial's focus: off unless a tutorial lights an animal up (setFocus). */
+  private focusPass!: FocusPass;
+  private focused: THREE.Object3D[] = [];
+  /** Arrow tiles by cell, with the time left of their bounce (bounceArrow). */
+  private arrowTiles = new Map<string, { obj: THREE.Object3D; t: number }>();
+  /** How many arrow bounces were played (for checks). */
+  arrowBounces = 0;
   private tilt!: ShaderPass;
 
   constructor(private readonly container: HTMLElement) {
@@ -115,6 +123,7 @@ export class Stage {
     container.appendChild(this.renderer.domElement);
     this.scene.background = new THREE.Color(0xcfe8f3);
     this.scene.add(this.hemi);
+    this.hemi.layers.enable(FOCUS_LAYER);
     const sun = new THREE.DirectionalLight(0xffffff, 1.7);
     sun.position.set(4, 10, 6);
     sun.castShadow = true;
@@ -123,10 +132,13 @@ export class Stage {
     sun.shadow.camera.right = 10;
     sun.shadow.camera.top = 10;
     sun.shadow.camera.bottom = -10;
+    sun.layers.enable(FOCUS_LAYER);
     this.scene.add(sun);
     this.scene.add(this.board);
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.focusPass = new FocusPass(this.scene, this.camera);
+    this.composer.addPass(this.focusPass);
     this.tilt = new ShaderPass(VerticalTiltShiftShader);
     this.composer.addPass(this.tilt);
     this.composer.addPass(new OutputPass());
@@ -217,7 +229,12 @@ export class Stage {
       this.board.add(obj);
       this.crates.push({ crate: k, obj, crack, pips, cracks: 0, shakeT: 0 });
     }
-    for (const a of level.arrows ?? []) this.board.add(this.arrowTile(level, a.x, a.y, a.dir));
+    this.arrowTiles.clear();
+    for (const a of level.arrows ?? []) {
+      const obj = this.arrowTile(level, a.x, a.y, a.dir);
+      this.arrowTiles.set(`${a.x},${a.y}`, { obj, t: 0 });
+      this.board.add(obj);
+    }
     this.fit();
   }
 
@@ -357,10 +374,78 @@ export class Stage {
       c.obj.rotation.z = Math.sin(c.shakeT * 50) * 0.08 * (c.shakeT / 0.35);
       c.obj.scale.setScalar(1 - 0.06 * Math.sin((c.shakeT / 0.35) * Math.PI));
     }
+    for (const a of this.arrowTiles.values()) {
+      if (a.t <= 0) continue;
+      a.t = Math.max(0, a.t - dt);
+      const k = Math.sin((1 - a.t / ARROW_BOUNCE) * Math.PI);
+      a.obj.scale.set(1 + 0.12 * k, 1 + 0.6 * k, 1 + 0.12 * k);
+    }
+  }
+
+  /** A short bounce of the arrow tile at a cell (the chick tutorial: the moment an animal turns on it). */
+  bounceArrow(x: number, y: number): void {
+    const a = this.arrowTiles.get(`${x},${y}`);
+    if (!a) return;
+    a.t = ARROW_BOUNCE;
+    this.arrowBounces++;
+  }
+
+  /**
+   * Light these objects up over a dark veil (the chick tutorial): they are drawn again on top at full brightness.
+   * An empty list turns the veil off and leaves the scene and its rendering exactly as before.
+   */
+  setFocus(objects: THREE.Object3D[]): void {
+    for (const o of this.focused) o.traverse((c) => c.layers.disable(FOCUS_LAYER));
+    this.focused = objects;
+    for (const o of objects) o.traverse((c) => c.layers.enable(FOCUS_LAYER));
+    this.focusPass.enabled = objects.length > 0;
+  }
+
+  /** How many objects the tutorial focus lights up now (0: off). */
+  get focusCount(): number {
+    return this.focused.length;
   }
 
   render(): void {
     this.composer.render();
+  }
+}
+
+/** Layer of what the tutorial focus draws over its veil. */
+const FOCUS_LAYER = 1;
+/** The focus veil, blended in linear light before tone mapping: 0.9 reads about as dark as the approved 0.6 DOM veil. */
+const FOCUS_VEIL = { color: 0x000000, opacity: 0.9 };
+/** Seconds of an arrow tile's bounce. */
+const ARROW_BOUNCE = 0.35;
+
+/**
+ * The chick tutorial's focus, right after the scene is drawn: a dark veil over it, then only the focused objects drawn
+ * again on top (depth cleared, so the whole animal shows, in front of any neighbour). Disabled unless a tutorial asks,
+ * and every renderer and scene setting it touches is put back after each frame.
+ */
+class FocusPass extends Pass {
+  private readonly veil = new FullScreenQuad(new THREE.MeshBasicMaterial({ color: FOCUS_VEIL.color, transparent: true, opacity: FOCUS_VEIL.opacity, depthTest: false, depthWrite: false }));
+
+  constructor(private readonly scene: THREE.Scene, private readonly camera: THREE.Camera) {
+    super();
+    this.needsSwap = false;
+    this.enabled = false;
+  }
+
+  render(renderer: THREE.WebGLRenderer, _write: THREE.WebGLRenderTarget, read: THREE.WebGLRenderTarget): void {
+    const autoClear = renderer.autoClear, background = this.scene.background, shadows = renderer.shadowMap.autoUpdate, mask = this.camera.layers.mask;
+    renderer.setRenderTarget(this.renderToScreen ? null : read);
+    renderer.autoClear = false;
+    this.veil.render(renderer);
+    renderer.clearDepth();
+    this.scene.background = null;
+    renderer.shadowMap.autoUpdate = false;
+    this.camera.layers.set(FOCUS_LAYER);
+    renderer.render(this.scene, this.camera);
+    this.camera.layers.mask = mask;
+    renderer.shadowMap.autoUpdate = shadows;
+    this.scene.background = background;
+    renderer.autoClear = autoClear;
   }
 }
 
