@@ -22,7 +22,8 @@ export async function runP0Checks(browser, base, report) {
     await p.goto(address, { waitUntil: 'networkidle0' });
     await p.waitForFunction(() => window.__game?.ids().length > 0, { timeout: 15000 });
     await sleep(500);
-    await p.evaluate(() => { const pop = document.getElementById('popup'); if (!pop.hidden) document.getElementById('popupBtn').click(); });
+    // a first-time tutorial (a fresh save on a ?level= entry) is skipped so the checks play the level as it is
+    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, .tutOk')].find((b) => !b.hidden)?.click(); });
     // per-frame monitor: closest gap between different animals' blocks while any runs, and the win shown while animals still run
     await p.evaluate(() => {
       const g = window.__game; window.__mon = { min: 9, earlyPopup: 0, waits: {}, resumes: {}, startS: {} };

@@ -1,14 +1,16 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
-import { canExit, headDirection, isAsleep, lockedBy } from '../src/core/rules';
+import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
-import { dialogButton, Modal, para, ruleRow, type RuleText } from './modal';
+import { dialogButton, Modal, para } from './modal';
+import { arrowTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
+import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -102,6 +104,8 @@ function paintBombBar(): void {
 }
 
 /** Heart icons for the HUD and the result card: the hearts left bright, the ones used dark. Fixed markup only. */
+/** Hearts as the HUD last showed them, so a heart just lost can pop. */
+let shownHearts = 0;
 const heartsMarkup = (left: number, max: number): string =>
   '<i class="heart full"></i>'.repeat(Math.max(0, left)) + '<i class="heart empty"></i>'.repeat(Math.max(0, max - Math.max(0, left)));
 
@@ -112,6 +116,12 @@ function refreshHud(): void {
   // reads as "레벨 7" (textContent), drawn as a small label and a big number
   $('levelLabel').innerHTML = `<span class="lvK">레벨</span> <span class="lvN">${levelNumber}</span>`;
   $('hearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
+  // a heart just lost pops once (plain feedback on the blocked tap)
+  if (state.hearts !== undefined) {
+    const all = $('hearts').querySelectorAll('.heart');
+    for (let i = Math.max(0, state.hearts); i < Math.min(shownHearts, all.length); i++) all[i].classList.add('pop');
+    shownHearts = state.hearts;
+  }
   $('hearts').setAttribute('aria-label', state.hearts === undefined ? '' : `하트 ${Math.max(0, state.hearts)}개 남음`);
   void spec;
   for (const [id, v] of views) {
@@ -139,6 +149,7 @@ function clearBoard(): number {
   $('msg').textContent = '';
   fx.clear();
   sound.stopAll();
+  stopTutorials();
   clearPlayed = false;
   failPlayed = false;
   pendingExits.clear();
@@ -174,7 +185,8 @@ async function loadLevel(n: number): Promise<void> {
   flow = new PlayFlow(built.level, built.hearts);
   addViews(built.level);
   refreshHud();
-  showIntro(built.level, built.hearts !== undefined);
+  shownHearts = built.hearts ?? 0;
+  beginTutorials(built.level);
 }
 
 /** True when the object and all its parents are drawn (the raycaster also hits hidden objects). */
@@ -258,7 +270,9 @@ function crackCrates(): void {
   if (!state) return;
   for (const c of stage.updateCrates(state.level, state.alive)) {
     if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); }
-    else { fx.dust(c.pos); sound.play('arrive'); }
+    else {
+      fx.dust(c.pos); sound.play('arrive');
+    }
   }
 }
 
@@ -277,6 +291,9 @@ function onTap(id: number): TapOutcome {
   }
   const view = views.get(id);
   if (ev.type === 'exited' && view) {
+    // a tap tutorial is done once its animal really leaves
+    if (tutorialShown?.target === id) tutorialTapped();
+    tutorialCheck = true;
     // The rules treat it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
     fx.launch(view.headWorld());
     sound.play('move');
@@ -312,41 +329,208 @@ const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(
 const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch { /* ignore */ } };
 
 /**
- * First-time rule tips: id (kept in the seen list), short name, text, and whether the level uses the rule. The 🔒 🔑 💣
- * left in the texts are the badges drawn over those animals, so the text points at what is on the board.
+ * The chick's first-time tutorials (tutorial.ts draws the chick and the finger, src/game/tutorialPlan.ts decides). Five,
+ * each one tap on an animal: the first rule (level 1), the arrow tile (once an animal whose way bends on one can leave),
+ * the key, the sleeper's neighbour, the way clear for a bomb. At most one per level; nothing shows while an animal
+ * runs or once the level is over; a tutorial with no animal on screen to point at is not forced and waits for another
+ * level. The scene darkens with only that animal lit and breathing (stage.ts setFocus, PieceView.setBreathe). The
+ * rule is learnt when the animal really leaves on that tap, or on 건너뛰기. After the key, sleep and bomb taps the
+ * animal that changed is lit for a moment (RESULT_MS) and play goes on by itself.
  */
-const TIPS: Array<[string, string, string, (l: Level, hearts: boolean) => boolean]> = [
-  ['basic', '친구 보내기', '친구를 누르면 바라보는 쪽으로 판 밖까지 달려 나가요. 길이 막혀 있으면 못 나가요. 꾹 누르고 있으면 가는 길이 보여요.', () => true],
-  ['arrow', '화살표 칸', '화살표 칸을 지나면 그 방향으로 꺾이고, 화살표를 마주 보면 막혀요.', (l) => (l.arrows?.length ?? 0) > 0],
-  ['obstacle', '장애물', '장애물이 있는 칸은 지나갈 수 없어요.', (l) => (l.obstacles?.length ?? 0) > 0],
-  ['crate', '상자', '상자와 건초더미는 길을 막아요. 옆에 붙은 친구가 나갈 때마다 금이 가고, 다 깨지면 길이 열려요.', (l) => (l.crates?.length ?? 0) > 0],
-  ['long', '몸이 긴 친구', '몸 전체가 지나갈 길이 비어 있어야 나갈 수 있어요.', (l) => l.pieces.some((p) => p.cells.length >= 3)],
-  ['hearts', '하트', '막힌 친구를 누르면 하트가 줄어요. 하트가 모두 없어지면 다시 시작해요.', (_l, h) => h],
-  ['key', '열쇠와 자물쇠', '자물쇠(🔒)가 달린 친구는 열쇠(🔑)를 가진 친구가 먼저 나가야 움직일 수 있어요.', (l) => l.pieces.some((p) => p.key !== undefined)],
-  ['sleep', '자는 친구', 'Zzz 표시가 있는 친구는 옆 친구가 나가면 깨어나요. 그 전에는 움직이지 못해요.', (l) => l.pieces.some((p) => p.sleeping)],
-  ['bomb', '폭탄', '폭탄(💣) 위의 숫자는 다른 친구가 몇 번 더 나가면 터지는지예요. 터지기 전에 폭탄 친구 앞을 비워서 먼저 구해 주세요.', (l) => l.pieces.some((p) => p.fuse !== undefined)],
-];
-const ruleOf = ([, title, text]: (typeof TIPS)[number]): RuleText => ({ title, text });
+const tutorial = new Tutorial('/assets/ui/result/chick.png');
+/** The chick's words: one or two short lines, broken by hand where the phrase breaks (\n). */
+const TUTORIAL_TEXT: Record<TutorialId, string> = {
+  basic: '이 친구를 눌러봐!',
+  arrow: '화살표에서\n꺾이는 걸 봐!',
+  key: '열쇠 친구를\n먼저 보내봐!',
+  sleep: '옆 친구를 보내서\n깨워봐!',
+  bomb: '폭탄이 터지기 전에\n길을 비워줘!',
+};
+/**
+ * The tap's round target around the animal, in board cells on screen; never under SPOT_MIN (the finger's target stays
+ * well over 44 px across) nor over SPOT_MAX CSS pixels.
+ */
+const SPOT_CELLS = 0.8;
+const SPOT_MIN = 30;
+const SPOT_MAX = 48;
+/** How often the tap's spot checks it still sits on its animal (ms): the 2.5D pictures may still be loading. */
+const SPOT_RECHECK = 300;
+/** How long the animal a tap changed (unlocked, woken, its way cleared) stays lit after the tap (ms). */
+const RESULT_MS = 800;
+/** Tutorials whose tap changes another animal, shown for RESULT_MS. */
+const WITH_RESULT: readonly TutorialId[] = ['key', 'sleep', 'bomb'];
+/** This level's one tutorial is taken (shown, or the level's own start rule is waiting for its animal). */
+let tutorialUsed = true;
+/** Look for the arrow tutorial on the next frame where nothing runs. */
+let tutorialCheck = false;
+/** The tutorial on screen: its rule and the animal to tap. */
+let tutorialShown: { id: TutorialId; target: number } | null = null;
+let resultTimer: number | undefined;
+/** After the arrow tutorial's tap: the tile it turns on, bounced when the animal's head reaches it. */
+let arrowWatch: { id: number; x: number; y: number; at: THREE.Vector3 } | null = null;
 
-function showIntro(level: Level, hearts: boolean): void {
+const learn = (id: TutorialId): void => { const seen = readSeen(); if (!seen.includes(id)) writeSeen([...seen, id]); };
+/** Close the tutorial and put everything back: no veil, no breathing, taps reach the board again. */
+function endTutorial(learnt?: TutorialId): void {
+  if (learnt) learn(learnt);
+  window.clearTimeout(resultTimer);
+  if (tutorialShown) views.get(tutorialShown.target)?.setBreathe(false);
+  stage.setFocus([]);
+  tutorial.hide();
+  tutorialShown = null;
+}
+/** Close any tutorial; nothing more this level (a new level starts afresh). */
+function stopTutorials(): void {
+  endTutorial();
+  arrowWatch = null;
+  tutorialCheck = false;
+  tutorialUsed = true;
+}
+
+/** A world point on screen, in CSS pixels. */
+function screenAt(p: THREE.Vector3): { x: number; y: number } {
+  const v = p.clone().project(stage.camera);
+  const rect = stage.renderer.domElement.getBoundingClientRect();
+  return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+}
+
+/**
+ * A screen point where a finger gets this animal (the game's own pick says so): the top of its head, or the closest
+ * such point around it. Null when no point near it picks it (hidden behind another animal).
+ */
+function screenPointOf(id: number): { x: number; y: number } | null {
+  const v = views.get(id);
+  if (!v) return null;
+  const box = new THREE.Box3().setFromObject(v.tapTargets()[0]);
+  const { x: x0, y: y0 } = screenAt(new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2));
+  for (let r = 0; r <= 40; r += 2) for (let a = 0; a < 16; a++) {
+    const x = x0 + r * Math.cos((a * Math.PI) / 8), y = y0 + r * Math.sin((a * Math.PI) / 8);
+    if (pick(x, y) === id) return { x, y };
+    if (r === 0) break;
+  }
+  return null;
+}
+
+/** One board cell's width on screen (CSS pixels), at the board's middle. */
+function cellPx(): number {
+  const s = current();
+  if (!s) return 45;
+  const a = screenAt(stage.worldOf(s.level, 0, 0)), b = screenAt(stage.worldOf(s.level, 1, 0));
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+/**
+ * The tap's spot on an animal: the middle of its head when a finger there gets it (the game's own pick), otherwise
+ * screenPointOf's point; about one animal wide. Null when no point picks it.
+ */
+function spotOf(id: number): TutorialSpot | null {
+  const v = views.get(id);
+  if (!v) return null;
+  const box = new THREE.Box3().setFromObject(v.tapTargets()[0]);
+  const mid = screenAt(box.getCenter(new THREE.Vector3()));
+  const at = pick(mid.x, mid.y) === id ? mid : screenPointOf(id);
+  if (!at) return null;
+  return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) };
+}
+
+/**
+ * Light up the first of these animals that a finger can get on screen and wait for its tap; a tap there is the game's
+ * tap on that animal. False when none can be shown (the tutorial waits for another level).
+ */
+function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
+  for (const target of candidates) {
+    let spot = spotOf(target);
+    const view = views.get(target);
+    if (!spot || !view) continue;
+    let checked = performance.now();
+    const follow = (): TutorialSpot => {
+      if (performance.now() - checked > SPOT_RECHECK) {
+        checked = performance.now();
+        spot = spotOf(target) ?? spot;
+      }
+      return spot!;
+    };
+    tutorialShown = { id, target };
+    tutorialUsed = true;
+    stage.setFocus([view.group]);
+    view.setBreathe(true);
+    tutorial.show({
+      text: TUTORIAL_TEXT[id],
+      spot: follow,
+      onAction: () => {
+        const s = current();
+        // only a tap that lets the animal out: never a blocked tap (no heart lost) and never another animal
+        if (s && s.alive.has(target) && canExit(s.level, target, s.alive)) onTap(target);
+        else endTutorial();
+      },
+      onSkip: () => endTutorial(id),
+    });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * The tutorial's animal has left on its tap: the rule is learnt. The key, sleep and bomb tutorials light up the animal
+ * that changed for a moment; the arrow tutorial watches for the tile; then play goes on.
+ */
+function tutorialTapped(): void {
+  const shown = tutorialShown;
+  const s = current();
+  if (!shown || !s) return;
+  learn(shown.id);
+  views.get(shown.target)?.setBreathe(false);
+  if (shown.id === 'arrow') {
+    const piece = s.level.pieces.find((p) => p.id === shown.target)!;
+    const arrows = new Set((s.level.arrows ?? []).map((a) => `${a.x},${a.y}`));
+    const tile = traceExit(s.level, piece).cells.find((c) => arrows.has(`${c.x},${c.y}`));
+    if (tile) arrowWatch = { id: shown.target, x: tile.x, y: tile.y, at: stage.worldOf(s.level, tile.x, tile.y) };
+  }
+  const changed = WITH_RESULT.includes(shown.id) ? resultSubjects(s.level, shown.id, shown.target).filter((id) => s.alive.has(id) && views.has(id)) : [];
+  if (!changed.length) { endTutorial(); return; }
+  stage.setFocus(changed.map((id) => views.get(id)!.group));
+  for (const id of changed) views.get(id)!.pulse();
+  const first = changed[0];
+  tutorial.result(() => spotOf(first));
+  resultTimer = window.setTimeout(() => endTutorial(), RESULT_MS);
+}
+
+/** A new level: its start tutorial if it has one, otherwise watch for the arrow tutorial. */
+function beginTutorials(level: Level): void {
+  stopTutorials();
   if (DEMO) return;
-  const seen = readSeen();
-  const fresh = TIPS.filter(([id, , , test]) => test(level, hearts) && !seen.includes(id) && (id !== 'basic' || levelNumber === 1 || !seen.length));
-  if (fresh.length === 0) return;
-  writeSeen([...seen, ...fresh.map(([id]) => id)]);
-  $('popup').hidden = false;
-  $('popup').dataset.kind = 'intro';
-  $('popupHearts').innerHTML = '';
-  $('popupRescue').innerHTML = '';
-  $('popupStage').innerHTML = '';
-  $('popupBtn').className = dialogButton('primary');
-  $('popupTitle').textContent = `레벨 ${levelNumber}`;
-  const sub = $('popupSub');
-  sub.innerHTML = '';
-  for (const tip of fresh) sub.appendChild(ruleRow(ruleOf(tip)));
-  $('popupBtn').textContent = '알겠어요';
-  $('popupBtn').onclick = () => { $('popup').hidden = true; };
-  $('popupHome').hidden = true;
+  tutorialUsed = false;
+  const start = startTutorial(level, readSeen(), levelNumber);
+  if (start) {
+    // the level's own start rule takes the level, even when its animal cannot be shown (then it waits)
+    tutorialUsed = true;
+    const s = current();
+    if (s) showTapTutorial(start, startTargets(level, s.alive, start, s.fuses));
+    return;
+  }
+  tutorialCheck = true; // an arrow animal may be free from the start
+}
+
+/** Called every frame while a check is due: show the arrow tutorial once the board is still and its animal can leave. */
+function situationalTutorial(): void {
+  if (!flow || tutorialUsed || isCleared(flow.state) || flow.lost) { tutorialCheck = false; return; }
+  // wait while an animal runs, a result or the modal is up, or a tutorial is on screen
+  if (anyRunning() || tutorial.visible || !$('popup').hidden || !$('modal').hidden) return;
+  tutorialCheck = false;
+  const s = flow.state;
+  if (!readSeen().includes('arrow')) showTapTutorial('arrow', arrowTargets(s.level, s.alive));
+}
+
+/** After the arrow tutorial's tap: bounce the tile once the animal's head reaches it. */
+function watchArrow(): void {
+  if (!arrowWatch) return;
+  const v = views.get(arrowWatch.id);
+  if (!v?.running) { arrowWatch = null; return; }
+  const head = v.headWorld();
+  if (Math.hypot(head.x - arrowWatch.at.x, head.z - arrowWatch.at.z) < 0.35) {
+    stage.bounceArrow(arrowWatch.x, arrowWatch.y);
+    arrowWatch = null;
+  }
 }
 
 const RESCUED_KEY = 'animal-rescue-rescued';
@@ -422,6 +606,8 @@ $('popup').addEventListener('click', (e) => { if (e.detail > 0 && touches === ca
 function showEnd(won: boolean): void {
   const state = current();
   if (!state) return;
+  // the result comes first: a tutorial on screen or waiting is dropped, not learnt
+  stopTutorials();
   if (won) {
     if (!clearPlayed) { clearPlayed = true; sound.play('clear'); }
     fx.confetti(new THREE.Vector3(0, 0, 0), 8);
@@ -543,6 +729,8 @@ const clock = new THREE.Clock();
       if (++printTick % 2 === 0) fx.print(v.tailWorld(), v.color);
     }
   }
+  if (tutorialCheck) situationalTutorial();
+  watchArrow();
   fx.update(dt);
   stage.update(dt);
   stage.render();
@@ -691,21 +879,12 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   sound,
   ids: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id)).map((p) => p.id) : []; },
   /** A screen point where a finger would get this animal: the top of its head, or the closest such point around it. */
-  screenOf: (id: number) => {
-    const v = views.get(id);
-    if (!v) return null;
-    const box = new THREE.Box3().setFromObject(v.tapTargets()[0]);
-    const top = new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2).project(stage.camera);
-    const rect = stage.renderer.domElement.getBoundingClientRect();
-    const x0 = rect.left + ((top.x + 1) / 2) * rect.width;
-    const y0 = rect.top + ((1 - top.y) / 2) * rect.height;
-    for (let r = 0; r <= 40; r += 2) for (let a = 0; a < 16; a++) {
-      const x = x0 + r * Math.cos((a * Math.PI) / 8), y = y0 + r * Math.sin((a * Math.PI) / 8);
-      if (pick(x, y) === id) return { x, y };
-      if (r === 0) break;
-    }
-    return null;
-  },
+  screenOf: (id: number) => screenPointOf(id),
+  /** The tutorial on screen (its rule, the animal to tap, the spotlight) or null. */
+  tutorial: () => (tutorialShown ? { ...tutorialShown, spot: tutorial.spotNow(), phase: tutorial.phase } : null),
+  /** Objects the tutorial focus lights now (0: off) and arrow tile bounces played. */
+  focus: () => stage.focusCount,
+  arrowBounces: () => stage.arrowBounces,
   /** How far each animal's drawn body reaches past half a cell from its block centres, per animal (look checks). */
   overhang: () => [...views.entries()].map(([id, v]) => {
     let worst = 0;

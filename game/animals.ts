@@ -61,6 +61,8 @@ const CARD_BADGE_LIFT = 0.04;
 const LAUNCH_TIME = 0.2;
 /** cells past the board edge over which a block shrinks away */
 const GATE_FADE = 0.8;
+/** The chick tutorial's breathing on the animal to tap: up to 6% bigger and back, once per period (seconds). */
+const BREATHE = { amount: 0.06, period: 1.2 };
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
 const BLOCK_SPACING = 1;
 
@@ -227,6 +229,8 @@ export class PieceView {
   /** seconds the current wait has lasted */
   private waitT = 0;
   private pulseT = 0;
+  /** seconds into the tutorial's breathing, or null when it is off */
+  private breatheT: number | null = null;
   readonly bodyLen: number;
   /** where the path leaves the board, just past its last cell: the rescue burst and sparkles play here */
   private gatePos = new THREE.Vector3();
@@ -508,6 +512,7 @@ export class PieceView {
     this.chevrons.visible = false;
     this.aheadMarks.visible = false;
     this.pulseT = 0;
+    this.breatheT = null;
     for (const seg of this.segments) seg.scale.setScalar(1);
     this.anim = { kind: 'run', s: this.headStart, onDone, onExit };
     this.launchT = LAUNCH_TIME;
@@ -621,6 +626,12 @@ export class PieceView {
     this.pulseT = 0.35;
   }
 
+  /** The chick tutorial's slow breathing (1.00 to 1.06 and back) on an animal that stands; off puts it back at 1. */
+  setBreathe(on: boolean): void {
+    this.breatheT = on ? 0 : null;
+    if (!on && !this.running && this.pulseT === 0) for (const s of this.segments) s.scale.setScalar(1);
+  }
+
   /** Free what this view owns. Block geometry and materials are shared and stay alive. */
   dispose(): void {
     const shared = new Set<THREE.Object3D>();
@@ -684,6 +695,11 @@ export class PieceView {
       this.pulseT = Math.max(0, this.pulseT - dt);
       const k = 1 + Math.sin((1 - this.pulseT / 0.35) * Math.PI) * 0.12;
       for (const s of this.segments) s.scale.setScalar(this.pulseT === 0 ? 1 : k);
+    }
+    if (this.breatheT !== null && this.pulseT === 0) {
+      this.breatheT += dt;
+      const k = 1 + (BREATHE.amount * (1 - Math.cos((this.breatheT / BREATHE.period) * Math.PI * 2))) / 2;
+      for (const s of this.segments) s.scale.setScalar(k);
     }
   }
 }

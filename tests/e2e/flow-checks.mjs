@@ -37,9 +37,9 @@ export async function runFlowChecks(browser, base, report) {
       playing: window.__game.state() !== null && document.getElementById('title').hidden,
     };
   });
-  /** Close the first-time rule tips if they are showing. */
+  /** Close the chick's first-time tutorial if it is showing (건너뛰기, or 알겠어요 on a look-only one). */
   const closeTips = async (p) => {
-    if (await p.evaluate(() => !document.getElementById('popup').hidden && document.getElementById('popupBtn').textContent === '알겠어요')) await p.click('#popupBtn');
+    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, .tutOk')].find((b) => !b.hidden)?.click(); });
     await sleep(100);
   };
   /** Send out every animal (rules decide at once); returns the number of taps. */
@@ -284,6 +284,105 @@ export async function runFlowChecks(browser, base, report) {
     const fresh = await q.evaluate(() => getComputedStyle(document.getElementById('title')).getPropertyValue('--board-top'));
     await q.close();
     check('title: the board sits at the same height with one button or two', withSave !== '' && withSave === fresh, `with a save ${withSave}, fresh ${fresh}`);
+  });
+
+  // the chick's first-time tutorials: done only by the real thing (a touch in the spotlight) or by 건너뛰기, one per
+  // level, the level's own new rule first, never while an animal runs, and the result popup always wins
+  const ALL_TIPS = ['basic', 'arrow', 'key', 'sleep', 'bomb'];
+  /** Nothing of a tutorial is left: no focus veil, the HUD not dimmed, nothing on screen. */
+  const restored = (p) => p.evaluate(() => window.__game.focus() === 0 && !document.body.classList.contains('tut-on') && window.__game.tutorial() === null);
+  /** Open a level with this save of learnt tips (the page keeps its storage across the reload). */
+  const withSeen = async (p, seen, query) => {
+    await p.evaluate((s) => localStorage.setItem('animal-rescue-seen', JSON.stringify(s)), seen);
+    await p.goto(new URL(query, base).href, { waitUntil: 'networkidle0' });
+    await sleep(900);
+  };
+  const tut = (p) => p.evaluate(() => window.__game.tutorial());
+  const seenNow = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('animal-rescue-seen') ?? '[]'));
+  const settle = async (p) => { for (let t = 0; t < 80 && await p.evaluate(() => [...window.__game.views().values()].some((v) => v.running)); t++) await sleep(100); await sleep(150); };
+
+  await scenario('tutorial: level 1 is learnt by a real touch in the spotlight', null, async (p) => {
+    await p.click('#tStart');
+    await sleep(700);
+    const t = await tut(p);
+    const free = await p.evaluate(() => window.__game.free());
+    check('tutorial: level 1 opens with the first rule on an animal that can leave', t?.id === 'basic' && free.includes(t.target) && t.spot !== null, JSON.stringify(t));
+    // a touch on another animal, outside the spotlight, does nothing
+    const other = await p.evaluate((t) => { for (const id of window.__game.ids()) { if (id === t.target) continue; const q = window.__game.screenOf(id); if (q && Math.hypot(q.x - t.spot.x, q.y - t.spot.y) > t.spot.r + 10) return q; } return null; }, t);
+    if (other) await p.touchscreen.tap(other.x, other.y);
+    await sleep(300);
+    const held = await p.evaluate(() => window.__game.state().taps);
+    await p.touchscreen.tap(t.spot.x, t.spot.y);
+    await sleep(400);
+    const after = await p.evaluate((id) => ({ s: window.__game.state(), gone: !window.__game.state().alive.includes(id) }), t.target);
+    const seen = await seenNow(p);
+    check('tutorial: a touch outside the spotlight is held back', other !== null && held === 0, `other ${JSON.stringify(other)}, taps ${held}`);
+    check('tutorial: the touch in the spotlight is the game tap on that animal only, and the rule is learnt', after.gone && after.s.taps === 1 && after.s.blocked === 0 && (await restored(p)) && seen.includes('basic'), `${JSON.stringify(after.s)}, seen ${JSON.stringify(seen)}`);
+  });
+
+  await scenario('tutorial: 건너뛰기 counts as learnt and taps nothing', null, async (p) => {
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'key'), '?level=61');
+    const t = await tut(p);
+    await p.click('#tutorial .tutSkip');
+    await sleep(200);
+    const s = await p.evaluate(() => window.__game.state());
+    check('tutorial: level 61 opens with the key on the free key carrier, and 건너뛰기 learns it without a tap', t?.id === 'key' && (await restored(p)) && (await seenNow(p)).includes('key') && s.taps === 0, `${JSON.stringify(t)}, taps ${s.taps}`);
+  });
+
+  await scenario('tutorial: hearts and crates teach themselves in play (no tutorial), a lost heart pops', null, async (p) => {
+    // level 7 brings hearts and level 11 crates: no chick for either; the heart a blocked tap takes pops once
+    await withSeen(p, ['basic', 'arrow'], '?level=7');
+    await p.evaluate(() => { const g = window.__game; const f = new Set(g.free()); g.tap(g.ids().find((i) => !f.has(i))); });
+    await sleep(120);
+    const pop = await p.evaluate(() => document.querySelectorAll('#hearts .heart.pop').length);
+    await sleep(500);
+    const seven = await tut(p);
+    await withSeen(p, ['basic', 'arrow'], '?level=11');
+    let eleven = null;
+    for (let k = 0; k < 40; k++) { const id = await p.evaluate(() => window.__game.free()[0] ?? null); if (id === null) break; await p.evaluate((i) => window.__game.tap(i), id); await settle(p); eleven ??= await tut(p); }
+    check('tutorial: no tutorial on levels 7 and 11, and the heart lost to a blocked tap pops', seven === null && eleven === null && pop === 1, `7 ${JSON.stringify(seven)}, 11 ${JSON.stringify(eleven)}, pops ${pop}`);
+  });
+
+  await scenario('tutorial: after the key tap the unlocked animal is lit for a moment, then play goes on', null, async (p) => {
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'key'), '?level=61');
+    const t = await tut(p);
+    await p.touchscreen.tap(t.spot.x, t.spot.y);
+    await sleep(250);
+    const during = await p.evaluate(() => ({ t: window.__game.tutorial(), focus: window.__game.focus() }));
+    await sleep(1100);
+    check('tutorial: the key tap lights up the unlocked animal briefly, then everything is back and the key is learnt', during.t?.phase === 'result' && during.focus > 0 && (await restored(p)) && (await seenNow(p)).includes('key'), JSON.stringify(during));
+  });
+
+  await scenario('tutorial: the result popup comes before a tutorial', null, async (p) => {
+    // level 121 opens on the bomb tutorial; the bomb goes off on taps made around it (the test hook, not a finger)
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'bomb'), '?level=121');
+    const t = await tut(p);
+    for (let k = 0; k < 12 && await p.evaluate(() => document.getElementById('popup').hidden); k++) {
+      await p.evaluate((target) => { const g = window.__game; const s = g.state(); const id = g.free().find((i) => i !== target && s.fuses[i] === undefined); if (id !== undefined) g.tap(id); }, t.target);
+      await sleep(200);
+    }
+    await sleep(600);
+    const popup = await p.evaluate(() => document.getElementById('popup').hidden ? null : document.getElementById('popupTitle').textContent);
+    check('tutorial: when the bomb goes off the fail popup shows, the tutorial is gone and not learnt', t?.id === 'bomb' && popup === '펑! 폭탄이 터졌어요' && (await restored(p)) && !(await seenNow(p)).includes('bomb'), `${JSON.stringify(t)}, popup ${popup}`);
+  });
+
+  await scenario('tutorial: the arrow tutorial waits for its animal and is learnt by tapping it', null, async (p) => {
+    await withSeen(p, ['basic'], '?level=6');
+    const atStart = await tut(p);
+    let shown = null;
+    for (let k = 0; k < 20 && !shown; k++) {
+      const id = await p.evaluate(() => window.__game.free()[0] ?? null);
+      if (id === null) break;
+      await p.evaluate((i) => window.__game.tap(i), id);
+      await settle(p);
+      shown = await tut(p);
+    }
+    if (shown) await p.touchscreen.tap(shown.spot.x, shown.spot.y);
+    await sleep(400);
+    const gone = shown ? await p.evaluate((id) => !window.__game.state().alive.includes(id), shown.target) : false;
+    await settle(p);
+    const bounced = await p.evaluate(() => window.__game.arrowBounces());
+    check('tutorial: level 6 shows the arrow tutorial only once an arrow animal can leave, and its touch lets that animal out', atStart === null && shown?.id === 'arrow' && gone && bounced > 0 && (await restored(p)) && (await seenNow(p)).includes('arrow'), `start ${JSON.stringify(atStart)}, shown ${JSON.stringify(shown)}, gone ${gone}, tile bounces ${bounced}`);
   });
 
   await scenario('dev entry', null, async (p) => {
