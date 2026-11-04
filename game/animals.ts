@@ -59,14 +59,13 @@ const CARD_BADGE_H = 200;
 /** small lift of the pointer tip above spriteCards' badgeTip, in world units */
 const CARD_BADGE_LIFT = 0.04;
 const LAUNCH_TIME = 0.2;
-const GATE_TIME = 0.4;
-/** cells past the gate over which a block shrinks away */
+/** cells past the board edge over which a block shrinks away */
 const GATE_FADE = 0.8;
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
 const BLOCK_SPACING = 1;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
-/** The same hue, more saturated, for the lit plate and gate (the floor marks and effects keep pieceColor). */
+/** The same hue, more saturated, for the lit plate (the floor marks and effects keep pieceColor). */
 const plateColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.896, 0.55);
 
 /** Badge colours for a bomb's remaining taps: calm, getting close, about to go off. */
@@ -218,9 +217,6 @@ export class PieceView {
   private flinchT = 0;
   /** take-off squash and stretch */
   private launchT = 0;
-  /** gate bounce when the head passes it */
-  private gateT = 0;
-  private gate!: THREE.Object3D;
   private alertT = 0;
   private alert: THREE.Sprite | null = null;
   private badgeKey = '';
@@ -232,6 +228,7 @@ export class PieceView {
   private waitT = 0;
   private pulseT = 0;
   readonly bodyLen: number;
+  /** where the path leaves the board, just past its last cell: the rescue burst and sparkles play here */
   private gatePos = new THREE.Vector3();
   /** drawn as 2.5D picture cards (the Classic 3D blocks keep their own badge and Zzz) */
   readonly cards: boolean;
@@ -252,7 +249,7 @@ export class PieceView {
     for (const seg of this.segments) this.group.add(seg);
 
     // Plate under each cell, following the path: Classic 3D in the animal's colour so the whole animal reads as one
-    // colour; 2.5D cards as a neutral shadow pad (the pictures carry the identity, the gate and the V keep the colour).
+    // colour; 2.5D cards as a neutral shadow pad (the pictures carry the identity, the V keeps the colour).
     const cards = this.segments[0]?.userData.spriteCards === true;
     this.cards = cards;
     const plateMaterial = (): THREE.Material =>
@@ -289,10 +286,11 @@ export class PieceView {
     this.buildAheadMarks(color);
     this.group.add(this.aheadMarks);
     this.group.add(this.chevrons);
-    const gate = this.buildGate(lit);
-    this.gate = gate;
-    this.markers.push(gate);
-    this.group.add(gate);
+    // no gate is drawn: any board edge lets an animal out (rules.ts traceExit), so a door at one spot would suggest a
+    // rule the game does not have; only the point where this path leaves is kept, for the rescue effects
+    const v = directionVector(exitDirection(this.level, this.piece));
+    const cell = exitCell(this.level, this.piece);
+    this.gatePos = this.world(cell.x + v.x * 0.62, cell.y + v.y * 0.62);
     this.place(this.headStart);
   }
 
@@ -393,27 +391,7 @@ export class PieceView {
     return [...this.aheadMarks.children];
   }
 
-  private buildGate(color: THREE.Color): THREE.Object3D {
-    const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
-    const v = directionVector(exitDirection(this.level, this.piece));
-    const cell = exitCell(this.level, this.piece);
-    const along = v.x !== 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
-    for (const s of [-0.42, 0.42]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.75, 0.12), mat);
-      post.position.copy(along).multiplyScalar(s).setY(0.375);
-      g.add(post);
-    }
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(v.x !== 0 ? 0.12 : 1.0, 0.12, v.x !== 0 ? 1.0 : 0.12), mat);
-    lintel.position.y = 0.78;
-    g.add(lintel);
-    g.position.copy(this.world(cell.x + v.x * 0.62, cell.y + v.y * 0.62));
-    this.gatePos = g.position.clone();
-    g.traverse((o) => { o.castShadow = true; });
-    return g;
-  }
-
-  /** Hide the color plates and gate so the bare animal can be inspected. */
+  /** Hide the color plates so the bare animal can be inspected. */
   hideMarkers(): void {
     for (const m of this.markers) m.visible = false;
   }
@@ -481,12 +459,12 @@ export class PieceView {
   /** World position of the head block (for effects). */
   headWorld(): THREE.Vector3 { return this.segments[0].position; }
 
-  /** What a finger can land on: the body blocks, the colour plates under them and the badge over the head (not the gate or the path). */
+  /** What a finger can land on: the body blocks, the colour plates under them and the badge over the head (not the path). */
   tapTargets(): THREE.Object3D[] {
     return [...this.segments, ...this.plates, this.badge];
   }
 
-  /** World position of the exit gate. */
+  /** World position where the path leaves the board (the rescue effects play here). */
   gateWorld(): THREE.Vector3 { return this.gatePos; }
 
   get color(): number { return pieceColor(this.piece.id).getHex(); }
@@ -525,7 +503,7 @@ export class PieceView {
     return hit ? hit.distance : null;
   }
 
-  /** `onExit` fires once when the head crosses the board edge (the gate); `onDone` when the whole body is gone. */
+  /** `onExit` fires once when the head crosses the board edge; `onDone` when the whole body is gone. */
   runOut(onDone: () => void, onExit?: () => void): void {
     this.chevrons.visible = false;
     this.aheadMarks.visible = false;
@@ -600,7 +578,7 @@ export class PieceView {
   }
 
   /**
-   * Past the gate each block shrinks away within GATE_FADE cells, as if stepping through it, so nothing runs on into
+   * Past the board edge each block shrinks away within GATE_FADE cells, as if stepping off it, so nothing runs on into
    * the scenery around the board.
    */
   private shrinkIntoGate(): void {
@@ -679,14 +657,7 @@ export class PieceView {
       if (this.anim.onExit && this.anim.s >= this.track.length - (this.bodyLen + 2)) {
         const exit = this.anim.onExit;
         this.anim.onExit = undefined;
-        this.gateT = GATE_TIME;
         exit();
-      }
-      if (this.gateT > 0) {
-        this.gateT = Math.max(0, this.gateT - dt);
-        const t = 1 - this.gateT / GATE_TIME;
-        const k = 1 + Math.sin(t * Math.PI * 2) * 0.22 * (1 - t);
-        this.gate.scale.set(k, 2 - k, k);
       }
       if (this.anim.s >= this.track.length) {
         const done = this.anim.onDone;

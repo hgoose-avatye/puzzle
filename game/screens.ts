@@ -7,7 +7,7 @@ import type { Level } from '../src/core/types';
 
 /**
  * The title board: 3 x 3, where only the chick at the front can leave; everyone else is blocked by another animal.
- * Each animal has its own gate, so the gates show where friends go out; main.ts sends the chick out on a loop.
+ * Any edge lets a friend out (there are no doors); main.ts sends the chick out over the front edge on a loop.
  *   . . P      P pig (head below, facing down)
  *   F F P      F fox (head right, facing right)
  *   r c n      r parrot (right), c chick (down, the one that runs out), n penguin (left)
@@ -25,7 +25,7 @@ export function titleBoard(): { level: Level; species: Map<number, string>; runn
   return { level: { width: 3, height: 3, pieces }, species, runner: 1 };
 }
 
-/** Where the title board is drawn on screen, in CSS pixels: the top of its animals and the bottom of its gates. */
+/** Where the title board is drawn on screen, in CSS pixels: the top of its animals and just past its front edge. */
 export interface BoardBand {
   top: number;
   bottom: number;

@@ -64,7 +64,7 @@ export class Fx {
     this.still(m, 0.22);
   }
 
-  /** Sparkles where an animal passes its gate. */
+  /** Sparkles where an animal leaves the board. */
   sparkle(pos: THREE.Vector3, color: number): void {
     for (let i = 0; i < 8; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -77,7 +77,7 @@ export class Fx {
     for (let i = 0; i < 2; i++) this.spawn(new THREE.Vector3(pos.x, 0.1, pos.z), 0xf4efe6, 0.17 + Math.random() * 0.1, new THREE.Vector3((Math.random() - 0.5) * 0.9, 0.6, (Math.random() - 0.5) * 0.9), 0.5, -0.5);
   }
 
-  /** Rescue burst at the gate, in the animal's own color. */
+  /** Rescue burst where an animal leaves the board, in the animal's own color. */
   burst(pos: THREE.Vector3, color: number): void {
     for (let i = 0; i < 16; i++) {
       const a = Math.random() * Math.PI * 2;
