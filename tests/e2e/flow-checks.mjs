@@ -220,20 +220,27 @@ export async function runFlowChecks(browser, base, report) {
     check('retry: 다시 하기 in the question restarts level 7', !(await modalUi(p)).open && reset.taps === 0 && reset.hearts === 3 && (await ui(p)).label === '레벨 7', JSON.stringify(reset));
   });
 
-  await scenario('sound button on the title and in play', null, async (p) => {
-    const onTitle = await p.evaluate(() => { const m = document.getElementById('mute'); return !document.getElementById('title').hidden && getComputedStyle(m).display !== 'none'; });
+  // UI v0.2: the sound switch (#mute) lives in the settings card, opened from the settings button on the title and in play
+  await scenario('sound switch in the settings, on the title and in play', null, async (p) => {
+    const onTitle = await p.evaluate(() => { const s = document.getElementById('settings'); return !document.getElementById('title').hidden && getComputedStyle(s).display !== 'none'; });
+    await p.click('#settings');
+    await sleep(100);
     await p.click('#mute');
     await sleep(100);
     const off = await p.evaluate(() => ({ stored: localStorage.getItem('animal-rescue-muted'), muted: document.getElementById('mute').classList.contains('muted') }));
-    check('sound: the title shows the sound button and one tap switches the sound off (saved)', onTitle && off.stored === '1' && off.muted, JSON.stringify(off));
+    check('sound: the title has the settings button and its sound switch turns the sound off (saved)', onTitle && off.stored === '1' && off.muted, JSON.stringify(off));
+    await p.click('#settingsClose');
     await p.click('#tStart');
     await sleep(500);
     await closeTips(p);
+    await p.click('#settings');
+    await sleep(100);
     const inPlay = await p.evaluate(() => getComputedStyle(document.getElementById('mute')).display !== 'none' && document.getElementById('mute').classList.contains('muted'));
     await p.click('#mute');
     await sleep(100);
     const on = await p.evaluate(() => localStorage.getItem('animal-rescue-muted'));
-    check('sound: in play the same button shows the setting and switches it back on', inPlay && on === '0', `inPlay ${inPlay}, stored ${on}`);
+    await p.click('#settingsClose');
+    check('sound: in play the settings show the same switch, still off, and it turns the sound back on', inPlay && on === '0', `inPlay ${inPlay}, stored ${on}`);
   });
 
   await scenario('bomb fail', null, async (p) => {

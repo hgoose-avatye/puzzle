@@ -8,7 +8,7 @@ import { PieceView, runSpeed, speciesOverride } from './animals';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
-import { Modal, para, ruleRow, type RuleText } from './modal';
+import { dialogButton, Modal, para, ruleRow, type RuleText } from './modal';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
@@ -109,7 +109,8 @@ function refreshHud(): void {
   const state = current();
   if (!state) return;
   const spec = levelSpec(levelNumber);
-  $('levelLabel').textContent = `레벨 ${levelNumber}`;
+  // reads as "레벨 7" (textContent), drawn as a small label and a big number
+  $('levelLabel').innerHTML = `<span class="lvK">레벨</span> <span class="lvN">${levelNumber}</span>`;
   $('hearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
   $('hearts').setAttribute('aria-label', state.hearts === undefined ? '' : `하트 ${Math.max(0, state.hearts)}개 남음`);
   void spec;
@@ -167,8 +168,6 @@ async function loadLevel(n: number): Promise<void> {
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   const st = stageFor(n);
   stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
-  $('stageLabel').textContent = DEMO ? '' : st.name;
-  paintStageDots(n);
   if (!DEMO && startsStage(n)) showBanner(n);
   if (token !== loadToken) return;
   maxHearts = built.hearts ?? 0;
@@ -338,7 +337,9 @@ function showIntro(level: Level, hearts: boolean): void {
   $('popup').hidden = false;
   $('popup').dataset.kind = 'intro';
   $('popupHearts').innerHTML = '';
-  $('popupBtn').className = 'primary';
+  $('popupRescue').innerHTML = '';
+  $('popupStage').innerHTML = '';
+  $('popupBtn').className = dialogButton('primary');
   $('popupTitle').textContent = `레벨 ${levelNumber}`;
   const sub = $('popupSub');
   sub.innerHTML = '';
@@ -352,18 +353,12 @@ const RESCUED_KEY = 'animal-rescue-rescued';
 const readRescued = (): number => { try { return Number(localStorage.getItem(RESCUED_KEY) ?? 0) || 0; } catch { return 0; } };
 const addRescued = (k: number): void => { try { localStorage.setItem(RESCUED_KEY, String(readRescued() + k)); } catch { /* ignore */ } };
 
-/** Ten dots under the stage name: cleared levels green, the current one amber. */
-function paintStageDots(n: number): void {
-  const box = $('stageDots');
-  box.innerHTML = '';
-  if (DEMO) return;
+/** The result card's stage step: the place, "+1 step / of" and a bar where this level's cell has just filled. */
+function stageProgressMarkup(n: number): string {
+  if (DEMO) return '';
   const { step, of } = stageStep(n);
-  for (let i = 1; i <= of; i++) {
-    const d = document.createElement('i');
-    if (i < step) d.className = 'done';
-    else if (i === step) d.className = 'now';
-    box.appendChild(d);
-  }
+  const cells = Array.from({ length: of }, (_, i) => `<i class="${i + 1 < step ? 'done' : i + 1 === step ? 'new' : ''}"></i>`).join('');
+  return `<div class="stTop"><span>${splitName(stageFor(n)).place}</span><span class="stFrac"><span class="stPlus">+1</span>${step} / ${of}</span></div><div class="stBar">${cells}</div>`;
 }
 
 /** Name card when a new stage begins; it fades by itself and never blocks a tap. */
@@ -414,6 +409,16 @@ async function playInterludes(list: Interlude[]): Promise<void> {
   }
 }
 
+/**
+ * The tap that ends a level (the last friend out, the blocked tap that takes the last heart, the one that sets a bomb
+ * off) opens the result card during that same touch, and the touch's click then lands on whatever button now sits under
+ * the finger. A click from the touch that opened the card is dropped; a new touch, a key or a scripted click goes through.
+ */
+let touches = 0;
+let cardTouch = -1;
+window.addEventListener('pointerdown', () => { touches++; }, { capture: true, passive: true });
+$('popup').addEventListener('click', (e) => { if (e.detail > 0 && touches === cardTouch) e.stopPropagation(); }, true);
+
 function showEnd(won: boolean): void {
   const state = current();
   if (!state) return;
@@ -421,16 +426,20 @@ function showEnd(won: boolean): void {
     if (!clearPlayed) { clearPlayed = true; sound.play('clear'); }
     fx.confetti(new THREE.Vector3(0, 0, 0), 8);
   }
+  cardTouch = touches;
   $('popup').hidden = false;
   $('msg').textContent = '';
   $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
-  // a bomb ends the level whatever the hearts are, so the bomb card shows no hearts
-  $('popupHearts').innerHTML = state.hearts === undefined || (!won && state.exploded) ? '' : heartsMarkup(state.hearts, maxHearts);
+  // the rescue card celebrates the friends saved and the stage step it filled; hearts left are not a score, so only a
+  // lost level shows them (and a bomb ends the level whatever the hearts are, so the bomb card shows none)
+  $('popupRescue').innerHTML = won ? `친구<b>${state.level.pieces.length}</b>마리를 구했어요` : '';
+  $('popupStage').innerHTML = won ? stageProgressMarkup(levelNumber) : '';
+  $('popupHearts').innerHTML = won || state.hearts === undefined || state.exploded ? '' : heartsMarkup(state.hearts, maxHearts);
   // the level is over: a retry question still open is moot
   if (modal.kind === 'retry') modal.close();
-  $('popupBtn').className = won ? 'primary' : 'yellow';
-  $('popupSub').textContent = won ? '모든 친구를 구했어요' : '다시 도전해 볼까요?';
+  $('popupBtn').className = dialogButton(won ? 'primary' : 'retry');
+  $('popupSub').textContent = won ? '' : '다시 도전해 볼까요?';
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
   $('popupHome').hidden = false;
   $('popupHome').onclick = goHome;
@@ -483,7 +492,7 @@ $('retry').addEventListener('click', () => {
   const state = current();
   if (!state || state.taps === 0) { void loadLevel(levelNumber); return; }
   modal.open('retry', '다시 할까요?', [para('지금까지 푼 것이 처음 상태로 돌아가요.')], [
-    { id: 'retryYes', label: '다시 하기', kind: 'yellow', onClick: () => { modal.close(); void loadLevel(levelNumber); } },
+    { id: 'retryYes', label: '다시 하기', kind: 'retry', onClick: () => { modal.close(); void loadLevel(levelNumber); } },
     { id: 'retryNo', label: '취소', kind: 'secondary', onClick: () => modal.close() },
   ]);
 });
@@ -540,13 +549,37 @@ const clock = new THREE.Clock();
   requestAnimationFrame(loop);
 })();
 
-const muteBtn = $('mute');
+// the result card's three friends: copies of the approved 2.5D front pictures (game/public/assets/ui/result, UI v0.2)
+for (const src of ['/assets/ui/result/penguin.png', '/assets/ui/result/chick.png', '/assets/ui/result/parrot.png']) {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = '';
+  document.querySelector('#popup .peek')!.appendChild(img);
+}
+
+/**
+ * Settings (top right on the title and in play): for now one switch, the sound. The switch keeps the old sound
+ * button's id and its `muted` class, so the saved setting and the checks read it as before.
+ */
+const SOUND_ICONS = '<svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
+  + '<svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg>';
+const muteBtn = document.createElement('button');
+muteBtn.id = 'mute';
+muteBtn.className = 'toggle';
+muteBtn.setAttribute('role', 'switch');
+muteBtn.innerHTML = `<span class="tName">${SOUND_ICONS}소리</span><span class="tWord"></span><span class="tTrack"><span class="tKnob"></span></span>`;
 const paintMute = (): void => {
   muteBtn.classList.toggle('muted', sound.muted);
-  muteBtn.setAttribute('aria-label', sound.muted ? '소리 켜기' : '소리 끄기');
+  muteBtn.setAttribute('aria-checked', String(!sound.muted));
+  muteBtn.setAttribute('aria-label', sound.muted ? '소리 꺼짐, 누르면 켜져요' : '소리 켜짐, 누르면 꺼져요');
+  muteBtn.querySelector('.tWord')!.textContent = sound.muted ? '꺼짐' : '켜짐';
 };
 paintMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
+$('settings').addEventListener('click', () => {
+  sound.unlock();
+  modal.open('settings', '설정', [muteBtn], [{ id: 'settingsClose', label: '닫기', kind: 'secondary', onClick: () => modal.close() }]);
+});
 
 /** Home: the title over a small board where the front animal runs out on a loop. Leaves the saved progress alone. */
 function goHome(): void {
@@ -712,7 +745,7 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
       return { x: rect.left + ((p.x + 1) / 2) * rect.width, y: rect.top + ((1 - p.y) / 2) * rect.height };
     });
     const bar = document.getElementById('retry')!.getBoundingClientRect().top;
-    const hud = Math.max(document.getElementById('hud')!.getBoundingClientRect().bottom, document.getElementById('mute')!.getBoundingClientRect().bottom);
+    const hud = Math.max(document.getElementById('hud')!.getBoundingClientRect().bottom, document.getElementById('settings')!.getBoundingClientRect().bottom);
     const xs = corners.map((c) => c.x), ys = corners.map((c) => c.y);
     return {
       animals: s.level.pieces.map((p) => ({ id: p.id, len: p.cells.length, dir: headDirection(p), ...per[p.id] })),
