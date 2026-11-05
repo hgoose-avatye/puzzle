@@ -34,6 +34,56 @@ function image(name: string): HTMLImageElement {
 }
 for (const name of new Set(Object.values(ICON_OF))) image(name);
 
+/**
+ * Key only (2026-11-05): a dark brown line on the inside edge of the orange body, just within the cream outline, so the
+ * key holds its shape on yellow and orange animals. Orange is an opaque pixel whose blue is under creamBlue; the line
+ * follows only the cream that reaches the clear pixels, so a light spot inside the body gets none. px is in key.png
+ * pixels: 192 tall drawn 72 canvas px tall, so 5 is about 2 canvas px (0.67 css px).
+ */
+const KEY_LINE = { r: 0x75, g: 0x45, b: 0x2f, px: 5, creamBlue: 140 };
+let lineKey: HTMLCanvasElement | null = null;
+function keyWithLine(img: HTMLImageElement): HTMLCanvasElement {
+  if (lineKey) return lineKey;
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, w, h);
+  const d = data.data;
+  const opaque = (i: number): boolean => d[i * 4 + 3] >= 128;
+  const orange = (i: number): boolean => opaque(i) && d[i * 4 + 2] < KEY_LINE.creamBlue;
+  // the clear pixels and the cream joined to them
+  const outside = new Uint8Array(w * h);
+  const stack: number[] = [];
+  for (let i = 0; i < w * h; i++) if (!opaque(i)) { outside[i] = 1; stack.push(i); }
+  while (stack.length) {
+    const i = stack.pop()!;
+    const x = i % w, y = (i - x) / w;
+    const next = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1];
+    for (const j of next) if (j >= 0 && !outside[j] && !orange(j)) { outside[j] = 1; stack.push(j); }
+  }
+  const R = KEY_LINE.px;
+  const nearOutside = (x: number, y: number): boolean => {
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (dx * dx + dy * dy <= R * R && nx >= 0 && nx < w && ny >= 0 && ny < h && outside[ny * w + nx]) return true;
+    }
+    return false;
+  };
+  const line: number[] = [];
+  for (let i = 0; i < w * h; i++) if (orange(i) && nearOutside(i % w, Math.floor(i / w))) line.push(i);
+  for (const i of line) {
+    d[i * 4] = KEY_LINE.r;
+    d[i * 4 + 1] = KEY_LINE.g;
+    d[i * 4 + 2] = KEY_LINE.b;
+  }
+  ctx.putImageData(data, 0, 0);
+  lineKey = c;
+  return c;
+}
+
 const fontOf = (px: number): string => `700 ${px}px Pretendard, system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif`;
 
 let pixelScale = 0;
@@ -60,7 +110,7 @@ export function statusTexture(items: string[], count?: number): { tex: THREE.Can
     names.forEach((name, i) => {
       const iw = widthOf(i), ih = ICON_H[name];
       const img = imgs[i];
-      if (img.complete && img.naturalWidth) ctx.drawImage(img, x * RES, (h - ih) * RES, iw * RES, ih * RES);
+      if (img.complete && img.naturalWidth) ctx.drawImage(name === 'key' ? keyWithLine(img) : img, x * RES, (h - ih) * RES, iw * RES, ih * RES);
       if (name === 'bomb' && count !== undefined) {
         ctx.font = fontOf(COUNT_FONT_PX * RES);
         ctx.fillStyle = COUNT_COLOR;
