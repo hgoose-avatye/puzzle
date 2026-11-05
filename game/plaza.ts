@@ -50,8 +50,8 @@ export function buildPlaza(level: Level, cells: Array<{ x: number; y: number }>,
   const tone = (c: number, l = 0.05): THREE.Color => new THREE.Color(c).offsetHSL(0, (rng.next() - 0.5) * 0.04, (rng.next() - 0.5) * l);
   const pos = cells.map((c) => world(c.x, c.y));
   out.add(instanced(g('bed', () => new THREE.BoxGeometry(1, 0.1, 1)), pos.map((p) => at(p.x, -0.06, p.z)), st.bed, 1));
-  // the beach plaza sits on a sand island in the sea
-  if (st.rim === 'surf') out.add(instanced(g('beach', () => new RoundedBoxGeometry(3.2, 0.12, 3.2, 3, 0.5)), pos.map((p) => at(p.x, -0.1, p.z)), 0xf4da9c, 1));
+  // the beach plaza sits on a sand island in the sea, the island a darker damp sand so the plaza's edge shows
+  if (st.rim === 'surf') out.add(instanced(g('beach', () => new RoundedBoxGeometry(3.2, 0.12, 3.2, 3, 0.5)), pos.map((p) => at(p.x, -0.1, p.z)), 0xdfbd7e, 1));
 
   const mats: THREE.Matrix4[] = [];
   const cols: THREE.Color[] = [];
@@ -61,11 +61,11 @@ export function buildPlaza(level: Level, cells: Array<{ x: number; y: number }>,
     pos.forEach((p, i) => { for (const dx of [-0.32, 0, 0.32]) { mats.push(at(p.x + dx, -0.05, p.z + (rng.next() - 0.5) * 0.04, 0, 1, 1 + (rng.next() - 0.5) * 0.1, 1)); cols.push(tone(top(p, i), 0.08)); } });
     out.add(instanced(g('plank', () => new RoundedBoxGeometry(0.3, 0.12, 0.98, 2, 0.03)), mats, cols));
   } else if (st.floor === 'cobble') {
-    // four small cobbles per cell
-    pos.forEach((p, i) => { for (const dx of [-0.24, 0.24]) for (const dz of [-0.24, 0.24]) { mats.push(at(p.x + dx + (rng.next() - 0.5) * 0.04, -0.05, p.z + dz + (rng.next() - 0.5) * 0.04, rng.next() * 0.3)); cols.push(tone(top(p, i), 0.1)); } });
-    out.add(instanced(g('cobble', () => new RoundedBoxGeometry(0.44, 0.13, 0.44, 2, 0.08)), mats, cols));
+    // four small cobbles per cell, packed towards the cell centre in one cell tone so the dark gaps between cells read as the grid
+    pos.forEach((p, i) => { const c = tone(top(p, i), 0.06); for (const dx of [-0.215, 0.215]) for (const dz of [-0.215, 0.215]) { mats.push(at(p.x + dx + (rng.next() - 0.5) * 0.02, -0.05, p.z + dz + (rng.next() - 0.5) * 0.02, (rng.next() - 0.5) * 0.08)); cols.push(c.clone().offsetHSL(0, 0, (rng.next() - 0.5) * 0.03)); } });
+    out.add(instanced(g('cobble', () => new RoundedBoxGeometry(0.4, 0.13, 0.4, 2, 0.08)), mats, cols));
   } else {
-    const size = st.floor === 'sand' ? 0.98 : 0.93;
+    const size = st.floor === 'sand' ? 0.94 : 0.93;
     pos.forEach((p, i) => { mats.push(at(p.x + (rng.next() - 0.5) * 0.03, -0.055 + rng.next() * 0.012, p.z + (rng.next() - 0.5) * 0.03)); cols.push(tone(top(p, i), st.floor === 'sand' ? 0.03 : 0.05)); });
     out.add(instanced(g(`tile${size}`, () => new RoundedBoxGeometry(size, 0.12, size, 2, st.floor === 'sand' ? 0.05 : 0.05)), mats, cols, st.floor === 'ice' ? 0.3 : 0.95));
     if (st.floor === 'moss' || st.floor === 'sand') {
@@ -96,7 +96,7 @@ export function buildPlaza(level: Level, cells: Array<{ x: number; y: number }>,
     iron: () => new RoundedBoxGeometry(0.16, 0.14, 1.14, 2, 0.04),
     snow: () => new RoundedBoxGeometry(0.3, 0.22, 1.2, 3, 0.11),
   };
-  const rim = instanced(g(`rim-${st.rim}`, rimGeo[st.rim]), edges, st.rim === 'iron' ? 0x736c8b : st.rimColor, st.rim === 'surf' ? 0.4 : 0.9);
+  const rim = instanced(g(`rim-${st.rim}`, rimGeo[st.rim]), edges, st.rim === 'iron' ? 0x3d3650 : st.rimColor, st.rim === 'surf' ? 0.4 : 0.9);
   rim.castShadow = st.rim !== 'surf';
   out.add(rim);
   if (posts.length) out.add(instanced(g('ironpost', () => new THREE.CylinderGeometry(0.035, 0.035, 0.5, 6)), posts, st.rimColor, 0.6));
