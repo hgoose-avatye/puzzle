@@ -556,14 +556,24 @@ const iceLake: Scene = (f, rng) => {
   return g;
 };
 
+/** Winter: a blue gift under the tree (the red gift with a gold ribbon is this stage's board obstacle). */
+function treeGift(): THREE.Group {
+  const g = new THREE.Group();
+  part(g, plainBox(), 0x4f8fd8, 0, 0.3, 0, 0.62, 0.6, 0.62);
+  part(g, plainBox(), 0xffffff, 0, 0.3, 0, 0.66, 0.62, 0.12);
+  part(g, plainBox(), 0xffffff, 0, 0.3, 0, 0.12, 0.62, 0.66);
+  return g;
+}
+
 const xmasSquare: Scene = (f, rng) => {
   const { g, put } = sceneKit(f);
   const { hw, hz } = f;
   put(xmasTree(), 0.3, -hz - 2.8);
-  for (const [x, z] of [[-1.2, -hz - 1.5], [1.6, -hz - 1.6], [-0.4, -hz - 1.3]] as const) put(LIB.gift(rng), x, z, rng.next());
+  for (const [x, z] of [[-1.2, -hz - 1.5], [1.6, -hz - 1.6], [-0.4, -hz - 1.3]] as const) put(treeGift(), x, z, rng.next());
   put(snowHouse(), -hw + 0.6, -hz - 3.0);
   put(snowHouse(), hw - 0.4, -hz - 3.4);
-  sides(put, f, () => (rng.next() < 0.5 ? LIB.gift(rng) : LIB.pine(true)(rng)), 1.9, 1.2);
+  // no gifts beside the board: a red gift is this stage's board obstacle
+  sides(put, f, () => (rng.next() < 0.5 ? LIB.snowPile(rng) : LIB.pine(true)(rng)), 1.9, 1.2);
   put(LIB.snowman(rng), -hw + 1.0, hz + 1.8);
   put(LIB.snowman(rng), hw - 1.0, hz + 1.9);
   put(lampPost(), 0, hz + 1.7);

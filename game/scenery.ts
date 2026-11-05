@@ -328,12 +328,21 @@ const planter: Prop = (rng) => {
   return g;
 };
 
+/** Jungle board obstacle: a small bush in a clay pot, so it reads as a placed block and not as the undergrowth around the board. */
+const bushTrough: Prop = () => {
+  const g = new THREE.Group();
+  part(g, box(), 0xb8683f, 0, 0.2, 0, 0.72, 0.4, 0.72);
+  part(g, box(), 0xa2552f, 0, 0.42, 0, 0.8, 0.08, 0.8);
+  part(g, ball(), 0x56aa43, 0, 0.6, 0, 0.62, 0.42, 0.62);
+  return g;
+};
+
 /** Board obstacle per stage: hay, fences and crates in the village, logs in the forest, barrels at the harbour... */
 const OBSTACLES: Record<Theme, [Prop, Prop, Prop]> = {
   village: [planter, fenceBlock, crate],
   forest: [log, rock, stump],
   pirate: [rock, barrel, crate],
-  jungle: [bush, rock, pillar],
+  jungle: [bushTrough, rock, pillar],
   haunted: [pumpkin, graveBlock, stoneWall],
   winter: [snowPile, iceBlock, gift],
 };
