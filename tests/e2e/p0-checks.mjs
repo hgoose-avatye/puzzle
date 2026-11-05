@@ -89,7 +89,7 @@ export async function runP0Checks(browser, base, report) {
     check('R1 repeat after the way opened still exits', !a.alive.includes(4) && a.hearts === 2, `alive ${a.alive}, hearts ${a.hearts}`);
   });
 
-  await scenario('R1+R3 bomb level', url('?level=124'), async (p) => {
+  await scenario('R1+R3 bomb level', url('?level=127'), async (p) => {
     const blocked = await p.evaluate(() => { const g = window.__game; const free = g.free(); return g.ids().find((i) => !free.includes(i)); });
     const f0 = await st(p);
     await tap(p, blocked); await sleep(80); await tap(p, blocked);
@@ -194,7 +194,7 @@ export async function runP0Checks(browser, base, report) {
     check('tap picks the animal drawn there (level 10): at least 90%, another animal at most 3%', t.ok / n >= 0.9 && t.wrong / n <= 0.03, `ok ${(100 * t.ok / n).toFixed(1)}%, wrong ${(100 * t.wrong / n).toFixed(1)}%, miss ${(100 * t.miss / n).toFixed(1)}% of ${n} points`);
   });
 
-  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1
+  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2 (two cells), which has to wait behind 1
   const BOMB = url('?demo=bomb');
   /** The bomb chip under the hearts and the warning above the buttons (null when hidden). */
   // 2.5D draws the clay bomb picture where Classic 3D writes 💣 (status icons 2026-11-05): read the picture as the emoji
@@ -212,8 +212,8 @@ export async function runP0Checks(browser, base, report) {
     check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 다른 친구가 1번 더 나가면 펑!', JSON.stringify(at1));
   });
 
-  // two bombs (level 131): the chip follows the closest one as fuses burn, and goes once no bomb is left
-  await scenario('bomb chip with two bombs', url('?level=131'), async (p) => {
+  // two bombs (level 139): the chip follows the closest one as fuses burn, and goes once no bomb is left
+  await scenario('bomb chip with two bombs', url('?level=139'), async (p) => {
     const read = () => p.evaluate(() => {
       const s = window.__game.state();
       const left = Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([, f]) => f);
