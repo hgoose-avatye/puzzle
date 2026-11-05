@@ -82,11 +82,14 @@ export function crossLevel(): Level {
 
 /**
  * crossLevel with a bomb on 2 (fuse 2), for checking bombs by hand: tap 1 and the bar warns at 1; then tapping 2 saves
- * it even while it waits behind 1, and tapping 3 first sets it off.
+ * it even while it waits behind 1, and tapping 3 first sets it off. One-cell animals carry no bombs (2026-11-05), so 2
+ * is two cells long here, over 4's cell; 4 waits in the bottom corner, out of everyone's way, so the board is not
+ * cleared by the bomb checks.
  */
 export function bombLevel(): Level {
   const level = crossLevel();
-  return { ...level, pieces: level.pieces.map((p) => (p.id === 2 ? { ...p, fuse: 2 } : p)) };
+  const bomb = { id: 2, cells: [{ x: 5, y: 1 }, { x: 5, y: 0 }], fuse: 2 };
+  return { ...level, pieces: level.pieces.map((p) => (p.id === 2 ? bomb : p.id === 4 ? { ...p, cells: [{ x: 8, y: 8 }] } : p)) };
 }
 
 /**

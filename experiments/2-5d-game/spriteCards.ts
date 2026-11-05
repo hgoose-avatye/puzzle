@@ -118,22 +118,25 @@ function alphaAt(img: HTMLImageElement, u: number, v: number): number {
  * one was on its own animal.
  */
 const BADGE_TIP_DROP = 0.25;
+/** the count dynamite's screen centre, as a fraction of the drawn body block's height from its top */
+const BODY_DROP = 0.45;
 
 /** the opaque part of a picture, in texture fractions from the top-left: where its drawn top and middle are */
-const opaqueBoxes = new Map<string, { top: number; mid: number }>();
-function opaqueBox(img: HTMLImageElement): { top: number; mid: number } {
+const opaqueBoxes = new Map<string, { top: number; mid: number; bottom: number }>();
+function opaqueBox(img: HTMLImageElement): { top: number; mid: number; bottom: number } {
   let box = opaqueBoxes.get(img.src);
   if (box) return box;
   alphaAt(img, 0, 0); // fills alphaMaps for this picture
   const m = alphaMaps.get(img.src)!;
-  let top = m.h, left = m.w, right = -1;
+  let top = m.h, left = m.w, right = -1, bottom = 0;
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     if (m.a[(y * m.w + x) * 4 + 3] <= 127) continue;
     if (y < top) top = y;
+    if (y > bottom) bottom = y;
     if (x < left) left = x;
     if (x > right) right = x;
   }
-  box = right < 0 ? { top: 0, mid: 0.5 } : { top: top / m.h, mid: (left + right + 1) / 2 / m.w };
+  box = right < 0 ? { top: 0, mid: 0.5, bottom: 1 } : { top: top / m.h, mid: (left + right + 1) / 2 / m.w, bottom: (bottom + 1) / m.h };
   opaqueBoxes.set(img.src, box);
   return box;
 }
@@ -224,6 +227,9 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     card.updateWorldMatrix(true, false);
     const tip = (root.userData.badgeTip as THREE.Vector3 | undefined) ?? (root.userData.badgeTip = new THREE.Vector3());
     tip.set(box.mid - 0.5, Math.max(-0.4, 0.5 - box.top - BADGE_TIP_DROP), 0).applyMatrix4(card.matrixWorld);
+    // where the body-mounted count dynamite sits (its screen centre), BODY_DROP of the drawn block down from its top
+    const body = (root.userData.bodyTip as THREE.Vector3 | undefined) ?? (root.userData.bodyTip = new THREE.Vector3());
+    body.set(box.mid - 0.5, 0.5 - box.top - BODY_DROP * (box.bottom - box.top), 0).applyMatrix4(card.matrixWorld);
   };
   return root;
 }
