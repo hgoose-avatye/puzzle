@@ -203,17 +203,17 @@ const drawn = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) i
 /** The animal whose body, plate or badge is drawn under a screen point, standing or running; null if none. */
 function animalAt(clientX: number, clientY: number): number | null {
   const owner = new Map<THREE.Object3D, number>();
-  for (const [id, v] of views) if (v.group.visible) for (const t of v.tapTargets()) owner.set(t, id);
+  for (const [id, v] of views) if (v.group.visible) for (const t of v.touchTargets()) owner.set(t, id);
   const hit = stage.rayAt(clientX, clientY).intersectObjects([...owner.keys()], true).find((h) => drawn(h.object));
   for (let o: THREE.Object3D | null = hit?.object ?? null; o; o = o.parent) if (owner.has(o)) return owner.get(o)!;
   return null;
 }
 
 /**
- * 2.5D only (animals drawn as picture cards): the animal a finger sees under it. A badge is drawn over everything, so
- * an opaque badge pixel wins (the nearest badge when two overlap, as it is drawn last); then the nearest opaque card
- * pixel, which is the one the depth test keeps on screen. Null when no card animal is shown there, or in Classic 3D,
- * where pick() goes on with the tap targets exactly as before.
+ * 2.5D only (animals drawn as picture cards): the animal a finger sees under it, the nearest opaque card pixel, which
+ * is the one the depth test keeps on screen. The status icons are left out: drawn over everything, they covered the
+ * animal behind and took its taps (2026-11-05). Null when no card animal is shown there, or in Classic 3D, where
+ * pick() goes on with the tap targets exactly as before.
  */
 function cardAnimalAt(clientX: number, clientY: number): number | null {
   const shown = [...views.entries()].filter(([, v]) => v.cards && v.group.visible);
@@ -227,13 +227,14 @@ function cardAnimalAt(clientX: number, clientY: number): number | null {
     }
     return best?.id ?? null;
   };
-  return nearest((v) => v.badgeHitDistance(ray)) ?? nearest((v) => v.cardHitDistance(ray));
+  return nearest((v) => v.cardHitDistance(ray));
 }
 
 /**
  * The animal a finger means. First the one drawn under it: a tap on the top of an animal hits the floor about half a
  * cell behind it (the camera looks down at 58 degrees), so picking by the floor alone chose the animal behind or
- * nothing. Only when no animal is drawn there, the closest standing animal within 0.75 cell of the floor point.
+ * nothing. When no animal is drawn there: a press right on a count bomb's icon (an opaque pixel) picks its animal, so
+ * the bomb itself can be pressed; only then the closest standing animal within 0.75 cell of the floor point.
  */
 function pick(clientX: number, clientY: number): number | null {
   const state = current();
@@ -242,6 +243,8 @@ function pick(clientX: number, clientY: number): number | null {
   if (shown !== null) return shown;
   const seen = animalAt(clientX, clientY);
   if (seen !== null) return seen;
+  const ray = stage.rayAt(clientX, clientY);
+  for (const [id, v] of views) if (state.alive.has(id) && v.bombIconHit(ray)) return id;
   const g = stage.screenToGrid(clientX, clientY);
   if (!g) return null;
   let best: { id: number; d: number } | null = null;

@@ -405,9 +405,17 @@ export class PieceView {
   /** World position of the head block (for effects). */
   headWorld(): THREE.Vector3 { return this.segments[0].position; }
 
-  /** What a finger can land on: the body blocks, the colour plates under them and the badge over the head (not the path). */
+  /** The body blocks, the colour plates under them and the badge over the head (not the path); dev measurements use it. */
   tapTargets(): THREE.Object3D[] {
     return [...this.segments, ...this.plates, this.badge];
+  }
+
+  /**
+   * What a finger can land on. 2.5D: not the status icon, which is drawn over the animal behind and took its taps
+   * (2026-11-05); a tap there goes to whatever is under the icon. Classic 3D: the badge too, as before.
+   */
+  touchTargets(): THREE.Object3D[] {
+    return this.cards ? [...this.segments, ...this.plates] : this.tapTargets();
   }
 
   /** World position where the path leaves the board (the rescue effects play here). */
@@ -428,17 +436,17 @@ export class PieceView {
   }
 
   /**
-   * 2.5D tap test on the badge as drawn: distance along the ray when it hits an opaque pixel of the visible status
-   * icon, else null. The badge is drawn over everything, so the caller tries it before the cards.
+   * 2.5D: whether the ray hits an opaque pixel of this animal's count-bomb icon (not its transparent margin). pick()
+   * asks only after no animal was found under the finger, so the icon never takes another animal's touch (2026-11-05).
    */
-  badgeHitDistance(ray: THREE.Raycaster): number | null {
-    if (!this.badge.visible || !this.group.visible) return null;
+  bombIconHit(ray: THREE.Raycaster): boolean {
+    if (!this.cards || this.badgeNumber === undefined || !this.badge.visible || !this.group.visible) return false;
     const hit = ray.intersectObject(this.badge, false)[0];
     const canvas = (this.badge.material as THREE.SpriteMaterial).map?.image as HTMLCanvasElement | undefined;
-    if (!hit?.uv || !canvas) return null;
+    if (!hit?.uv || !canvas) return false;
     const x = Math.min(canvas.width - 1, Math.floor(hit.uv.x * canvas.width));
     const y = Math.min(canvas.height - 1, Math.floor((1 - hit.uv.y) * canvas.height));
-    return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 127 ? hit.distance : null;
+    return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 127;
   }
 
   /** 2.5D tap test on the picture cards: distance to the nearest opaque card pixel under the ray (spriteCards drops transparent texels), else null. */
