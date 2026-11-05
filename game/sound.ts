@@ -17,14 +17,15 @@ interface Entry {
   trim?: { start: number; length: number };
 }
 
+/** Every cooldown is at least 100 ms: the same sound twice within that plays once (polish step 3, 2026-11-05). */
 export const MANIFEST: Record<SoundName, Entry> = {
   // Pixabay "Pop Cartoon": the file has 0.5 s of silence before a 0.11 s pop, so only the pop is played
-  select: { file: 'pop-cartoon.mp3', volume: 0.3, cooldown: 80, trim: { start: 0.49, length: 0.15 } },
-  move: { file: 'move.mp3', volume: 0.18, cooldown: 60 },
+  select: { file: 'pop-cartoon.mp3', volume: 0.3, cooldown: 100, trim: { start: 0.49, length: 0.15 } },
+  move: { file: 'move.mp3', volume: 0.18, cooldown: 100 },
   arrive: { file: 'arrive.mp3', volume: 0.22, cooldown: 120 },
   wall: { file: 'wall.mp3', volume: 0.22, cooldown: 120 }, // Mixkit "Small hit in a game" (sfx 2072)
   collision: { file: 'collision.mp3', volume: 0.25, cooldown: 150 }, // Mixkit "Soft quick punch" (sfx 2151)
-  rescued: { file: 'rescued.mp3', volume: 0.3, cooldown: 90 },
+  rescued: { file: 'rescued.mp3', volume: 0.3, cooldown: 100 },
   clear: { file: 'clear.mp3', volume: 0.45, cooldown: 1000 },
   gameover: { file: 'gameover.mp3', volume: 0.3, cooldown: 1000 },
 };
