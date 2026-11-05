@@ -5,6 +5,7 @@ import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/co
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
+import { setStatusPixelScale } from './statusIcons';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
@@ -88,6 +89,7 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
  * While a bomb is on the board, a chip under the hearts shows the closest bomb's number: other animals may leave that
  * many more times before it goes off. At 1 the chip turns red and a warning shows just above the buttons.
  */
+const BOMB_ICON = '<img class="statusIcon" src="/assets/status/bomb.png" alt="">';
 function paintBombBar(): void {
   const chip = $('bombChip');
   const warn = $('bombBar');
@@ -97,10 +99,16 @@ function paintBombBar(): void {
   const n = Math.min(...left);
   chip.hidden = false;
   chip.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
-  chip.textContent = `💣 ${n}`;
   chip.setAttribute('aria-label', `폭탄: 다른 친구가 ${n}번 더 나가면 터져요`);
   warn.hidden = n > 1;
-  warn.textContent = '💣 다른 친구가 1번 더 나가면 펑!';
+  // 2.5D: the same clay bomb as over the animals (status UI 2026-11-05); Classic 3D keeps its emoji
+  if ([...views.values()].some((v) => v.cards)) {
+    chip.innerHTML = `${BOMB_ICON}${n}`;
+    warn.innerHTML = `${BOMB_ICON}다른 친구가 1번 더 나가면 펑!`;
+  } else {
+    chip.textContent = `💣 ${n}`;
+    warn.textContent = '💣 다른 친구가 1번 더 나가면 펑!';
+  }
 }
 
 /** Heart icons for the HUD and the result card: the hearts left bright, the ones used dark. Fixed markup only. */
@@ -712,6 +720,8 @@ let printTick = 0;
 const clock = new THREE.Clock();
 (function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
+  // 2.5D status icons keep a fixed size on the screen: sprite scale per css px for this camera and canvas
+  setStatusPixelScale(2 / (stage.camera.projectionMatrix.elements[5] * (stage.renderer.domElement.clientHeight || 1)));
   dustT += dt;
   const dust = dustT > 0.07;
   if (dust) dustT = 0;
