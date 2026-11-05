@@ -3,12 +3,15 @@ import { blockersOf, canExit, lockedBy, traceExit, validateLevel } from '../core
 import type { Level } from '../core/types';
 import { solve } from '../solver/solver';
 import { buildGameLevel, levelSpec } from './curve';
+import handLevels from './handLevels.json';
 
 /**
  * Checks on the levels the game actually ships (src/curve/levels.json): not on the generator in general, but on what a
  * player gets. Rebuild with scripts/pick-seeds.ts and scripts/build-levels.ts when these fail after a generator change.
  */
 const levels: Array<{ n: number; level: Level; hearts?: number }> = Array.from({ length: 180 }, (_, i) => ({ n: i + 1, ...buildGameLevel(i + 1)! }));
+/** Hand-made lesson levels (handLevels.json): they set their own crates, so the curve's crate rule does not hold them. */
+const HAND = handLevels as unknown as Record<string, { level: Level; hearts?: number }>;
 const all = (l: Level): Set<number> => new Set(l.pieces.map((p) => p.id));
 /** held by its lock (or sleep) alone: its way out is clear otherwise */
 const holdsAlone = (l: Level, id: number): boolean => {
@@ -58,6 +61,10 @@ describe('shipped levels', () => {
     expect(bombBlocked / bombs).toBeGreaterThanOrEqual(0.8);
   });
 
+  it('every hand-made level ships exactly as written in handLevels.json', () => {
+    for (const n of Object.keys(HAND)) expect(buildGameLevel(+n), `level ${n}`).toEqual(HAND[n]);
+  });
+
   it('every crate stands on some animal\u2019s way out and can be broken; intro levels teach a one-crack crate', () => {
     let crates = 0;
     for (const { n, level } of levels) {
@@ -65,7 +72,7 @@ describe('shipped levels', () => {
       for (const k of level.crates ?? []) {
         crates++;
         expect(onPaths.has(`${k.x},${k.y}`), `level ${n} crate (${k.x},${k.y})`).toBe(true);
-        expect(k.hits, `level ${n}`).toBe(levelSpec(n).role === 'intro' ? 1 : 2);
+        if (!HAND[n]) expect(k.hits, `level ${n}`).toBe(levelSpec(n).role === 'intro' ? 1 : 2);
       }
       expect(level.obstacles ?? [], `level ${n}`).toEqual([]);
     }
