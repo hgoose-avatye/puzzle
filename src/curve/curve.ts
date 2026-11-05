@@ -181,7 +181,7 @@ function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mecha
   const mechanics = mechanicsFor(chapter, level, role);
   const crateCount = cratesFor(obstaclesFor(chapter, level, role), board, mechanics);
   const extras = role === 'finale' ? finaleExtras(chapter) : {};
-  const bombSlack = bombSlackFor(chapter, role, mechanics);
+  const bombSlack = bombSlackFor(chapter, level, role, mechanics);
   // crates are taught with a single crack on intro levels, two everywhere else
   const params: GenParams = {
     ...raw.params, ...board, crateCount, crateHits: role === 'intro' ? 1 : 2, ...mechanicParams(mechanics),
