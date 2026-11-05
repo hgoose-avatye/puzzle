@@ -176,10 +176,13 @@ export const TIGHT_BOMB_SLACK = 2;
 /**
  * The chapter 5 finale and the ordinary levels of chapters 5 and 6 that carry bombs get TIGHT_BOMB_SLACK: in the
  * 2026-11-03 isolated experiment it lifted those ordinary levels by 10-14 fail points without changing their structure.
+ * Tough 20 of chapter 5 (level 140) gets it too: with the default slack no candidate reached its target and it sat
+ * barely above its stage (D2, 2026-11-05 experiment). Tough 10 of chapter 5 and the chapter 6 tough levels keep 3.
  */
-export function bombSlackFor(chapter: number, role: Role, x: Mechanics): number | undefined {
+export function bombSlackFor(chapter: number, level: number, role: Role, x: Mechanics): number | undefined {
   if (x.bombCount === 0) return undefined;
   if (role === 'finale' && chapter === 5) return TIGHT_BOMB_SLACK;
+  if (role === 'tough' && chapter === 5 && level === 20) return TIGHT_BOMB_SLACK;
   if (role === 'ordinary' && chapter >= 5) return TIGHT_BOMB_SLACK;
   return undefined;
 }

@@ -3789,24 +3789,24 @@
    "role": "tough",
    "hearts": 3,
    "pieces": 16,
-   "rounds": 7,
-   "initialFree": 0.31,
+   "rounds": 9,
+   "initialFree": 0.25,
    "arrows": 0,
    "sims": {
     "careful": {
-     "failRate": 0.005,
-     "blockedPerRun": 0.18,
-     "effort": 0.7108395989974937
+     "failRate": 0.04,
+     "blockedPerRun": 0.335,
+     "effort": 1.2686804451510334
     },
     "average": {
-     "failRate": 0.36,
-     "blockedPerRun": 0.555,
-     "effort": 1.144074074074074
+     "failRate": 0.435,
+     "blockedPerRun": 0.885,
+     "effort": 1.4982078853046594
     },
     "hasty": {
-     "failRate": 0.905,
-     "blockedPerRun": 1.495,
-     "effort": 2.084507042253521
+     "failRate": 0.935,
+     "blockedPerRun": 1.59,
+     "effort": 2.460388639760837
     }
    }
   },

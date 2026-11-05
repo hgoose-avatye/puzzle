@@ -41,10 +41,11 @@ describe('chapter plan (2.5D redesign)', () => {
     }
     for (const n of [36, 37, 38, 39, 66, 67, 68, 69, 155, 165, 175]) expect(levelSpec(n).params.shape, `level ${n}`).toBe('rounded');
   });
-  it('tightens the bomb fuse on chapter 5 and 6 ordinary levels with bombs and on the chapter 5 finale only', () => {
+  it('tightens the bomb fuse on chapter 5 and 6 ordinary levels with bombs, the chapter 5 finale and level 140 only', () => {
     for (let n = 1; n <= 180; n++) {
       const s = levelSpec(n);
-      const tight = (s.params.bombCount ?? 0) > 0 && ((s.role === 'ordinary' && s.chapter >= 5) || (s.role === 'finale' && s.chapter === 5));
+      const tight = (s.params.bombCount ?? 0) > 0
+        && ((s.role === 'ordinary' && s.chapter >= 5) || (s.chapter === 5 && (s.role === 'finale' || n === 140)));
       expect(s.params.bombSlack, `level ${n}`).toBe(tight ? 2 : undefined);
     }
   });
