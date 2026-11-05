@@ -33,10 +33,12 @@ export const PEAK_RUNS = 400;
  * Seeds set by hand, which scripts/pick-seeds.ts keeps instead of its own pick (ordinary and tough levels only). The pick
  * script scores each one like a candidate and warns when it is off target. 2026-11-03: in the picked levels an animal
  * standing on the camera-side cell hid the level's arrow tiles at the start; these seeds are on target with every arrow
- * in sight (level 12's seed 11 came from a wider search than the usual ten candidates).
+ * in sight. 2026-11-05: levels 8 and 12 follow the hand-made lessons (src/curve/handLevels.json) with few 3-cell
+ * animals (seeds from a wider search, arrows checked in sight on the 2.5D board; level 12 was seed 11 before).
  */
 export const SEED_OVERRIDES: Readonly<Record<number, { seed: number; reason: string }>> = {
-  12: { seed: 11, reason: 'arrow tile hidden at start' },
+  8: { seed: 21, reason: 'L7 onboarding: fewer 3-cell animals, arrows in sight' },
+  12: { seed: 297, reason: 'L7 onboarding: fewer 3-cell animals, arrows in sight' },
   66: { seed: 3, reason: 'arrow tile hidden at start' },
   133: { seed: 2, reason: 'arrow tiles hidden at start' },
 };

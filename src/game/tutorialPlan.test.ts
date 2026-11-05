@@ -21,7 +21,22 @@ describe('tutorialPlan', () => {
   it('teaches the first rule later only to a save that has learnt nothing', () => {
     expect(startTutorial(levelOf(10), [], 10)).toBe('basic');
     expect(startTutorial(levelOf(10), ['hearts'], 10)).toBeNull();
-    expect(startTutorial(levelOf(2), ['basic'], 2)).toBeNull();
+    expect(startTutorial(levelOf(3), ['basic'], 3)).toBeNull();
+  });
+
+  it('teaches the blocked animal on level 2 only: it points at an animal held by others that can all leave', () => {
+    const l = levelOf(2);
+    expect(startTutorial(l, ['basic'], 2)).toBe('blocked');
+    expect(startTutorial(l, ['basic', 'blocked'], 2)).toBeNull();
+    expect(startTutorial(levelOf(7), ['basic', 'arrow'], 7)).toBeNull();
+    const targets = startTargets(l, everyone(l), 'blocked');
+    expect(targets.length).toBeGreaterThan(0);
+    for (const id of targets) {
+      expect(canExit(l, id, everyone(l))).toBe(false);
+      const inWay = resultSubjects(l, 'blocked', id);
+      expect(inWay.length).toBeGreaterThan(0);
+      for (const b of inWay) expect(canExit(l, b, everyone(l))).toBe(true);
+    }
   });
 
   it('points the key tutorial at the free key carrier of level 61', () => {
@@ -49,15 +64,10 @@ describe('tutorialPlan', () => {
     expect(canExit(l, target, everyone(l))).toBe(true);
   });
 
-  it('has no arrow moment on level 6 at the start, and one once the way of an arrow animal is clear', () => {
+  it('has the arrow moment on level 6 right at the start, on an animal that can leave', () => {
     const l = levelOf(6);
     const alive = everyone(l);
-    expect(arrowTargets(l, alive)).toEqual([]);
-    // take free animals out one by one until an animal whose way bends on an arrow can leave
-    for (let k = 0; k < l.pieces.length && arrowTargets(l, alive).length === 0; k++) {
-      const next = l.pieces.find((p) => alive.has(p.id) && canExit(l, p.id, alive))!;
-      alive.delete(next.id);
-    }
+    expect(startTutorial(l, ['basic', 'blocked'], 6)).toBeNull();
     const targets = arrowTargets(l, alive);
     expect(targets.length).toBeGreaterThan(0);
     for (const id of targets) expect(canExit(l, id, alive)).toBe(true);
