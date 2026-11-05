@@ -126,6 +126,27 @@ let failTimer: number | undefined;
 
 const playGameover = (): void => { if (!failPlayed) { failPlayed = true; sound.play('gameover'); } };
 
+/** How long the 2.5D board celebrates (confetti, clear sound) before the rescue card shows. */
+const CLEAR_CELEBRATE_MS = 1200;
+let winTimer: number | undefined;
+
+/**
+ * The last animal has left the board: confetti and the clear sound, and the clear is saved, all at once. 2.5D shows the
+ * rescue card CLEAR_CELEBRATE_MS later with the buttons still usable (home, a level change or a retry go through
+ * clearBoard, which drops the card still waiting); Classic 3D and reduced motion show it at once, as before.
+ */
+function winLevel(): void {
+  const state = current();
+  if (!state || clearPlayed) return;
+  clearPlayed = true;
+  sound.play('clear');
+  fx.confetti(new THREE.Vector3(0, 0, 0), 8);
+  writeProgress(progressAfterClear(readProgress(), levelNumber, LAST_LEVEL));
+  addRescued(state.level.pieces.length);
+  if (reducedMotion() || ![...views.values()].some((v) => v.cards)) { showEnd(true); return; }
+  winTimer = window.setTimeout(() => { winTimer = undefined; showEnd(true); }, CLEAR_CELEBRATE_MS);
+}
+
 /** Show the lost card after `ms`; meanwhile the buttons wait as well (clearBoard drops a card still waiting). */
 function showLostAfter(ms: number, then?: () => void): void {
   document.body.classList.add('heart-wait');
@@ -216,6 +237,8 @@ function clearBoard(): number {
   window.clearTimeout(hintTimer);
   // a hearts-out card still waiting belongs to the board being thrown away
   window.clearTimeout(failTimer);
+  window.clearTimeout(winTimer);
+  winTimer = undefined;
   document.body.classList.remove('heart-wait');
   $('hearts').innerHTML = '';
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
@@ -366,7 +389,7 @@ function onTap(id: number): TapOutcome {
     fx.launch(view.headWorld());
     sound.play('move');
     pendingExits.add(id);
-    view.runOut(() => { if (flow?.won && !anyRunning()) showEnd(true); }, () => {
+    view.runOut(() => { if (flow?.won && !anyRunning()) winLevel(); }, () => {
       pendingExits.delete(id);
       // the last animal's exit is covered by the clear sound
       if (!(flow && isCleared(flow.state) && pendingExits.size === 0)) sound.play('rescued');
@@ -680,10 +703,6 @@ function showEnd(won: boolean): void {
   if (!state) return;
   // the result comes first: a tutorial on screen or waiting is dropped, not learnt
   stopTutorials();
-  if (won) {
-    if (!clearPlayed) { clearPlayed = true; sound.play('clear'); }
-    fx.confetti(new THREE.Vector3(0, 0, 0), 8);
-  }
   cardTouch = touches;
   $('popup').hidden = false;
   $('msg').textContent = '';
@@ -701,7 +720,6 @@ function showEnd(won: boolean): void {
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
   $('popupHome').hidden = false;
   $('popupHome').onclick = goHome;
-  if (won) writeProgress(progressAfterClear(readProgress(), levelNumber, LAST_LEVEL));
   $('popupBtn').onclick = () => {
     if (!won) { void loadLevel(levelNumber); return; }
     const n = levelNumber;
@@ -709,7 +727,6 @@ function showEnd(won: boolean): void {
     $('popup').hidden = true;
     void playInterludes(interludesAfter(n)).then(() => loadLevel(next));
   };
-  if (won) addRescued(state.level.pieces.length);
 }
 
 // Decode the sounds now; unlock on any gesture the browser counts as user activation (touch pointerdown may not count on iOS).
