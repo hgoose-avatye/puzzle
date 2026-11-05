@@ -5,6 +5,7 @@ import type { Level, Piece } from '../src/core/types';
 import { routeOf } from '../src/game/flow';
 import { trackAt, type Track } from '../src/game/smooth';
 import { buildAnimal } from './blocks';
+import { statusPixelScale, statusTexture } from './statusIcons';
 
 /** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
@@ -42,12 +43,12 @@ const BADGE_NUMBER_FONT = "700 70px Pretendard, system-ui, -apple-system, 'Apple
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
 /**
- * 2.5D cards: the badge hangs from a pointer whose tip sits on the top of its own animal's picture. A badge floating
- * over the head lands on the animal behind once the camera tilts, so on a crowded board it read as that animal's.
+ * 2.5D cards: the status icon sits on the top of its own animal's picture (no pointer since the status UI of
+ * 2026-11-05). A badge floating over the head lands on the animal behind once the camera tilts, so on a crowded board
+ * it read as that animal's. spriteCards' badgeTip is 0.25 of the picture inside its top; the icon is lifted this many
+ * css px off it, onto the top edge, so it does not cover a one-cell animal's face.
  */
-const CARD_BADGE_H = 200;
-/** small lift of the pointer tip above spriteCards' badgeTip, in world units */
-const CARD_BADGE_LIFT = 0.04;
+const CARD_ICON_LIFT_PX = 10;
 const LAUNCH_TIME = 0.2;
 /** cells past the board edge over which a block shrinks away */
 const GATE_FADE = 0.8;
@@ -68,10 +69,10 @@ export const fuseTone = (n: number): { line: string; text: string } =>
  * A cream speech-bubble pill over the head: icons, then the bomb's remaining taps in big digits. The light fill keeps
  * a black bomb readable on a dark animal (penguin, husky).
  */
-function badgeTexture(items: string[], number?: number, pointer = false): THREE.CanvasTexture {
+function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 320;
-  c.height = pointer ? CARD_BADGE_H : 128;
+  c.height = 128;
   const ctx = c.getContext('2d')!;
   const tone = number === undefined ? { line: '#8a7a5c', text: '#3b3a36' } : fuseTone(number);
   const iconW = 76;
@@ -80,20 +81,6 @@ function badgeTexture(items: string[], number?: number, pointer = false): THREE.
   const x0 = (320 - w) / 2;
   const paint = (): void => {
     ctx.clearRect(0, 0, c.width, c.height);
-    if (pointer) {
-      // a tapering stem from the bubble down to a dot on the animal's head (the sprite's anchor is the dot)
-      ctx.fillStyle = tone.line;
-      ctx.beginPath();
-      ctx.moveTo(149, 100);
-      ctx.lineTo(171, 100);
-      ctx.lineTo(163, CARD_BADGE_H - 12);
-      ctx.lineTo(157, CARD_BADGE_H - 12);
-      ctx.closePath();
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(160, CARD_BADGE_H - 10, 9, 0, Math.PI * 2);
-      ctx.fill();
-    }
     ctx.fillStyle = '#fff8e8';
     ctx.strokeStyle = tone.line;
     ctx.lineWidth = 10;
@@ -229,8 +216,10 @@ export class PieceView {
   /** 2.5D: the badge's items and whether the animal sleeps, so either change repaints one badge */
   private badgeItems: string[] = [];
   private asleep = false;
-  /** badge height over width */
-  private badgeRatio = 0.4;
+  /** badge height over width (Classic 3D) */
+  private readonly badgeRatio = 0.4;
+  /** 2.5D: the status icons' size on the screen, css px */
+  private iconSize = { w: 0, h: 0 };
 
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
@@ -257,11 +246,9 @@ export class PieceView {
       this.group.add(plate);
     }
 
-    this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false }));
-    if (cards) {
-      this.badgeRatio = CARD_BADGE_H / 320;
-      this.badge.center.set(0.5, 0); // anchored at the pointer's tip
-    }
+    // 2.5D: a fixed size on the screen (statusPixelScale), anchored at its bottom centre on the top of the picture
+    this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, sizeAttenuation: !cards }));
+    if (cards) this.badge.center.set(0.5, 0);
     this.badge.scale.set(BADGE_W, BADGE_W * this.badgeRatio, 1);
     this.badge.renderOrder = 10;
     this.badge.visible = false;
@@ -309,9 +296,10 @@ export class PieceView {
       plate.rotation.y = q.angle;
     });
     const h = this.segments[0].position;
-    // 2.5D: the pointer's tip just inside the top of the head picture as last drawn (spriteCards sets badgeTip each frame)
+    // 2.5D: just inside the top of the head picture as last drawn (spriteCards sets badgeTip each frame); the icon's
+    // own anchor lifts it onto the top edge (CARD_ICON_LIFT_PX)
     const tip = this.cards ? (this.segments[0].userData.badgeTip as THREE.Vector3 | undefined) : undefined;
-    if (tip) this.badge.position.set(tip.x, tip.y + CARD_BADGE_LIFT, tip.z);
+    if (tip) this.badge.position.copy(tip);
     else this.badge.position.set(h.x, 2.1, h.z);
     this.zzz.position.set(h.x, 0, h.z);
   }
@@ -371,7 +359,14 @@ export class PieceView {
     this.badgeNumber = number;
     const mat = this.badge.material as THREE.SpriteMaterial;
     mat.map?.dispose();
-    mat.map = badgeTexture(items, number, this.cards);
+    if (this.cards) {
+      const icon = statusTexture(items, number);
+      mat.map = icon.tex;
+      this.iconSize = { w: icon.w, h: icon.h };
+      this.badge.center.set(0.5, -CARD_ICON_LIFT_PX / icon.h);
+    } else {
+      mat.map = badgeTexture(items, number);
+    }
     mat.needsUpdate = true;
     this.badge.visible = true;
   }
@@ -385,6 +380,11 @@ export class PieceView {
       k += Math.sin((1 - this.badgePopT / BADGE_POP) * Math.PI) * 0.35;
     }
     if (this.badgeNumber !== undefined && this.badgeNumber <= 2) k += Math.max(0, Math.sin(this.clock * 7)) * 0.12;
+    if (this.cards) {
+      const px = statusPixelScale() * k;
+      this.badge.scale.set(this.iconSize.w * px, this.iconSize.h * px, 1);
+      return;
+    }
     this.badge.scale.set(BADGE_W * k, BADGE_W * this.badgeRatio * k, 1);
   }
 
@@ -405,9 +405,17 @@ export class PieceView {
   /** World position of the head block (for effects). */
   headWorld(): THREE.Vector3 { return this.segments[0].position; }
 
-  /** What a finger can land on: the body blocks, the colour plates under them and the badge over the head (not the path). */
+  /** The body blocks, the colour plates under them and the badge over the head (not the path); dev measurements use it. */
   tapTargets(): THREE.Object3D[] {
     return [...this.segments, ...this.plates, this.badge];
+  }
+
+  /**
+   * What a finger can land on. 2.5D: not the status icon, which is drawn over the animal behind and took its taps
+   * (2026-11-05); a tap there goes to whatever is under the icon. Classic 3D: the badge too, as before.
+   */
+  touchTargets(): THREE.Object3D[] {
+    return this.cards ? [...this.segments, ...this.plates] : this.tapTargets();
   }
 
   /** World position where the path leaves the board (the rescue effects play here). */
@@ -415,7 +423,7 @@ export class PieceView {
 
   get color(): number { return pieceColor(this.piece.id).getHex(); }
 
-  /** Classic 3D: Z's rising from the body. 2.5D: a 💤 on the head badge, so it points at its sleeper like the others. */
+  /** Classic 3D: Z's rising from the body. 2.5D: the sleep icon over the head, so it points at its sleeper like the others. */
   setAsleep(asleep: boolean): void {
     if (!this.cards) {
       this.zzz.visible = asleep;
@@ -428,17 +436,17 @@ export class PieceView {
   }
 
   /**
-   * 2.5D tap test on the badge as drawn: distance along the ray when it hits an opaque pixel of the visible badge
-   * (pointer included), else null. The badge is drawn over everything, so the caller tries it before the cards.
+   * 2.5D: whether the ray hits an opaque pixel of this animal's count-bomb icon (not its transparent margin). pick()
+   * asks only after no animal was found under the finger, so the icon never takes another animal's touch (2026-11-05).
    */
-  badgeHitDistance(ray: THREE.Raycaster): number | null {
-    if (!this.badge.visible || !this.group.visible) return null;
+  bombIconHit(ray: THREE.Raycaster): boolean {
+    if (!this.cards || this.badgeNumber === undefined || !this.badge.visible || !this.group.visible) return false;
     const hit = ray.intersectObject(this.badge, false)[0];
     const canvas = (this.badge.material as THREE.SpriteMaterial).map?.image as HTMLCanvasElement | undefined;
-    if (!hit?.uv || !canvas) return null;
+    if (!hit?.uv || !canvas) return false;
     const x = Math.min(canvas.width - 1, Math.floor(hit.uv.x * canvas.width));
     const y = Math.min(canvas.height - 1, Math.floor((1 - hit.uv.y) * canvas.height));
-    return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 127 ? hit.distance : null;
+    return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 127;
   }
 
   /** 2.5D tap test on the picture cards: distance to the nearest opaque card pixel under the ray (spriteCards drops transparent texels), else null. */
