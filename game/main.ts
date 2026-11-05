@@ -8,6 +8,7 @@ import { PieceView, runSpeed, speciesOverride } from './animals';
 import { setStatusPixelScale } from './statusIcons';
 import { PlayFlow } from '../src/game/flow';
 import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
+import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
 import { arrowTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
@@ -117,19 +118,68 @@ let shownHearts = 0;
 const heartsMarkup = (left: number, max: number): string =>
   '<i class="heart full"></i>'.repeat(Math.max(0, left)) + '<i class="heart empty"></i>'.repeat(Math.max(0, max - Math.max(0, left)));
 
+/** How long a lost heart takes to shrink and break (heartBreak in index.html); the hearts-out card waits for it. */
+const HEART_BREAK_MS = 350;
+/** How long a count bomb at zero takes to go off in 2.5D (icon swell, then the burst) before the bomb card shows. */
+const BOMB_BLAST_MS = 400;
+let failTimer: number | undefined;
+
+const playGameover = (): void => { if (!failPlayed) { failPlayed = true; sound.play('gameover'); } };
+
+/** Show the lost card after `ms`; meanwhile the buttons wait as well (clearBoard drops a card still waiting). */
+function showLostAfter(ms: number, then?: () => void): void {
+  document.body.classList.add('heart-wait');
+  failTimer = window.setTimeout(() => { document.body.classList.remove('heart-wait'); then?.(); showEnd(false); }, ms);
+}
+
+/**
+ * A count bomb reached zero. 2.5D: every bomb at zero swells its icon away and bursts (orange and grey bits, a dust
+ * ring), one punch sound, and the bomb card with its sound after BOMB_BLAST_MS. Classic 3D and reduced motion: the
+ * card and sound at once, as before. No hearts are taken.
+ */
+function blowUp(state: GameState): void {
+  const bombs = state.level.pieces.filter((p) => p.fuse !== undefined && state.alive.has(p.id) && state.fuses[p.id] <= 0);
+  const blasts = reducedMotion() ? [] : bombs.map((p) => views.get(p.id)).filter((v): v is PieceView => !!v && v.explode());
+  if (!blasts.length) { playGameover(); showEnd(false); return; }
+  for (const v of blasts) {
+    fx.burst(v.headWorld(), 0xf07b3f);
+    fx.burst(v.headWorld(), 0x8c8c8c);
+    fx.launch(v.headWorld());
+  }
+  sound.play('collision');
+  showLostAfter(BOMB_BLAST_MS, playGameover);
+}
+const reducedMotion = (): boolean => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+/** The shared heart-loss feedback: the heart shrinks and breaks in two over the empty heart left behind. */
+function breakHeart(heart: Element): void {
+  heart.classList.remove('pop');
+  void (heart as HTMLElement).offsetWidth; // restart the animation if this heart is still breaking
+  heart.classList.add('pop');
+  heart.addEventListener('animationend', () => heart.classList.remove('pop'), { once: true });
+}
+
+/**
+ * Show `left` of the level's hearts. The heart elements stay and only the ones that changed flip, so a heart still
+ * breaking keeps animating when the next blocked tap redraws the HUD; a new level (other heart count) builds them anew.
+ */
+function syncHearts(left: number | undefined): void {
+  const box = $('hearts');
+  if (left === undefined) { box.innerHTML = ''; return; }
+  if (box.children.length !== maxHearts) { box.innerHTML = heartsMarkup(left, maxHearts); shownHearts = left; return; }
+  [...box.children].forEach((heart, i) => { heart.classList.toggle('full', i < left); heart.classList.toggle('empty', i >= left); });
+  for (const i of lostHeartSlots(shownHearts, left)) breakHeart(box.children[i]);
+  shownHearts = left;
+}
+
 function refreshHud(): void {
   const state = current();
   if (!state) return;
   const spec = levelSpec(levelNumber);
   // reads as "레벨 7" (textContent), drawn as a small label and a big number
   $('levelLabel').innerHTML = `<span class="lvK">레벨</span> <span class="lvN">${levelNumber}</span>`;
-  $('hearts').innerHTML = state.hearts === undefined ? '' : heartsMarkup(state.hearts, maxHearts);
-  // a heart just lost pops once (plain feedback on the blocked tap)
-  if (state.hearts !== undefined) {
-    const all = $('hearts').querySelectorAll('.heart');
-    for (let i = Math.max(0, state.hearts); i < Math.min(shownHearts, all.length); i++) all[i].classList.add('pop');
-    shownHearts = state.hearts;
-  }
+  // a heart just lost breaks once (plain feedback on the blocked tap)
+  syncHearts(state.hearts);
   $('hearts').setAttribute('aria-label', state.hearts === undefined ? '' : `하트 ${Math.max(0, state.hearts)}개 남음`);
   void spec;
   for (const [id, v] of views) {
@@ -164,6 +214,10 @@ function clearBoard(): number {
   lastHit.clear();
   flow = null;
   window.clearTimeout(hintTimer);
+  // a hearts-out card still waiting belongs to the board being thrown away
+  window.clearTimeout(failTimer);
+  document.body.classList.remove('heart-wait');
+  $('hearts').innerHTML = '';
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
   return token;
@@ -328,9 +382,12 @@ function onTap(id: number): TapOutcome {
     $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 옆 친구가 나가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
-  if (flow.lost) {
-    if (!failPlayed) { failPlayed = true; sound.play('gameover'); }
-    showEnd(false);
+  // the level is lost at once (taps on the board stop now); the card waits for the last heart to break or the bomb to go off
+  if (flow.lost && flow.state.exploded) blowUp(flow.state);
+  else if (flow.lost) {
+    playGameover();
+    if (reducedMotion()) showEnd(false);
+    else showLostAfter(HEART_BREAK_MS);
   }
   return ev.type;
 }

@@ -181,9 +181,17 @@
       .tutFinger path { fill: #fff; stroke: #4a3424; stroke-width: 2.4; stroke-linejoin: round; filter: drop-shadow(0 3px 3px rgba(0,0,0,.45)); }
       @keyframes tutTap { 0%, 100% { transform: translate(6px, 10px) rotate(-18deg); } 45% { transform: translate(0, 0) rotate(-18deg) scale(.92); } 60% { transform: translate(0, 0) rotate(-18deg) scale(.92); } }
       #tutorial.result .tutBubble, #tutorial.result .tutSkip, #tutorial.result .tutFinger { display: none; }
-      /* a heart lost to a blocked tap pops once (plain game feedback, not a tutorial) */
-      #hearts .heart.pop { animation: heartPop .45s ease-out; }
-      @keyframes heartPop { 0% { transform: scale(1); } 35% { transform: scale(1.35); } 100% { transform: scale(1); } }
+      /* a heart lost to a blocked tap shrinks and breaks in two over the empty heart left behind (.35s, HEART_BREAK_MS
+         in main.ts; plain game feedback, not a tutorial) */
+      #hearts .heart { position: relative; }
+      #hearts .heart.pop::before, #hearts .heart.pop::after { content: ''; position: absolute; inset: 0; background: var(--heart-full) no-repeat center / contain; animation: .35s ease-in forwards; }
+      #hearts .heart.pop::before { clip-path: inset(0 50% 0 0); animation-name: heartBreakL; }
+      #hearts .heart.pop::after { clip-path: inset(0 0 0 50%); animation-name: heartBreakR; }
+      @keyframes heartBreakL { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(.82); opacity: 1; } 100% { transform: translate(-5px, 5px) rotate(-20deg) scale(.7); opacity: 0; } }
+      @keyframes heartBreakR { 0% { transform: scale(1); opacity: 1; } 40% { transform: scale(.82); opacity: 1; } 100% { transform: translate(5px, 5px) rotate(20deg) scale(.7); opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { #hearts .heart.pop::before, #hearts .heart.pop::after { display: none; } }
+      /* the last heart is breaking and the hearts-out card is about to show: the buttons wait too */
+      body.heart-wait #bar, body.heart-wait #settings { pointer-events: none; }
 
       /* title screen: the logo just above a small board of the game's animals, the buttons just below it, as one block
          in the middle of the screen. main.ts sets --board-top / --board-bottom from where the board is drawn (and

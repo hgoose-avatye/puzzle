@@ -42,6 +42,8 @@ const BADGE_NUMBER_FONT = "700 70px Pretendard, system-ui, -apple-system, 'Apple
 /** Badge width in cells, and how long a count change pops it. */
 const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
+/** seconds a 2.5D bomb icon at zero swells before it is gone (the burst plays where it was) */
+const BOMB_SWELL = 0.15;
 /**
  * 2.5D cards: the status icon sits on the top of its own animal's picture (no pointer since the status UI of
  * 2026-11-05). A badge floating over the head lands on the animal behind once the camera tilts, so on a crowded board
@@ -201,6 +203,8 @@ export class PieceView {
   private badgeKey = '';
   private badgeNumber: number | undefined;
   private badgePopT = 0;
+  /** 2.5D bomb gone off: seconds of swelling left, then the icon stays hidden (null: not gone off) */
+  private blowT: number | null = null;
   private dots: THREE.Sprite | null = null;
   private waiting = false;
   /** seconds the current wait has lasted */
@@ -334,6 +338,13 @@ export class PieceView {
     this.chevrons.visible = visible;
   }
 
+  /** 2.5D only: a bomb at zero swells its icon for BOMB_SWELL and then the icon is gone. False in Classic 3D (unchanged). */
+  explode(): boolean {
+    if (!this.cards || !this.badge.visible) return false;
+    this.blowT = BOMB_SWELL;
+    return true;
+  }
+
   setBadges(items: string[], number?: number): void {
     if (this.cards) {
       this.badgeItems = items;
@@ -353,6 +364,7 @@ export class PieceView {
     }
     const key = `${items.join('')}:${number ?? ''}`;
     if (key === this.badgeKey && this.badge.visible) return;
+    if (this.blowT !== null) return; // a bomb going off keeps its last icon until it is gone
     // a bomb's count going down pops the badge so the change is noticed
     if (number !== undefined && this.badgeNumber !== undefined && number < this.badgeNumber) this.badgePopT = BADGE_POP;
     this.badgeKey = key;
@@ -375,6 +387,13 @@ export class PieceView {
   private animateBadge(dt: number): void {
     if (!this.badge.visible) return;
     let k = 1;
+    if (this.blowT !== null) {
+      this.blowT = Math.max(0, this.blowT - dt);
+      if (this.blowT === 0) { this.badge.visible = false; return; }
+      const px = statusPixelScale() * (1 + (1 - this.blowT / BOMB_SWELL) * 0.5);
+      this.badge.scale.set(this.iconSize.w * px, this.iconSize.h * px, 1);
+      return;
+    }
     if (this.badgePopT > 0) {
       this.badgePopT = Math.max(0, this.badgePopT - dt);
       k += Math.sin((1 - this.badgePopT / BADGE_POP) * Math.PI) * 0.35;
