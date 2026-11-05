@@ -322,10 +322,13 @@ function cooled(id: number): boolean {
   return true;
 }
 
-/** Hit another animal (standing or running): punch sound, flinch and a "!" on the animal that was tapped. */
-function collide(id: number, view: PieceView): void {
+/**
+ * Hit another animal (standing or running): punch sound, flinch and a "!" on the animal that was tapped. `alert` false:
+ * the sound only (a 2.5D blocked tap, whose head shake already says it).
+ */
+function collide(id: number, view: PieceView, alert = true): void {
   if (!cooled(id)) return;
-  view.collide();
+  if (alert) view.collide();
   sound.play('collision');
 }
 
@@ -373,9 +376,10 @@ function onTap(id: number): TapOutcome {
     $('msg').textContent = '';
     crackCrates();
   } else if (ev.type === 'blocked' && view) {
+    // 2.5D: the head shake alone (no stars, no "!"); Classic 3D as before
     view.bump();
-    fx.stars(view.headWorld());
-    if (ev.blockers.length > 0) collide(id, view);
+    if (!view.cards) fx.stars(view.headWorld());
+    if (ev.blockers.length > 0) collide(id, view, !view.cards);
     else if (cooled(id)) sound.play('wall');
     for (const b of ev.blockers) views.get(b)?.pulse();
     if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
@@ -788,6 +792,8 @@ const clock = new THREE.Clock();
   for (const e of flow?.step(dt, loopSpeed ?? runSpeed()) ?? []) {
     const v = views.get(e.id);
     if (e.type === 'wait' && !e.quiet && v) collide(e.id, v);
+    // 2.5D: a runner held up behind another sets off again with its own step sound
+    if (e.type === 'resume' && v?.cards) sound.play('move');
   }
   for (const r of flow?.traffic.runners ?? []) views.get(r.id)?.setRun(r.s, r.state === 'waiting');
   for (const v of views.values()) {

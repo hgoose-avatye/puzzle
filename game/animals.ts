@@ -44,6 +44,9 @@ const BADGE_W = 1.9;
 const BADGE_POP = 0.35;
 /** seconds a 2.5D bomb icon at zero swells before it is gone (the burst plays where it was) */
 const BOMB_SWELL = 0.15;
+/** 2.5D blocked tap: the head picture tilts left, right, left (up to 8°, easing off) for this many seconds */
+const HEAD_SHAKE = 0.3;
+const HEAD_SHAKE_ROLL = (8 * Math.PI) / 180;
 /**
  * 2.5D cards: the status icon sits on the top of its own animal's picture (no pointer since the status UI of
  * 2026-11-05). A badge floating over the head lands on the animal behind once the camera tilts, so on a crowded board
@@ -205,6 +208,8 @@ export class PieceView {
   private badgePopT = 0;
   /** 2.5D bomb gone off: seconds of swelling left, then the icon stays hidden (null: not gone off) */
   private blowT: number | null = null;
+  /** 2.5D blocked tap: seconds of head shake left */
+  private headShakeT = 0;
   private dots: THREE.Sprite | null = null;
   private waiting = false;
   /** seconds the current wait has lasted */
@@ -586,9 +591,10 @@ export class PieceView {
     return true;
   }
 
-  /** Blocked tap: shake sideways and nod the head. */
+  /** Blocked tap: shake sideways and nod the head (Classic 3D); 2.5D shakes the head picture instead. */
   bump(): void {
-    this.shakeT = 0.4;
+    if (this.cards) this.headShakeT = HEAD_SHAKE;
+    else this.shakeT = 0.4;
   }
 
   pulse(): void {
@@ -659,6 +665,12 @@ export class PieceView {
     } else {
       this.group.position.x = 0;
       this.segments[0].children[0].rotation.x = 0;
+    }
+    if (this.cards) {
+      // the head card's tilt, read by the 2.5D card placement (spriteCards: root.userData.roll)
+      this.headShakeT = Math.max(0, this.headShakeT - dt);
+      const p = 1 - this.headShakeT / HEAD_SHAKE;
+      this.segments[0].userData.roll = this.headShakeT > 0 ? HEAD_SHAKE_ROLL * Math.sin(p * Math.PI * 3) * (1 - 0.4 * p) : 0;
     }
     if (this.pulseT > 0) {
       this.pulseT = Math.max(0, this.pulseT - dt);

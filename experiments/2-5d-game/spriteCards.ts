@@ -82,7 +82,8 @@ function texture(url: string): THREE.Texture {
   return t;
 }
 
-const tmp = { pos: new THREE.Vector3(), cam: new THREE.Vector3(), fwd: new THREE.Vector3(), q: new THREE.Quaternion(), head: new THREE.Vector3(), centre: new THREE.Vector3(), depth: new THREE.Vector3(), at: new THREE.Vector3(), plane: new THREE.Plane(), ray: new THREE.Ray() };
+const tmp = { pos: new THREE.Vector3(), cam: new THREE.Vector3(), fwd: new THREE.Vector3(), q: new THREE.Quaternion(), roll: new THREE.Quaternion(), head: new THREE.Vector3(), centre: new THREE.Vector3(), depth: new THREE.Vector3(), at: new THREE.Vector3(), plane: new THREE.Plane(), ray: new THREE.Ray() };
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
 let cardsDrawn = 0;
 let cardsMissing = 0;
 export const cardStats = (): { drawn: number; missing: number } => ({ drawn: cardsDrawn, missing: cardsMissing });
@@ -216,7 +217,7 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     // step per block decides blocks at the same depth
     root.getWorldPosition(tmp.depth).addScaledVector(tmp.head.normalize(), index * tuck);
     tmp.depth.y += PLATE_TOP + CARD_DEPTH_LIFT;
-    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror, tmp.depth.addScaledVector(camera.getWorldDirection(tmp.fwd), index * PART_DEPTH_STEP));
+    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror, tmp.depth.addScaledVector(camera.getWorldDirection(tmp.fwd), index * PART_DEPTH_STEP), (root.userData.roll as number | undefined) ?? 0);
     // where the status badge's pointer ends, in the world (PieceView reads it on the head): a little inside the top of
     // the drawn picture, not on its edge, where ear tips and outlines let the animal behind or the floor show through
     const box = opaqueBox(img);
@@ -229,9 +230,10 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
 
 /**
  * Placement C for one card: a camera-facing plane through the block centre above the world floor point `floor` (plate
- * top included), the picture's anchor pixel (ax, ay) on that point, sized from the projected cell width there.
+ * top included), the picture's anchor pixel (ax, ay) on that point, sized from the projected cell width there. `roll`
+ * (radians) tilts the picture in its own plane about that anchor (the blocked head shake).
  */
-function placeCard(card: THREE.Mesh, animated: THREE.Object3D, floor: THREE.Vector3, scaleX: number, camera: THREE.Camera, img: HTMLImageElement, cellPx: number, ax: number, ay: number, mirror: boolean, centre?: THREE.Vector3): void {
+function placeCard(card: THREE.Mesh, animated: THREE.Object3D, floor: THREE.Vector3, scaleX: number, camera: THREE.Camera, img: HTMLImageElement, cellPx: number, ax: number, ay: number, mirror: boolean, centre?: THREE.Vector3, roll = 0): void {
   const w = img.width / cellPx, h = img.height / cellPx;
   const anchorX = mirror ? img.width - ax : ax;
   // camera-facing plane through the block centre (or `centre`); the anchor goes where the ray to the floor point meets it
@@ -249,6 +251,7 @@ function placeCard(card: THREE.Mesh, animated: THREE.Object3D, floor: THREE.Vect
   card.position.copy(animated.worldToLocal(tmp.at.clone()));
   animated.getWorldQuaternion(tmp.q).invert();
   card.quaternion.copy(tmp.q.multiply(camera.quaternion));
+  if (roll) card.quaternion.multiply(tmp.roll.setFromAxisAngle(Z_AXIS, roll));
   const s = scaleX * k / (animated.getWorldScale(new THREE.Vector3()).x || 1);
   card.scale.set((mirror ? -w : w) * s, h * s, 1);
   // the plane is centred: shift it so the anchor pixel is at the floor point
