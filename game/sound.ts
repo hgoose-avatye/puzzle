@@ -17,17 +17,22 @@ interface Entry {
   trim?: { start: number; length: number };
 }
 
-/** Every cooldown is at least 100 ms: the same sound twice within that plays once (polish step 3, 2026-11-05). */
+/**
+ * Every cooldown is at least 100 ms: the same sound twice within that plays once (polish step 3, 2026-11-05).
+ * Trailing silence is trimmed (50 ms after the tail falls 60 dB below the peak) so a finished sound frees its voice:
+ * untrimmed, quick play kept four rescued tails sounding and dropped taps' sounds (2026-11-05). clear ends at the file end.
+ */
 export const MANIFEST: Record<SoundName, Entry> = {
   // Pixabay "Pop Cartoon": the file has 0.5 s of silence before a 0.11 s pop, so only the pop is played
   select: { file: 'pop-cartoon.mp3', volume: 0.3, cooldown: 100, trim: { start: 0.49, length: 0.15 } },
   move: { file: 'move.mp3', volume: 0.18, cooldown: 100 },
-  arrive: { file: 'arrive.mp3', volume: 0.22, cooldown: 120 },
-  wall: { file: 'wall.mp3', volume: 0.22, cooldown: 120 }, // Mixkit "Small hit in a game" (sfx 2072)
-  collision: { file: 'collision.mp3', volume: 0.25, cooldown: 150 }, // Mixkit "Soft quick punch" (sfx 2151)
-  rescued: { file: 'rescued.mp3', volume: 0.3, cooldown: 100 },
+  arrive: { file: 'arrive.mp3', volume: 0.22, cooldown: 120, trim: { start: 0, length: 0.53 } },
+  wall: { file: 'wall.mp3', volume: 0.22, cooldown: 120, trim: { start: 0, length: 0.25 } }, // Mixkit "Small hit in a game" (sfx 2072)
+  // Mixkit "Soft quick punch" (sfx 2151): 0.09 s of digital silence before the hit
+  collision: { file: 'collision.mp3', volume: 0.25, cooldown: 150, trim: { start: 0.09, length: 0.36 } },
+  rescued: { file: 'rescued.mp3', volume: 0.3, cooldown: 100, trim: { start: 0, length: 2.36 } },
   clear: { file: 'clear.mp3', volume: 0.45, cooldown: 1000 },
-  gameover: { file: 'gameover.mp3', volume: 0.3, cooldown: 1000 },
+  gameover: { file: 'gameover.mp3', volume: 0.3, cooldown: 1000, trim: { start: 0, length: 1.43 } },
 };
 
 /** Sounds that must not play while a higher-priority one is still sounding. */
@@ -46,8 +51,13 @@ const CUTS: Partial<Record<SoundName, SoundName[]>> = {
   wall: ['select'],
 };
 
+/** At most this many of the key at once: a new one stops the oldest first (quick play piled up rescued tails, 2026-11-05). */
+const MAX_SAME: Partial<Record<SoundName, number>> = {
+  rescued: 2,
+};
+
 /** At most this many sounds at once; further ones are dropped except the result sounds. */
-const MAX_VOICES = 4;
+const MAX_VOICES = 6;
 const ALWAYS: SoundName[] = ['clear', 'gameover'];
 
 const MUTE_KEY = 'animal-rescue-muted';
@@ -133,6 +143,9 @@ export class Sound {
     const now = this.deps.now();
     if (now - (this.lastAt.get(name) ?? -Infinity) < MANIFEST[name].cooldown) return false;
     for (const higher of SUPPRESSED_BY[name] ?? []) if ((this.playingUntil.get(higher) ?? 0) > now) return false;
+    // before the voice check, so the new one takes the voice the oldest gives back
+    const same = MAX_SAME[name];
+    if (same !== undefined) this.cutOldest(name, same - 1);
     if (this.active.size >= MAX_VOICES && !ALWAYS.includes(name)) return false;
     for (const cut of CUTS[name] ?? []) this.cut(cut);
     this.lastAt.set(name, now);
@@ -159,6 +172,16 @@ export class Sound {
       this.sources.delete(src);
     }
     this.playingUntil.delete(name);
+  }
+
+  /** Stop the oldest of `name` until at most `keep` are left sounding (sources keep their start order). */
+  private cutOldest(name: SoundName, keep: number): void {
+    const mine = [...this.sources].filter(([, n]) => n === name).map(([src]) => src);
+    for (const src of mine.slice(0, Math.max(0, mine.length - keep))) {
+      try { src.stop(); } catch { /* already stopped */ }
+      this.active.delete(src);
+      this.sources.delete(src);
+    }
   }
 
   /** Stop everything that is sounding (restart, mute). */
