@@ -76,8 +76,10 @@ const NONE = mech(0, 0, 0);
  * switch on all three; a level that has two of them gets no arrow tiles (see arrowsAllowed).
  */
 export function mechanicsFor(chapter: number, level: number, role: Role): Mechanics {
-  if (role === 'rest' || chapter <= 2) return NONE;
+  if (role === 'rest' || chapter === 1) return NONE;
   const slot = slotOf(level);
+  // chapter 2's three peaks bring the first dynamite: a push budget on top of the knot (2026-11-06)
+  if (chapter === 2) return slot === 't10' || slot === 't20' || slot === 'fin' ? mech(0, 0, 1) : NONE;
   const stageOne = role === 'intro' || slot === 's1a' || slot === 's1b';
   if (chapter === 3) return mech(1, 0, 0);
   if (chapter === 4) {

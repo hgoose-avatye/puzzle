@@ -33,7 +33,11 @@ export function createGame(level: Level, options: { hearts?: number; bump?: bool
   };
 }
 
-/** Every exit burns one fuse step of each bomb still on the board; one left at zero explodes. Blocked taps burn nothing (docs/rules.md R3). */
+/**
+ * One fuse step off every bomb still on the board; one left at zero explodes. Under the bump rule a push burns (the
+ * pushed bomb included) and exits burn nothing (docs/rules.md 5); under the old rule (bump: false) exits burn, as the
+ * exit-based planner (solver/plan.ts) and the simulated player still read it.
+ */
 function burnFuses(state: GameState): GameState {
   const fuses: Record<number, number> = {};
   let exploded = state.exploded;
@@ -63,7 +67,8 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
       hearts: state.hearts === undefined ? undefined : state.hearts - 1,
     };
     return {
-      state: counted,
+      // a push is the move the bombs count (the blocked tap that goes nowhere spends nothing)
+      state: state.bump && moved > 0 ? burnFuses(counted) : counted,
       event: {
         type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}), ...(crates ? { crates } : {}),
         ...(moved > 0 ? { moved } : {}),
@@ -72,7 +77,10 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
   }
   const alive = new Set(state.alive);
   alive.delete(id);
-  return { state: burnFuses({ ...state, alive, taps: state.taps + 1 }), event: { type: 'exited', id } };
+  if (!state.bump) return { state: burnFuses({ ...state, alive, taps: state.taps + 1 }), event: { type: 'exited', id } };
+  // a bomb that leaves takes its fuse with it; nothing else burns on an exit
+  const { [id]: _gone, ...fuses } = state.fuses;
+  return { state: { ...state, alive, fuses, taps: state.taps + 1 }, event: { type: 'exited', id } };
 }
 
 export function isCleared(state: GameState): boolean {

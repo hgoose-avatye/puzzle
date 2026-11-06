@@ -27,7 +27,7 @@ function nextTap(level: Level, alive: ReadonlySet<number>, id: number, seen: Set
  */
 export function tapsToExit(level: Level, id: number): number | null {
   const plain: Level = { ...level, pieces: level.pieces.map(({ fuse: _fuse, ...p }) => p) };
-  let state = createGame(plain);
+  let state = createGame(plain, { bump: false });
   let taps = 0;
   for (let guard = 0; guard < plain.pieces.length * 3 + 5 && state.alive.has(id); guard++) {
     const t = nextTap(plain, state.alive, id, new Set());
@@ -54,7 +54,7 @@ export function rescueSchedule(level: Level, ids: number[]): Map<number, number>
     order.push([id, t]);
   }
   order.sort((a, b) => a[1] - b[1]);
-  let state = createGame(plain);
+  let state = createGame(plain, { bump: false });
   let taps = 0;
   const leftAt = new Map<number, number>();
   for (const [id] of order) {
@@ -91,7 +91,7 @@ export function winnable(level: Level, budget = 200_000): boolean | null {
     dead.add(key);
     return false;
   };
-  return go(createGame(level));
+  return go(createGame(level, { bump: false }));
 }
 
 /** The tap that gets piece `id` closer to leaving (the first thing in its way, or itself), or null if none helps. */

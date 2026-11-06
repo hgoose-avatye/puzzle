@@ -22,20 +22,20 @@ export const MIN_KNOT = 3;
 const MAX_FLIPS = 3;
 
 /**
- * Bomb fuses after a knot: the exits before the bomb leaves on the grade's winning line, plus one for the bomb's own
- * tap, plus slack (the same reading as generate.ts, whose schedule the turned animals no longer fit). Null when a bomb
- * never leaves on that line.
+ * Bomb fuses after a knot: a bomb counts pushes (core/game.ts), so its fuse is the pushes made before it leaves on the
+ * grade's winning line, plus slack. The generator's slack (bombSlack, written for exits: 3, or 2 on tight levels)
+ * becomes one push less: a push is a bigger decision than an exit. Null when a bomb never leaves on that line.
  */
 function refuse(level: Level, grade: KnotGrade, slack: number): Level | null {
   const bombs = level.pieces.filter((p) => p.fuse !== undefined);
   if (!bombs.length) return level;
   if (!grade.line) return null;
   const fuses = new Map<number, number>();
-  let exits = 0;
+  const pushSlack = Math.max(1, slack - 1);
+  let pushes = 0;
   for (const m of grade.line) {
-    if (m.kind !== 'exit') continue;
-    if (bombs.some((b) => b.id === m.id)) fuses.set(m.id, exits + 1 + slack);
-    exits++;
+    if (m.kind === 'push') { pushes++; continue; }
+    if (bombs.some((b) => b.id === m.id)) fuses.set(m.id, pushes + pushSlack);
   }
   if (fuses.size < bombs.length) return null;
   return { ...level, pieces: level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p)) };
