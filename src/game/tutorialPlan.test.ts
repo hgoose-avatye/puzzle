@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { gradeKnot } from '../core/bump';
+import { createGame, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import type { Level } from '../core/types';
 import { buildGameLevel } from '../curve/curve';
-import { arrowTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
+import { arrowTargets, bumpTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
 
 const levelOf = (n: number): Level => buildGameLevel(n)!.level;
 const everyone = (l: Level): Set<number> => new Set(l.pieces.map((p) => p.id));
@@ -49,18 +51,32 @@ describe('tutorialPlan', () => {
     expect(canExit(l, target, everyone(l))).toBe(true);
   });
 
-  it('has no arrow moment on level 6 at the start, and one once the way of an arrow animal is clear', () => {
-    const l = levelOf(6);
-    const alive = everyone(l);
-    expect(arrowTargets(l, alive)).toEqual([]);
-    // take free animals out one by one until an animal whose way bends on an arrow can leave
-    for (let k = 0; k < l.pieces.length && arrowTargets(l, alive).length === 0; k++) {
-      const next = l.pieces.find((p) => alive.has(p.id) && canExit(l, p.id, alive))!;
-      alive.delete(next.id);
+  it('finds the arrow moment on the first level with an arrow tile: once an animal whose way bends on it can leave', () => {
+    // the first shipped level with a tile; play its winning line until such an animal is free
+    let n = 6;
+    while (!(levelOf(n).arrows?.length)) n++;
+    const l = levelOf(n);
+    let s = createGame(l);
+    let found = arrowTargets(s.level, s.alive);
+    for (const m of gradeKnot(l).line ?? []) {
+      if (found.length) break;
+      s = tap(s, m.id).state;
+      found = arrowTargets(s.level, s.alive);
     }
-    const targets = arrowTargets(l, alive);
-    expect(targets.length).toBeGreaterThan(0);
-    for (const id of targets) expect(canExit(l, id, alive)).toBe(true);
+    expect(found.length, `level ${n}`).toBeGreaterThan(0);
+    for (const id of found) expect(canExit(s.level, id, s.alive)).toBe(true);
+  });
+
+  it('points the bump tutorial at the push of the winning line once nothing can leave (level 6)', () => {
+    const l = levelOf(6);
+    let s = createGame(l);
+    expect(bumpTargets(s.level, s.alive)).toEqual([]);
+    for (const m of gradeKnot(l).line ?? []) {
+      if (m.kind === 'push') break;
+      s = tap(s, m.id).state;
+    }
+    expect(s.level.pieces.some((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive))).toBe(false);
+    expect(bumpTargets(s.level, s.alive)).toEqual([gradeKnot(l).line!.find((m) => m.kind === 'push')!.id]);
   });
 
   it('lights up after the tap the animal it changed: the lock opened, the sleeper woken, the bomb cleared', () => {

@@ -18,6 +18,8 @@ export function headDirection(piece: Piece): Direction {
     if (!piece.dir) throw new Error(`piece ${piece.id}: a one-cell piece needs dir`);
     return piece.dir;
   }
+  // a piece that stopped on an arrow tile (bump rule) keeps going the tile's way, not its body's
+  if (piece.dir) return piece.dir;
   const dx = piece.cells[0].x - piece.cells[1].x;
   const dy = piece.cells[0].y - piece.cells[1].y;
   if (Math.abs(dx) + Math.abs(dy) !== 1) throw new Error(`piece ${piece.id}: head and next cell are not adjacent`);

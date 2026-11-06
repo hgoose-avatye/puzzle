@@ -30,10 +30,20 @@ export class PlayFlow {
   readonly input = new TapInput();
   private current: GameState;
   private readonly routes = new Map<number, Route>();
+  /** Bump rule: cells each animal has moved along its way out (its route stays the one from the start). */
+  readonly advance = new Map<number, number>();
+  /** Taps that changed the board, in order: an undo replays all but the last on a fresh flow. */
+  readonly log: number[] = [];
 
-  constructor(readonly level: Level, hearts?: number) {
-    this.current = createGame(level, hearts === undefined ? {} : { hearts });
+  constructor(readonly level: Level, hearts?: number, bump = true) {
+    this.current = createGame(level, { ...(hearts === undefined ? {} : { hearts }), bump });
     for (const piece of level.pieces) this.routes.set(piece.id, routeOf(level, piece));
+  }
+
+  /** Head arc length on its route of an animal that moved `advance` cells. */
+  headAt(id: number): number {
+    const route = this.routes.get(id)!;
+    return route.track.vertexU[route.bodyLen - 1 + (this.advance.get(id) ?? 0)];
   }
 
   get state(): GameState {
@@ -46,11 +56,16 @@ export class PlayFlow {
     const ev = result.event;
     if (ev.type === 'blocked') {
       if (this.input.isBlockedRepeat(id, now)) return null;
+      // a push waits for a still board: the rules see runners as gone, so the animal could run through one on screen
+      if (ev.moved && this.traffic.runners.length) return null;
       this.input.noteBlocked(id, now);
     }
     this.current = result.state;
+    // only taps that changed the board: an undo of a bump that did not move would show nothing
+    if (ev.type === 'exited' || (ev.type === 'blocked' && ev.moved)) this.log.push(id);
+    if (ev.type === 'blocked' && ev.moved) this.advance.set(id, (this.advance.get(id) ?? 0) + ev.moved);
     const route = this.routes.get(id);
-    if (ev.type === 'exited' && route) this.traffic.add(id, route.track, route.bodyLen, route.headStart);
+    if (ev.type === 'exited' && route) this.traffic.add(id, route.track, route.bodyLen, this.headAt(id));
     return ev;
   }
 

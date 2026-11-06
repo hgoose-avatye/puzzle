@@ -12,10 +12,11 @@ const level: Level = {
 };
 
 describe('tap', () => {
-  it('a blocked tap leaves the pieces in place and reports the blockers', () => {
+  it('a blocked tap reports the blockers and, stopped at once, leaves the pieces in place', () => {
     const s0 = createGame(level);
     const { state, event } = tap(s0, 1);
     expect(event).toEqual({ type: 'blocked', id: 1, blockers: [2] });
+    expect(state.level).toEqual(level);
     expect([...state.alive].sort()).toEqual([1, 2]);
     expect(state.blockedTaps).toBe(1);
     expect(state.taps).toBe(1);

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { blockersOf, canExit, headDirection, lockedBy, traceExit, validateLevel } from '../core/rules';
 import type { Level } from '../core/types';
+import { gradeKnot } from '../core/bump';
+import { MIN_KNOT } from '../generator/knot';
 import { solve } from '../solver/solver';
-import { buildGameLevel, levelSpec } from './curve';
+import { buildGameLevel, knotLevel, levelSpec } from './curve';
 
 /**
  * Checks on the levels the game actually ships (src/curve/levels.json): not on the generator in general, but on what a
@@ -17,13 +19,27 @@ const holdsAlone = (l: Level, id: number): boolean => {
 };
 
 describe('shipped levels', () => {
-  it('all 180 are valid and solvable, with the hearts the curve asks for', () => {
+  // one grade per level, shared by the checks below (a knot search over 180 levels takes a few seconds)
+  const grades = new Map(levels.map(({ n, level }) => [n, gradeKnot(level)]));
+
+  it('all 180 are valid and can be cleared under the bump rule, with the hearts the curve asks for', () => {
     for (const { n, level, hearts } of levels) {
       expect(validateLevel(level), `level ${n}`).toEqual([]);
-      expect(solve(level).solvable, `level ${n}`).toBe(true);
+      expect(grades.get(n)!.solvable, `level ${n}`).toBe(true);
       expect(hearts, `level ${n}`).toBe(levelSpec(n).hearts);
     }
-  });
+  }, 60_000);
+
+  it('knot levels need a push and the others peel without one', () => {
+    for (const { n, level } of levels) {
+      const g = grades.get(n)!;
+      if (knotLevel(n)) expect(g.knot, `level ${n}`).toBeGreaterThanOrEqual(MIN_KNOT);
+      else {
+        expect(g.knot, `level ${n}`).toBe(0);
+        expect(solve(level).solvable, `level ${n}`).toBe(true);
+      }
+    }
+  }, 60_000);
 
   it('every arrow tile turns some animal on its way out (one that only runs over it straight does nothing)', () => {
     for (const { n, level } of levels) {

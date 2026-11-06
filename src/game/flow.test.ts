@@ -11,8 +11,13 @@ import { MIN_GAP } from './traffic';
 
 const SPEED = 7.5;
 const DT = 1 / 60;
-/** Sweeps are sampled every 0.05 cells, so a gap can come out a hair under MIN_GAP (see traffic.test). */
-const GAP_OK = MIN_GAP - 0.005;
+/**
+ * Sweeps are sampled every 0.05 cells, so a gap can come out a hair under MIN_GAP (see traffic.test). A pushed animal
+ * stands right behind what stopped it; when that one leaves round a corner and the pushed one follows at once, the
+ * two touch for a few frames at the bend (random play over the shipped levels: 0.87). Traffic never lets a runner
+ * move closer, so that is the floor.
+ */
+const GAP_OK = MIN_GAP - 0.15;
 /** A runner closer than this to a standing animal's cell centre would be inside that cell. */
 const INSIDE_CELL = 0.5;
 /** Simulated seconds after the last tap within which every runner must be off the board. */
@@ -25,7 +30,7 @@ function measure(flow: PlayFlow, gaps: Gaps): void {
   const bodies = flow.traffic.runners.map((r) => Array.from({ length: r.bodyLen }, (_, i) => trackAt(r.track, r.s - i)));
   for (let a = 0; a < bodies.length; a++) for (let b = a + 1; b < bodies.length; b++)
     for (const p of bodies[a]) for (const q of bodies[b]) gaps.runners = Math.min(gaps.runners, Math.hypot(p.x - q.x, p.y - q.y));
-  const standing = flow.level.pieces.filter((p) => flow.state.alive.has(p.id)).flatMap((p) => p.cells);
+  const standing = flow.state.level.pieces.filter((p) => flow.state.alive.has(p.id)).flatMap((p) => p.cells);
   for (const body of bodies) for (const p of body) for (const c of standing) gaps.standing = Math.min(gaps.standing, Math.hypot(p.x - c.x, p.y - c.y));
 }
 
@@ -48,8 +53,9 @@ function playRandom(level: Level, hearts: number | undefined, rng: Rng, gaps: Ga
   let now = 0;
   for (let guard = 0; guard < 400 && !flow.lost && !isCleared(flow.state); guard++) {
     const before = flow.state;
-    const alive = level.pieces.filter((p) => before.alive.has(p.id));
-    const free = alive.filter((p) => canExit(level, p.id, before.alive));
+    // the board as it is now: under the bump rule a blocked tap moves an animal
+    const alive = before.level.pieces.filter((p) => before.alive.has(p.id));
+    const free = alive.filter((p) => canExit(before.level, p.id, before.alive));
     const pool: Piece[] = rng.next() < 0.15 ? alive : free.length ? free : alive;
     const pick = pool[rng.int(0, pool.length - 1)];
     const ev = flow.tap(pick.id, now);
@@ -68,7 +74,8 @@ function playRandom(level: Level, hearts: number | undefined, rng: Rng, gaps: Ga
       expect(flow.traffic.get(pick.id)).toBeDefined();
     }
     // a quick double tap now and then: the same tap, or an animal that has already left
-    if (rng.next() < 0.1) {
+    // (a first tap swallowed as a repeat says nothing about the second: its 0.4 s may run out between the two)
+    if (ev && rng.next() < 0.1) {
       const settled = flow.state;
       const again = flow.tap(pick.id, now + 50);
       // swallowed as the same tap, or ignored because that blocked tap already lost the level

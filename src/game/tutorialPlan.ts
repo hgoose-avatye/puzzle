@@ -1,3 +1,4 @@
+import { peel, pickPush } from '../core/bump';
 import { canExit, traceExit } from '../core/rules';
 import { nextTapToward } from '../solver/plan';
 import type { Level, Piece } from '../core/types';
@@ -13,7 +14,7 @@ import { pickHint } from './hint';
  * on an arrow becomes free. A tutorial with no animal it can point at is not forced: it waits for the next level where
  * it can. Hearts and crates teach themselves in play (the heart that pops, the crate that cracks).
  */
-export type TutorialId = 'basic' | 'arrow' | 'key' | 'sleep' | 'bomb';
+export type TutorialId = 'basic' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb';
 /** Start tutorials, in the order a level is checked for them. */
 export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'key', 'sleep', 'bomb'];
 
@@ -40,6 +41,7 @@ export function usesRule(level: Level, id: TutorialId): boolean {
   switch (id) {
     case 'basic': return true;
     case 'arrow': return (level.arrows?.length ?? 0) > 0;
+    case 'bump': return peel(level, new Set(level.pieces.map((p) => p.id))).size > 0;
     case 'key': return level.pieces.some((p) => p.key !== undefined);
     case 'sleep': return level.pieces.some((p) => p.sleeping);
     case 'bomb': return level.pieces.some((p) => p.fuse !== undefined);
@@ -72,6 +74,16 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
     default:
       return [];
   }
+}
+
+/**
+ * The bump tutorial's moment: no animal can leave, and pushing this one (the first push of the best winning line)
+ * untangles the knot. Empty while a free animal is left or the board is knotted for good.
+ */
+export function bumpTargets(level: Level, alive: ReadonlySet<number>): number[] {
+  if (alive.size === 0 || free(level, alive).length > 0) return [];
+  const id = pickPush(level, alive);
+  return id === null ? [] : [id];
 }
 
 /** Animals that can leave now and whose way out bends on an arrow tile (the arrow tutorial's moment). */
