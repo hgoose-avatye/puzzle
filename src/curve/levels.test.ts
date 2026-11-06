@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blockersOf, canExit, lockedBy, traceExit, validateLevel } from '../core/rules';
+import { blockersOf, canExit, headDirection, lockedBy, traceExit, validateLevel } from '../core/rules';
 import type { Level } from '../core/types';
 import { solve } from '../solver/solver';
 import { buildGameLevel, levelSpec } from './curve';
@@ -25,10 +25,19 @@ describe('shipped levels', () => {
     }
   });
 
-  it('every arrow tile lies on the way out of some animal', () => {
+  it('every arrow tile turns some animal on its way out (one that only runs over it straight does nothing)', () => {
     for (const { n, level } of levels) {
-      const onPaths = new Set(level.pieces.flatMap((p) => traceExit(level, p).cells.map((c) => `${c.x},${c.y}`)));
-      for (const a of level.arrows ?? []) expect(onPaths.has(`${a.x},${a.y}`), `level ${n} arrow (${a.x},${a.y})`).toBe(true);
+      const turns = new Set<string>();
+      for (const p of level.pieces) {
+        let dir = headDirection(p);
+        for (const c of traceExit(level, p).cells) {
+          const tile = level.arrows?.find((a) => a.x === c.x && a.y === c.y);
+          if (!tile) continue;
+          if (tile.dir !== dir) turns.add(`${c.x},${c.y}`);
+          dir = tile.dir;
+        }
+      }
+      for (const a of level.arrows ?? []) expect(turns.has(`${a.x},${a.y}`), `level ${n} arrow (${a.x},${a.y})`).toBe(true);
     }
   });
 

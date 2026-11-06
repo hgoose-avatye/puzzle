@@ -1,5 +1,5 @@
 import type { Rng } from '../core/rng';
-import { canExit, directionVector, onBoard, traceExit } from '../core/rules';
+import { canExit, directionVector, headDirection, onBoard, traceExit } from '../core/rules';
 import { shapeVoids, type BoardShape } from '../core/shapes';
 import type { ArrowTile, Cell, Crate, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
@@ -236,7 +236,30 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     for (const id of chosen) fuses.set(id, schedule.get(id)! + (params.bombSlack ?? 3));
     level.pieces = level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p));
   }
-  return level;
+  return withoutIdleArrows(level);
+}
+
+/**
+ * Drop arrow tiles that turn no one: every animal that crosses one is already going its way, so the tile changes no
+ * path and only gives the player something more to read. Taking such tiles away changes no animal's way out (and so
+ * no difficulty measure), and it draws no random numbers, so a seed still makes the same board.
+ */
+export function withoutIdleArrows(level: Level): Level {
+  if (!level.arrows?.length) return level;
+  const turning = new Set<string>();
+  for (const piece of level.pieces) {
+    let dir = headDirection(piece);
+    for (const c of traceExit(level, piece).cells) {
+      const tile = level.arrows.find((a) => a.x === c.x && a.y === c.y);
+      if (!tile) continue;
+      if (tile.dir !== dir) turning.add(key(tile));
+      dir = tile.dir;
+    }
+  }
+  const arrows = level.arrows.filter((a) => turning.has(key(a)));
+  if (arrows.length === level.arrows.length) return level;
+  const { arrows: _idle, ...rest } = level;
+  return arrows.length ? { ...rest, arrows } : rest;
 }
 
 export function generateLevel(params: GenParams, rng: Rng, maxAttempts = 200): Level | null {
