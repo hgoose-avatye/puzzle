@@ -264,7 +264,7 @@ export function generateLevelFor(
   if (!result) return null;
   if (!knotLevel(levelNumber)) return { spec, ...result, grade: gradeKnot(result.level) };
   // the metrics stay those of the board before the knot: the peeling solver they come from cannot read a knot
-  const knotted = knotFrom(result.level, rng, aimAt(levelNumber), KNOT_TRIES, spec.params.bombSlack ?? 3);
+  const knotted = knotFrom(result.level, rng, aimAt(levelNumber), KNOT_TRIES);
   return knotted ? { spec, level: knotted.level, metrics: result.metrics, grade: knotted.grade } : null;
 }
 

@@ -12,6 +12,12 @@ import type { Direction, Level, Piece } from './types';
 
 const key = (c: { x: number; y: number }): string => `${c.x},${c.y}`;
 
+/**
+ * Spare pushes on a bomb's fuse (docs/rules.md 5): the pushes its level's winning line needs, plus these. One would make
+ * any try fatal; three hardly presses. The same on every level, tight or not: a push is the decision the fuse counts.
+ */
+export const BOMB_PUSH_SLACK = 2;
+
 /** How many cells a blocked piece runs before it is stopped; 0 when it cannot move at all. */
 export function bumpAdvance(level: Level, piece: Piece, alive: ReadonlySet<number>): number {
   if (lockedBy(level, piece, alive) !== undefined || isAsleep(level, piece, alive)) return 0;

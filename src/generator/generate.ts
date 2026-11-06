@@ -1,4 +1,5 @@
 import type { Rng } from '../core/rng';
+import { BOMB_PUSH_SLACK } from '../core/bump';
 import { canExit, directionVector, headDirection, onBoard, traceExit } from '../core/rules';
 import { shapeVoids, type BoardShape } from '../core/shapes';
 import type { ArrowTile, Cell, Crate, Direction, Level, Piece } from '../core/types';
@@ -217,7 +218,8 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
   };
   const bombCount = params.bombCount ?? 0;
   if (bombCount > 0) {
-    const plain = level.pieces.filter((p) => p.lock === undefined && p.key === undefined && !p.sleeping).map((p) => p.id);
+    // a bomb only on a 2-3 cell animal: the dynamite sits on the body block, which a one-cell animal does not have
+    const plain = level.pieces.filter((p) => p.lock === undefined && p.key === undefined && !p.sleeping && p.cells.length > 1).map((p) => p.id);
     for (let i = plain.length - 1; i > 0; i--) {
       const j = rng.int(0, i);
       [plain[i], plain[j]] = [plain[j], plain[i]];
@@ -228,10 +230,10 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const pool = params.teach ? blocked : [...blocked, ...plain.filter((id) => !blocked.includes(id))];
     if (pool.length < bombCount) return null;
     const chosen = new Set(pool.slice(0, bombCount));
-    // the fuse counts pushes (docs/rules.md 5): slack alone on a board that peels; generator/knot.ts adds the pushes
-    // a knot needs. bombSlack was written for exits (3, or 2 on tight levels): a push is a bigger decision, so one less.
+    // the fuse counts pushes (docs/rules.md 5): the spare pushes alone on a board that peels; generator/knot.ts adds
+    // the pushes a knot needs. (bombSlack, written for exits, only reads for the old rule's planner.)
     const fuses = new Map<number, number>();
-    for (const id of chosen) fuses.set(id, Math.max(1, (params.bombSlack ?? 3) - 1));
+    for (const id of chosen) fuses.set(id, BOMB_PUSH_SLACK);
     level.pieces = level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p));
   }
   return withoutIdleArrows(level);

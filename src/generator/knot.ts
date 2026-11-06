@@ -1,4 +1,4 @@
-import { gradeKnot, type KnotGrade } from '../core/bump';
+import { BOMB_PUSH_SLACK, gradeKnot, type KnotGrade } from '../core/bump';
 import type { Rng } from '../core/rng';
 import { traceExit, validateLevel } from '../core/rules';
 import type { Direction, Level, Piece } from '../core/types';
@@ -23,19 +23,17 @@ const MAX_FLIPS = 3;
 
 /**
  * Bomb fuses after a knot: a bomb counts pushes (core/game.ts), so its fuse is the pushes made before it leaves on the
- * grade's winning line, plus slack. The generator's slack (bombSlack, written for exits: 3, or 2 on tight levels)
- * becomes one push less: a push is a bigger decision than an exit. Null when a bomb never leaves on that line.
+ * grade's winning line, plus BOMB_PUSH_SLACK. Null when a bomb never leaves on that line.
  */
-function refuse(level: Level, grade: KnotGrade, slack: number): Level | null {
+function refuse(level: Level, grade: KnotGrade): Level | null {
   const bombs = level.pieces.filter((p) => p.fuse !== undefined);
   if (!bombs.length) return level;
   if (!grade.line) return null;
   const fuses = new Map<number, number>();
-  const pushSlack = Math.max(1, slack - 1);
   let pushes = 0;
   for (const m of grade.line) {
     if (m.kind === 'push') { pushes++; continue; }
-    if (bombs.some((b) => b.id === m.id)) fuses.set(m.id, pushes + pushSlack);
+    if (bombs.some((b) => b.id === m.id)) fuses.set(m.id, pushes + BOMB_PUSH_SLACK);
   }
   if (fuses.size < bombs.length) return null;
   return { ...level, pieces: level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p)) };
@@ -45,7 +43,7 @@ function refuse(level: Level, grade: KnotGrade, slack: number): Level | null {
  * Up to `tries` variants of `level` with one to three animals turned around; among those that are valid, knotted
  * (MIN_KNOT) and solvable, the one whose guessWin is nearest `aim`. Null when no variant qualifies.
  */
-export function knotFrom(level: Level, rng: Rng, aim: number, tries: number, bombSlack = 3): { level: Level; grade: KnotGrade } | null {
+export function knotFrom(level: Level, rng: Rng, aim: number, tries: number): { level: Level; grade: KnotGrade } | null {
   let best: { level: Level; grade: KnotGrade } | null = null;
   for (let t = 0; t < tries; t++) {
     const flips = 1 + rng.int(0, MAX_FLIPS - 1);
@@ -58,7 +56,7 @@ export function knotFrom(level: Level, rng: Rng, aim: number, tries: number, bom
     if ((variant.crates ?? []).some((k) => !onPaths.has(`${k.x},${k.y}`))) continue;
     const grade = gradeKnot(variant);
     if (grade.knot < MIN_KNOT || grade.solvable !== true) continue;
-    const fused = refuse(variant, grade, bombSlack);
+    const fused = refuse(variant, grade);
     if (!fused) continue;
     if (!best || Math.abs(grade.guessWin - aim) < Math.abs(best.grade.guessWin - aim)) best = { level: fused, grade };
   }
