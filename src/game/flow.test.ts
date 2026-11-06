@@ -65,8 +65,8 @@ function playRandom(level: Level, hearts: number | undefined, rng: Rng, gaps: Ga
       expect(after).toBe(before);
     } else if (ev.type === 'blocked') {
       if (before.hearts !== undefined) expect(after.hearts).toBe(before.hearts - 1);
-      // a push burns every bomb on the board once; a blocked tap that goes nowhere burns nothing
-      for (const id of Object.keys(before.fuses).filter((i) => before.alive.has(Number(i)))) expect(after.fuses[Number(id)]).toBe(before.fuses[Number(id)] - (ev.moved ? 1 : 0));
+      // a push burns the dynamite it collides with (at most once each); a blocked tap that goes nowhere burns nothing
+      for (const id of Object.keys(before.fuses).filter((i) => before.alive.has(Number(i)))) expect(ev.moved ? [0, 1] : [0]).toContain(before.fuses[Number(id)] - after.fuses[Number(id)]);
       expect(after.alive).toEqual(before.alive);
     } else {
       expect(after.hearts).toBe(before.hearts);
@@ -132,8 +132,8 @@ describe('play flow: scenarios', () => {
       { id: 4, cells: [{ x: 5, y: 0 }], dir: 'down' },
     ],
   });
-  /** The cross with the pushes a fuse counts: 6 runs one cell up to 3, then 7 one cell up to 6. Neither blocks anyone. */
-  const crossBomb = (fuse: number): Level => ({ ...cross(fuse), pieces: [...cross(fuse).pieces, { id: 6, cells: [{ x: 7, y: 7 }], dir: 'up' }, { id: 7, cells: [{ x: 7, y: 8 }], dir: 'up' }] });
+  /** The cross with two animals that run along row 1 and stop against the dynamite (2 at (5,1)): 6 from the left, 7 from the right. Neither is in its way down. */
+  const crossBomb = (fuse: number): Level => ({ ...cross(fuse), pieces: [...cross(fuse).pieces, { id: 6, cells: [{ x: 0, y: 1 }], dir: 'right' }, { id: 7, cells: [{ x: 8, y: 1 }], dir: 'left' }] });
   const noGaps = (): Gaps => ({ runners: Infinity, standing: Infinity });
   /** A push: its tap, then the frames until the board is still again (a push waits for a still board). */
   const push = (flow: PlayFlow, id: number, now: number): void => { run(flow, 3, noGaps(), new Set()); expect(flow.tap(id, now)).toMatchObject({ type: 'blocked' }); };
@@ -158,9 +158,9 @@ describe('play flow: scenarios', () => {
     expect(flow.traffic.runners).toHaveLength(0);
   });
 
-  it('exits burn no fuse, a push burns it once, and nothing burns while runners wait', () => {
+  it('exits burn no fuse, a collision with the dynamite burns it once, and nothing burns while runners wait', () => {
     const flow = new PlayFlow(crossBomb(9));
-    push(flow, 6, 0); // 6 runs up to 3 (still there): the one push
+    push(flow, 6, 0); // 6 runs along row 1 and stops against the dynamite
     expect(flow.state.fuses[2]).toBe(8);
     flow.tap(1, 5000);
     flow.tap(3, 5010);
@@ -179,7 +179,7 @@ describe('play flow: scenarios', () => {
     expect(flow.state.fuses[2]).toBe(1);
     flow.tap(1, 5000);
     flow.tap(2, 5010);
-    push(flow, 7, 10000); // the last push comes once the bomb has left by the rules: nothing to burn
+    push(flow, 7, 10000); // 7 stops where the dynamite stood: it has left by the rules, nothing to burn
     expect(flow.state.exploded).toBe(false);
     run(flow, 5, noGaps(), new Set());
     expect(flow.state.exploded).toBe(false);

@@ -213,7 +213,7 @@ export async function runP0Checks(browser, base, report) {
     const at1 = await bombUi(p);
     if (process.env.E2E_SHOTS) await p.screenshot({ path: `${process.env.E2E_SHOTS}/bomb-bar-at-1.png` });
     check('bomb chip shows 2 at the start, no warning yet', before.chip?.text === '💣 2' && before.chip.cls === 'warn' && before.warn === null, JSON.stringify(before));
-    check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 한 번 더 밀면 펑!', JSON.stringify(at1));
+    check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 한 번 더 부딪히면 펑!', JSON.stringify(at1));
   });
 
   // two bombs (level 139): the chip follows the closest one as fuses burn, and goes once no bomb is left

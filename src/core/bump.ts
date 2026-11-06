@@ -13,10 +13,11 @@ import type { Direction, Level, Piece } from './types';
 const key = (c: { x: number; y: number }): string => `${c.x},${c.y}`;
 
 /**
- * Spare pushes on a bomb's fuse (docs/rules.md 5): the pushes its level's winning line needs, plus these. One would make
- * any try fatal; three hardly presses. The same on every level, tight or not: a push is the decision the fuse counts.
+ * Spare collisions on a dynamite's number (docs/rules.md 5): the collisions its level's winning line makes with it,
+ * plus one. So a dynamite the line never touches shows 1 ("don't touch"); one the line bumps twice shows 3. With two
+ * spare the dynamite hardly changed a level (2026-11-06: guessWin 0.62 -> 0.57); with one it does (0.37).
  */
-export const BOMB_PUSH_SLACK = 2;
+export const BOMB_PUSH_SLACK = 1;
 
 /** How many cells a blocked piece runs before it is stopped; 0 when it cannot move at all. */
 export function bumpAdvance(level: Level, piece: Piece, alive: ReadonlySet<number>): number {
@@ -52,10 +53,32 @@ export function withPiece(level: Level, piece: Piece): Level {
   return { ...level, pieces: level.pieces.map((p) => (p.id === piece.id ? piece : p)) };
 }
 
-/** A blocked tap: the piece runs as far as it can. Null when it does not move (locked, asleep, or stopped at once). */
-export function bumpResult(level: Level, piece: Piece, alive: ReadonlySet<number>): { level: Level; moved: number } | null {
+/**
+ * A blocked tap: the piece runs as far as it can. `stopper` is the animal it stops against (undefined for a crate, a
+ * wall or an arrow it cannot take). Null when it does not move (locked, asleep, or stopped at once).
+ */
+export function bumpResult(level: Level, piece: Piece, alive: ReadonlySet<number>): { level: Level; moved: number; stopper?: number } | null {
   const moved = bumpAdvance(level, piece, alive);
-  return moved > 0 ? { level: withPiece(level, advancePiece(level, piece, moved)), moved } : null;
+  if (moved === 0) return null;
+  const after = withPiece(level, advancePiece(level, piece, moved));
+  const next = traceExit(after, after.pieces.find((p) => p.id === piece.id)!).cells[0];
+  const stopper = next ? level.pieces.find((p) => p.id !== piece.id && alive.has(p.id) && p.cells.some((c) => c.x === next.x && c.y === next.y))?.id : undefined;
+  return { level: after, moved, ...(stopper !== undefined ? { stopper } : {}) };
+}
+
+/**
+ * The dynamite (docs/rules.md 5): a push burns a bomb's fuse when that bomb is in the collision, as the animal pushed
+ * or as the one it stops against. Returns the fuses after the push and whether one went off.
+ */
+export function burnOnCollision(fuses: Readonly<Record<number, number>>, alive: ReadonlySet<number>, pushed: number, stopper: number | undefined): { fuses: Record<number, number>; exploded: boolean } {
+  const next: Record<number, number> = { ...fuses };
+  let exploded = false;
+  for (const id of [pushed, stopper]) {
+    if (id === undefined || next[id] === undefined || !alive.has(id)) continue;
+    next[id] -= 1;
+    if (next[id] <= 0) exploded = true;
+  }
+  return { fuses: next, exploded };
 }
 
 /**
@@ -79,9 +102,13 @@ export const peel = (level: Level, alive: ReadonlySet<number>): Set<number> => p
  * Where the animals still on the board stand, plus how cracked each crate is: two states that agree on both play out
  * the same from here, whichever animals left to get there (a crate's cracks come from which neighbours have left).
  */
-const stateKey = (level: Level, alive: ReadonlySet<number>): string =>
+const stateKey = (level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>> = {}): string =>
   level.pieces.filter((p) => alive.has(p.id)).map((p) => `${p.id}:${p.cells.map(key).join(';')}`).join('|')
-  + '#' + (level.crates ?? []).map((k) => crateCracks(level, k, alive)).join(',');
+  + '#' + (level.crates ?? []).map((k) => crateCracks(level, k, alive)).join(',')
+  + '#' + Object.entries(fuses).filter(([id]) => alive.has(Number(id))).map(([id, f]) => `${id}=${f}`).join(',');
+
+/** The fuses a level starts with (its bombs' numbers). */
+export const startFuses = (level: Level): Record<number, number> => Object.fromEntries(level.pieces.filter((p) => p.fuse !== undefined).map((p) => [p.id, p.fuse!]));
 
 export type BumpMove = { kind: 'exit' | 'push'; id: number };
 
@@ -141,32 +168,35 @@ export function lineFor(level: Level, alive: ReadonlySet<number>, pushes: readon
  * animals; each push is tried, states are memoised, and guessWin averages over every possible push (a push into a
  * dead end counts 0). Peel-first is the natural way to play and the line it finds is what the hint follows.
  */
-export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(level.pieces.map((p) => p.id)), budget = GRADE_BUDGET): KnotGrade {
+export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(level.pieces.map((p) => p.id)), budget = GRADE_BUDGET, fuses: Readonly<Record<number, number>> = startFuses(level)): KnotGrade {
   const memo = new Map<string, Node>();
   let nodes = 0;
   let over = false;
   let first: { good: number; options: number } | null = null;
-  const go = (lv: Level, al: ReadonlySet<number>, depth: number): Node => {
+  const go = (lv: Level, al: ReadonlySet<number>, fz: Readonly<Record<number, number>>, depth: number): Node => {
     const rest = peel(lv, al);
     if (rest.size === 0) return { guessWin: 1, answers: 1, keyMoves: 0, pushes: [] };
-    const k = stateKey(lv, rest);
+    const k = stateKey(lv, rest, fz);
     const seen = memo.get(k);
     if (seen) return seen;
     if (++nodes > budget) { over = true; return { guessWin: 0, answers: 0, keyMoves: 0, pushes: null }; }
     // the memo entry goes in first so a loop back to this state reads as a dead end, not as endless recursion
     memo.set(k, { guessWin: 0, answers: 0, keyMoves: 0, pushes: null });
-    const options: Array<{ id: number; level: Level }> = [];
+    // every push a player could make; one that sets a bomb off is a dead end (it still counts as a choice)
+    const options: Array<{ id: number; level: Level; fuses: Readonly<Record<number, number>>; dead: boolean }> = [];
     for (const p of lv.pieces) {
       if (!rest.has(p.id)) continue;
       const b = bumpResult(lv, p, rest);
-      if (b) options.push({ id: p.id, level: b.level });
+      if (!b) continue;
+      const burnt = burnOnCollision(fz, rest, p.id, b.stopper);
+      options.push({ id: p.id, level: b.level, fuses: burnt.fuses, dead: burnt.exploded });
     }
     let sum = 0;
     let answers = 0;
     let good = 0;
     let best: { node: Node; id: number } | null = null;
     for (const o of options) {
-      const child = go(o.level, rest, depth + 1);
+      const child = o.dead ? { guessWin: 0, answers: 0, keyMoves: 0, pushes: null } : go(o.level, rest, o.fuses, depth + 1);
       if (over) break;
       if (child.guessWin > 0) {
         good++;
@@ -186,7 +216,7 @@ export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(lev
     memo.set(k, node);
     return node;
   };
-  const root = go(level, alive, 0);
+  const root = go(level, alive, fuses, 0);
   const f = first ?? { good: 0, options: 0 };
   return {
     knot: peel(level, alive).size,
@@ -208,14 +238,14 @@ const STUCK_BUDGET = 30_000;
  * Can the board still be cleared from here? Unlike gradeKnot this also tries pushes before free animals are out (an
  * animal still on the board can be the stopper a push needs), so a "no" is final. Null when the search ran out.
  */
-export function solvableBump(level: Level, alive: ReadonlySet<number>, budget = STUCK_BUDGET): boolean | null {
+export function solvableBump(level: Level, alive: ReadonlySet<number>, budget = STUCK_BUDGET, fuses: Readonly<Record<number, number>> = startFuses(level)): boolean | null {
   // the natural line first: it is cheap and nearly always decides
-  if (gradeKnot(level, alive, budget).solvable === true) return true;
+  if (gradeKnot(level, alive, budget, fuses).solvable === true) return true;
   const memo = new Set<string>();
   let nodes = 0;
-  const go = (lv: Level, al: ReadonlySet<number>): boolean | null => {
+  const go = (lv: Level, al: ReadonlySet<number>, fz: Readonly<Record<number, number>>): boolean | null => {
     if (al.size === 0) return true;
-    const k = stateKey(lv, al);
+    const k = stateKey(lv, al, fz);
     if (memo.has(k)) return false;
     memo.add(k);
     if (++nodes > budget) return null;
@@ -224,7 +254,7 @@ export function solvableBump(level: Level, alive: ReadonlySet<number>, budget = 
       if (!canExit(lv, id, al)) continue;
       const next = new Set(al);
       next.delete(id);
-      const r = go(lv, next);
+      const r = go(lv, next, fz);
       if (r) return true;
       if (r === null) unknown = true;
     }
@@ -232,20 +262,22 @@ export function solvableBump(level: Level, alive: ReadonlySet<number>, budget = 
       if (!al.has(p.id) || canExit(lv, p.id, al)) continue;
       const b = bumpResult(lv, p, al);
       if (!b) continue;
-      const r = go(b.level, al);
+      const burnt = burnOnCollision(fz, al, p.id, b.stopper);
+      if (burnt.exploded) continue;
+      const r = go(b.level, al, burnt.fuses);
       if (r) return true;
       if (r === null) unknown = true;
     }
     return unknown ? null : false;
   };
-  return go(level, alive);
+  return go(level, alive, fuses);
 }
 
 /**
  * The push to suggest when no animal can go: the first push of the best winning line, or null when the board is
  * knotted for good (or too big to search).
  */
-export function pickPush(level: Level, alive: ReadonlySet<number>): number | null {
-  const push = gradeKnot(level, alive).line?.find((m) => m.kind === 'push');
+export function pickPush(level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>> = startFuses(level)): number | null {
+  const push = gradeKnot(level, alive, GRADE_BUDGET, fuses).line?.find((m) => m.kind === 'push');
   return push ? push.id : null;
 }

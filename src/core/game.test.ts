@@ -102,15 +102,18 @@ describe('locks, sleepers and bombs', () => {
       { id: 2, cells: [{ x: 4, y: 2 }, { x: 3, y: 2 }], fuse: 2 },
     ],
   };
-  it('exits never burn a fuse; a blocked tap that goes nowhere burns nothing either', () => {
+  it('a push that stops against the dynamite burns it; exits and a tap that goes nowhere burn nothing', () => {
     let s = createGame(bombLevel);
-    s = tap(s, 2).state; // 2 leaves: nothing burns
+    s = tap(s, 1).state; // 1 runs one cell and stops against the dynamite
+    expect(s.fuses[2]).toBe(1);
+    s = tap(s, 2).state; // the dynamite leaves: its number goes with it
     expect(s.fuses).toEqual({});
-    const t = tap(createGame(fuseLevel(2)), 6).state; // 6 stands right behind the bomb: no room, no burn
+    const t = tap(createGame(fuseLevel(2)), 6).state; // 6 stands right behind the dynamite: no room, nothing burns
     expect(t.fuses[2]).toBe(2);
   });
 
-  // 7x5: bomb 2 (up) behind 1 with one cell of room; 3 free; 4 (left) has five cells before 3; 6 right behind the bomb
+  // 7x5: dynamite 2 (up) behind 1 with one cell of room; 3 free; 4 (left) runs five cells to 3; 6 right behind the
+  // dynamite with no room; 7 (up) runs one cell and stops against the dynamite
   const fuseLevel = (fuse: number): Level => ({
     width: 7, height: 5,
     pieces: [
@@ -119,62 +122,62 @@ describe('locks, sleepers and bombs', () => {
       { id: 3, cells: [{ x: 0, y: 4 }], dir: 'left' },
       { id: 4, cells: [{ x: 6, y: 4 }], dir: 'left' },
       { id: 6, cells: [{ x: 3, y: 2 }], dir: 'left' },
+      { id: 7, cells: [{ x: 2, y: 4 }], dir: 'up' },
     ],
   });
 
-  it('each push burns the fuse exactly once; exits and ignored taps do not', () => {
+  it('only a collision with the dynamite burns its number: a push elsewhere, exits and ignored taps do not', () => {
     let s = createGame(fuseLevel(3));
-    s = tap(s, 4).state; // 4 runs up to 3
+    s = tap(s, 4).state; // 4 runs up to 3: a push that never touches the dynamite
+    expect(s.fuses[2]).toBe(3);
+    const hit = tap(s, 7); // 7 runs one cell and stops against the dynamite
+    expect(hit.event).toMatchObject({ type: 'blocked', moved: 1 });
+    s = hit.state;
     expect(s.fuses[2]).toBe(2);
-    expect(tap(s, 4).event.type).toBe('blocked'); // no room left: no burn
-    expect(tap(s, 4).state.fuses[2]).toBe(2);
+    expect(tap(s, 7).state.fuses[2]).toBe(2); // no room left: no collision, no burn
     s = tap(s, 3).state; // an exit
     expect(s.fuses[2]).toBe(2);
     expect(tap(s, 3).event.type).toBe('ignored');
-    expect(s.taps).toBe(2);
   });
 
-  it('pushing the bomb itself burns its fuse too', () => {
+  it('pushing the dynamite itself into something burns its number too', () => {
     const r = tap(createGame(fuseLevel(2)), 2);
     expect(r.event).toMatchObject({ type: 'blocked', moved: 1 });
     expect(r.state.fuses[2]).toBe(1);
     expect(isFailed(r.state)).toBe(false);
   });
 
-  it('at fuse 1, a push sets the bomb off; the bomb leaving first is safe', () => {
-    const one = tap(createGame(fuseLevel(2)), 4).state;
+  it('at number 1, the next collision sets it off; the dynamite leaving first is safe', () => {
+    const one = tap(createGame(fuseLevel(2)), 7).state;
     expect(one.fuses[2]).toBe(1);
-    const boom = tap(one, 2).state; // the bomb pushed into 1: its last push
+    const boom = tap(one, 2).state; // the dynamite pushed into 1: its last collision
     expect(boom.exploded).toBe(true);
     expect(isFailed(boom)).toBe(true);
     expect(tap(boom, 3).event.type).toBe('ignored');
-    let safe = tap(one, 1).state; // 1 leaves, the bomb's way is clear
+    let safe = tap(one, 1).state; // 1 leaves, the dynamite's way is clear
     safe = tap(safe, 2).state;
     expect(safe.exploded).toBe(false);
     expect(safe.fuses).toEqual({});
-    safe = tap(tap(tap(safe, 3).state, 6).state, 4).state; // 6 runs left and out once the bomb is gone? no: it is pushed, then leaves
-    expect(isFailed(safe)).toBe(false);
   });
 
-  it('a bomb that runs out of fuse with exits alone never explodes', () => {
+  it('a dynamite nobody touches never goes off, whatever else is pushed or leaves', () => {
     let s = createGame(fuseLevel(1));
+    s = tap(s, 4).state;
     s = tap(s, 3).state;
     s = tap(s, 1).state;
     expect(s.exploded).toBe(false);
     expect(s.fuses[2]).toBe(1);
   });
 
-  it('one push burns every bomb once', () => {
-    const level: Level = { ...fuseLevel(3), pieces: fuseLevel(3).pieces.map((p) => (p.id === 3 ? { ...p, fuse: 5 } : p)) };
-    const s = tap(createGame(level), 4).state;
-    expect(s.fuses).toEqual({ 2: 2, 3: 4 });
-    const t = tap(s, 3).state; // 3 leaves: its fuse goes with it, 2's stays
-    expect(t.fuses).toEqual({ 2: 2 });
+  it('one collision burns both dynamites in it', () => {
+    const level: Level = { ...fuseLevel(3), pieces: fuseLevel(3).pieces.map((p) => (p.id === 7 ? { ...p, fuse: 5 } : p)) };
+    const s = tap(createGame(level), 7).state; // dynamite 7 pushed into dynamite 2
+    expect(s.fuses).toEqual({ 2: 2, 7: 4 });
   });
 
-  it('getting the bomb out in time defuses it', () => {
+  it('getting the dynamite out in time defuses it', () => {
     let s = createGame(bombLevel);
-    s = tap(s, 1).state; // 1 pushed up to the bomb: 2 -> 1
+    s = tap(s, 1).state; // 1 pushed up against the dynamite: 2 -> 1
     expect(s.fuses[2]).toBe(1);
     s = tap(s, 2).state;
     s = tap(s, 1).state;

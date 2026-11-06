@@ -332,12 +332,13 @@ export async function runFlowChecks(browser, base, report) {
   });
 
   await scenario('tutorial: 건너뛰기 counts as learnt and taps nothing', null, async (p) => {
-    await withSeen(p, ALL_TIPS.filter((id) => id !== 'key'), '?level=61');
+    // no level has locks since 2026-11-06: the sleep tutorial on level 91 stands in
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'sleep'), '?level=91');
     const t = await tut(p);
     await p.click('#tutorial .tutSkip');
     await sleep(200);
     const s = await p.evaluate(() => window.__game.state());
-    check('tutorial: level 61 opens with the key on the free key carrier, and 건너뛰기 learns it without a tap', t?.id === 'key' && (await restored(p)) && (await seenNow(p)).includes('key') && s.taps === 0, `${JSON.stringify(t)}, taps ${s.taps}`);
+    check('tutorial: level 91 opens with the sleep tutorial on a free neighbour, and 건너뛰기 learns it without a tap', t?.id === 'sleep' && (await restored(p)) && (await seenNow(p)).includes('sleep') && s.taps === 0, `${JSON.stringify(t)}, taps ${s.taps}`);
   });
 
   await scenario('tutorial: a blocked tap and crates teach themselves in play (no tutorial on 7 and 11)', null, async (p) => {
@@ -352,23 +353,23 @@ export async function runFlowChecks(browser, base, report) {
     check('tutorial: no tutorial on levels 7 and 11; the blocked tap on 7 is blocked, takes no heart', seven === null && eleven === null && moved.r === 'blocked' && moved.hearts == null, `7 ${JSON.stringify(seven)}, 11 ${JSON.stringify(eleven)}, blocked tap ${JSON.stringify(moved)}`);
   });
 
-  await scenario('tutorial: after the key tap the unlocked animal is lit for a moment, then play goes on', null, async (p) => {
-    await withSeen(p, ALL_TIPS.filter((id) => id !== 'key'), '?level=61');
+  await scenario('tutorial: after the sleep tap the woken animal is lit for a moment, then play goes on', null, async (p) => {
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'sleep'), '?level=91');
     const t = await tut(p);
     await p.touchscreen.tap(t.spot.x, t.spot.y);
     await sleep(250);
     const during = await p.evaluate(() => ({ t: window.__game.tutorial(), focus: window.__game.focus() }));
     await sleep(1100);
-    check('tutorial: the key tap lights up the unlocked animal briefly, then everything is back and the key is learnt', during.t?.phase === 'result' && during.focus > 0 && (await restored(p)) && (await seenNow(p)).includes('key'), JSON.stringify(during));
+    check('tutorial: the sleep tap lights up the woken animal briefly, then everything is back and the rule is learnt', during.t?.phase === 'result' && during.focus > 0 && (await restored(p)) && (await seenNow(p)).includes('sleep'), JSON.stringify(during));
   });
 
   await scenario('tutorial: the result popup comes before a tutorial', null, async (p) => {
     // level 40 (the first dynamite) opens on the bomb tutorial; pushes made around it (the test hook, not a finger) set it off
     await withSeen(p, ALL_TIPS.filter((id) => id !== 'bomb'), '?level=40');
     const t = await tut(p);
-    // pushes burn the fuse: push blocked animals (not the one the chick points at) until it goes off
+    // the dynamite counts its own collisions: push an animal that collides with it (the dev hook lists them) until it goes off
     for (let k = 0; k < 24 && await p.evaluate(() => document.getElementById('popup').hidden); k++) {
-      await p.evaluate((target, k) => { const g = window.__game; const free = g.free(); const ids = g.ids().filter((i) => i !== target && !free.includes(i)); if (ids.length) g.tap(ids[k % ids.length]); }, t.target, k);
+      await p.evaluate((target, k) => { const g = window.__game; const free = g.free(); const ids = g.bombTouches().filter((i) => i !== target); const rest = g.ids().filter((i) => i !== target && !free.includes(i)); const pool = ids.length ? ids : rest; if (pool.length) g.tap(pool[k % pool.length]); }, t.target, k);
       await settle(p);
     }
     await sleep(600);

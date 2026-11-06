@@ -86,11 +86,11 @@ describe('fixtures and hearts on the curve', () => {
 });
 
 describe('chapters after the first introduce one mechanic each', () => {
-  it('uses keys in chapter 3, sleepers in chapter 4 and bombs in chapter 5', () => {
-    expect(levelSpec(61).params.lockCount).toBeGreaterThanOrEqual(1);
+  it('uses no locks anywhere (2026-11-06), dynamite on chapter 2 peaks, sleepers from chapter 4 and bombs from chapter 5', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).params.lockCount ?? 0, `level ${n}`).toBe(0);
+    expect(levelSpec(40).params.bombCount).toBe(1);
     expect(levelSpec(91).params.sleepCount).toBeGreaterThanOrEqual(1);
     expect(levelSpec(121).params.bombCount).toBeGreaterThanOrEqual(1);
-    expect(levelSpec(35).params.lockCount ?? 0).toBe(0);
   });
   it('keeps rest levels free of mechanics and limits active elements to three', () => {
     for (const n of [65, 95, 125, 155]) {

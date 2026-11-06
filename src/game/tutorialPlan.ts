@@ -92,9 +92,9 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
  * The bump tutorial's moment: no animal can leave, and pushing this one (the first push of the best winning line)
  * untangles the knot. Empty while a free animal is left or the board is knotted for good.
  */
-export function bumpTargets(level: Level, alive: ReadonlySet<number>): number[] {
+export function bumpTargets(level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>> = {}): number[] {
   if (alive.size === 0 || free(level, alive).length > 0) return [];
-  const id = pickPush(level, alive);
+  const id = pickPush(level, alive, fuses);
   return id === null ? [] : [id];
 }
 

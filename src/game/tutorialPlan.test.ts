@@ -41,14 +41,6 @@ describe('tutorialPlan', () => {
     }
   });
 
-  it('points the key tutorial at the free key carrier of level 61', () => {
-    const l = levelOf(61);
-    expect(startTutorial(l, allBut('key'), 61)).toBe('key');
-    const [target] = startTargets(l, everyone(l), 'key');
-    expect(l.pieces.find((p) => p.id === target)?.key).toBeDefined();
-    expect(canExit(l, target, everyone(l))).toBe(true);
-  });
-
   it('points the sleep tutorial at a free neighbour of the sleeper on level 91', () => {
     const l = levelOf(91);
     expect(startTutorial(l, allBut('sleep'), 91)).toBe('sleep');
@@ -89,9 +81,9 @@ describe('tutorialPlan', () => {
     expect(bumpTargets(s.level, s.alive)).toEqual([gradeKnot(l).line!.find((m) => m.kind === 'push')!.id]);
   });
 
-  it('lights up after the tap the animal it changed: the lock opened, the sleeper woken, the bomb cleared', () => {
-    const cases: Array<[number, 'key' | 'sleep' | 'bomb', (p: { lock?: number; sleeping?: boolean; fuse?: number }) => boolean]> = [
-      [61, 'key', (p) => p.lock !== undefined], [91, 'sleep', (p) => !!p.sleeping], [121, 'bomb', (p) => p.fuse !== undefined],
+  it('lights up after the tap the animal it changed: the sleeper woken, the bomb cleared (no level has locks)', () => {
+    const cases: Array<[number, 'sleep' | 'bomb', (p: { sleeping?: boolean; fuse?: number }) => boolean]> = [
+      [91, 'sleep', (p) => !!p.sleeping], [121, 'bomb', (p) => p.fuse !== undefined],
     ];
     for (const [n, id, is] of cases) {
       const l = levelOf(n);

@@ -60,12 +60,8 @@ describe('shipped levels', () => {
     }
   });
 
-  it('where a lock or a sleeper is first taught, it is the only thing holding that animal', () => {
-    for (const n of [61, 62, 63]) {
-      const l = levels[n - 1].level;
-      const locked = l.pieces.filter((p) => p.lock !== undefined && lockedBy(l, p, all(l)) !== undefined);
-      expect(locked.some((p) => holdsAlone(l, p.id)), `level ${n}`).toBe(true);
-    }
+  it('where a sleeper is first taught, it is the only thing holding that animal (no level has locks since 2026-11-06)', () => {
+    for (const { n, level } of levels) expect(level.pieces.some((p) => p.lock !== undefined || p.key !== undefined), `level ${n}`).toBe(false);
     for (const n of [91, 92, 93]) {
       const l = levels[n - 1].level;
       expect(l.pieces.some((p) => p.sleeping && holdsAlone(l, p.id)), `level ${n}`).toBe(true);
@@ -81,7 +77,8 @@ describe('shipped levels', () => {
         if (p.fuse !== undefined) { bombs++; if (!canExit(l, p.id, all(l))) bombBlocked++; }
       }
     }
-    expect(lockAlone / locks).toBeGreaterThanOrEqual(0.7);
+    expect(locks).toBe(0);
+    expect(lockAlone).toBe(0);
     expect(sleepAlone / sleepers).toBeGreaterThanOrEqual(0.7);
     expect(bombBlocked / bombs).toBeGreaterThanOrEqual(0.8);
   });

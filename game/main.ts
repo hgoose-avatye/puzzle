@@ -2,7 +2,7 @@ import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
-import { bumpAdvance, pickPush, solvableBump } from '../src/core/bump';
+import { bumpAdvance, bumpResult, burnOnCollision, pickPush, solvableBump } from '../src/core/bump';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
@@ -107,15 +107,15 @@ function paintBombBar(): void {
   const n = Math.min(...left);
   chip.hidden = false;
   chip.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
-  chip.setAttribute('aria-label', `폭탄: ${n}번 더 밀면 터져요`);
+  chip.setAttribute('aria-label', `폭탄: ${n}번 더 부딪히면 터져요`);
   warn.hidden = n > 1;
   // 2.5D: the same clay bomb as over the animals (status UI 2026-11-05); Classic 3D keeps its emoji
   if ([...views.values()].some((v) => v.cards)) {
     chip.innerHTML = `${BOMB_ICON}${n}`;
-    warn.innerHTML = `${BOMB_ICON}한 번 더 밀면 펑!`;
+    warn.innerHTML = `${BOMB_ICON}한 번 더 부딪히면 펑!`;
   } else {
     chip.textContent = `💣 ${n}`;
-    warn.textContent = '💣 한 번 더 밀면 펑!';
+    warn.textContent = '💣 한 번 더 부딪히면 펑!';
   }
 }
 
@@ -314,7 +314,7 @@ function undoTap(): void {
 function checkStuck(): void {
   const s = current();
   if (!BUMP || !s || isCleared(s)) return;
-  if (solvableBump(s.level, s.alive) === false) {
+  if (solvableBump(s.level, s.alive, undefined, s.fuses) === false) {
     $('msg').textContent = '길이 꼬였어요. 되돌리기를 눌러요';
     $('undo').classList.add('nudge');
   } else $('undo').classList.remove('nudge');
@@ -504,7 +504,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   arrow: '화살표에서\n꺾이는 걸 봐!',
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
-  bomb: '폭탄이 터지기 전에\n길을 비워줘!',
+  bomb: '폭탄 친구가 부딪히기 전에\n길을 비워줘!',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
 };
 /**
@@ -689,7 +689,7 @@ function situationalTutorial(): void {
   const s = flow.state;
   if (!readSeen().includes('arrow') && showTapTutorial('arrow', arrowTargets(s.level, s.alive))) return;
   // the first knot: nothing can leave, so the chick shows the push that untangles it
-  if (BUMP && !readSeen().includes('bump')) showTapTutorial('bump', bumpTargets(s.level, s.alive));
+  if (BUMP && !readSeen().includes('bump')) showTapTutorial('bump', bumpTargets(s.level, s.alive, s.fuses));
 }
 
 /** After the arrow tutorial's tap: bounce the tile once the animal's head reaches it. */
@@ -857,7 +857,7 @@ function showHint(): void {
   const state = current();
   if (!state || isCleared(state) || isFailed(state)) return;
   // nothing can leave: the push that untangles the knot, if there is one
-  const id = pickHint(state.level, state.alive, state.fuses) ?? (BUMP ? pickPush(state.level, state.alive) : null);
+  const id = pickHint(state.level, state.alive, state.fuses) ?? (BUMP ? pickPush(state.level, state.alive, state.fuses) : null);
   const view = id === null ? undefined : views.get(id);
   if (!view) { $('msg').textContent = BUMP ? '길이 꼬였어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
   sound.play('select');
@@ -1041,7 +1041,9 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   /** The animal the hint button would light up (bombs first). */
   // the hint button's pick: a free animal, or (nothing free) the push that untangles the knot
-  hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) ?? (BUMP ? pickPush(s.level, s.alive) : null) : null; },
+  hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) ?? (BUMP ? pickPush(s.level, s.alive, s.fuses) : null) : null; },
+  // animals whose push right now collides with a dynamite (the browser checks set one off with these)
+  bombTouches: () => { const s = current(); if (!s) return []; return s.level.pieces.filter((p) => s.alive.has(p.id) && !canExit(s.level, p.id, s.alive)).filter((p) => { const b = bumpResult(s.level, p, s.alive); return !!b && burnOnCollision(s.fuses, s.alive, p.id, b.stopper).exploded; }).map((p) => p.id); },
   free: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive)).map((p) => p.id) : []; },
   views: () => views,
   runSpeed: () => runSpeed(),

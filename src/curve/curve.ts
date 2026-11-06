@@ -217,8 +217,13 @@ export function aimAt(n: number): number {
   return Math.min(AIM_MAX, Math.max(AIM_MIN, trendAt(n) + WAVE[(level - 1) % 10]));
 }
 
-/** Flip variants tried per generated board on a knot level; the one nearest the aim is kept (hard aims are rare). */
+/**
+ * Flip variants tried per generated board on a knot level; the one nearest the aim is kept (hard aims are rare). A
+ * level with sleepers draws twice as many: its sleeper must end up inside the knot, which few variants manage
+ * (2026-11-06: 30 tries missed the aim by 0.44 on chapter 4, 60 by 0.25).
+ */
 export const KNOT_TRIES = 30;
+export const KNOT_TRIES_SLEEPERS = 60;
 
 function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mechanics } {
   if (!Number.isInteger(levelNumber) || levelNumber < 1) throw new Error(`invalid level number ${levelNumber}`);
@@ -260,11 +265,17 @@ export function generateLevelFor(
   const base = levelSpec(levelNumber);
   const spec = { ...base, params: { ...base.params, ...overrides } };
   const rng = createRng(baseSeed * 1000 + levelNumber);
-  const result = generateMatching(spec.params, spec.target, rng, 300);
+  if (!knotLevel(levelNumber)) {
+    const result = generateMatching(spec.params, spec.target, rng, 300);
+    return result ? { spec, ...result, grade: gradeKnot(result.level) } : null;
+  }
+  // a knot level's dynamite goes where the knot makes it count (knotFrom), not on the board before the knot
+  const { bombCount, ...plain } = spec.params;
+  const result = generateMatching(plain, spec.target, rng, 300);
   if (!result) return null;
-  if (!knotLevel(levelNumber)) return { spec, ...result, grade: gradeKnot(result.level) };
   // the metrics stay those of the board before the knot: the peeling solver they come from cannot read a knot
-  const knotted = knotFrom(result.level, rng, aimAt(levelNumber), KNOT_TRIES);
+  const tries = result.level.pieces.some((p) => p.sleeping) ? KNOT_TRIES_SLEEPERS : KNOT_TRIES;
+  const knotted = knotFrom(result.level, rng, aimAt(levelNumber), tries, bombCount ?? 0);
   return knotted ? { spec, level: knotted.level, metrics: result.metrics, grade: knotted.grade } : null;
 }
 
