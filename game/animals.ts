@@ -177,7 +177,11 @@ function zzzTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-type Anim = { kind: 'idle' } | { kind: 'run'; s: number; onDone: () => void; onExit?: () => void } | { kind: 'done' };
+type Anim =
+  | { kind: 'idle' }
+  | { kind: 'run'; s: number; onDone: () => void; onExit?: () => void }
+  | { kind: 'slide'; s: number; to: number; onArrive: () => void }
+  | { kind: 'done' };
 
 export class PieceView {
   readonly group = new THREE.Group();
@@ -488,8 +492,19 @@ export class PieceView {
     this.pulseT = 0;
     this.breatheT = null;
     for (const seg of this.segments) seg.scale.setScalar(1);
-    this.anim = { kind: 'run', s: this.headStart, onDone, onExit };
+    this.anim = { kind: 'run', s: this.lastS, onDone, onExit };
     this.launchT = LAUNCH_TIME;
+  }
+
+  /** Bump rule: run along the way out to head arc length `to` and stand there. */
+  slideTo(to: number, onArrive: () => void): void {
+    this.anim = { kind: 'slide', s: this.lastS, to, onArrive };
+  }
+
+  /** Bump rule: stand with the head at arc length `s` (a board rebuilt after an undo). */
+  setHead(s: number): void {
+    this.anim = { kind: 'idle' };
+    this.place(s);
   }
 
   /** Running position, driven by the traffic system (see src/game/traffic.ts). */
@@ -651,6 +666,16 @@ export class PieceView {
         this.group.visible = false;
         this.updateDots();
         done();
+      }
+      return;
+    }
+    if (this.anim.kind === 'slide') {
+      const a = this.anim;
+      a.s = Math.min(a.to, a.s + runSpeed() * dt);
+      this.place(a.s);
+      if (a.s >= a.to) {
+        this.anim = { kind: 'idle' };
+        a.onArrive();
       }
       return;
     }

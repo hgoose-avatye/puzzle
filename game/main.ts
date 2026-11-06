@@ -2,6 +2,7 @@ import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
+import { bumpAdvance, pickPush, solvableBump } from '../src/core/bump';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
@@ -11,7 +12,7 @@ import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
-import { arrowTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
+import { arrowTargets, bumpTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
 import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -60,6 +61,12 @@ if (params.has('cam')) {
 }
 if (import.meta.env.DEV && params.has('touchdebug')) void import('./touchdebug').then((m) => { touchDebug = new m.TouchDebug(); });
 const DEMO = params.has('demo');
+/**
+ * The bump rule (docs/rules.md 2): a blocked animal runs up to what stops it and stays there (src/core/bump.ts). No
+ * hearts; "되돌리기" takes back the last tap, and the game says when the board can no longer be cleared. ?rule=classic on
+ * the dev server plays the old rule (a blocked animal stays put, three hearts) for comparisons.
+ */
+const BUMP = params.get('rule') !== 'classic';
 
 function buildLevel(n: number): { level: Level; hearts?: number } | null {
   if (params.get('demo') === 'sheet') {
@@ -241,6 +248,7 @@ function clearBoard(): number {
   winTimer = undefined;
   document.body.classList.remove('heart-wait');
   $('hearts').innerHTML = '';
+  $('undo').classList.remove('nudge');
   for (const v of views.values()) { stage.scene.remove(v.group); v.dispose(); }
   views = new Map();
   return token;
@@ -266,13 +274,54 @@ async function loadLevel(n: number): Promise<void> {
   stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
   if (!DEMO && startsStage(n)) showBanner(n);
   if (token !== loadToken) return;
-  maxHearts = built.hearts ?? 0;
-  flow = new PlayFlow(built.level, built.hearts);
+  // no hearts under the bump rule; the old rule (and the ?demo fixtures the browser checks drive) keep three
+  const hearts = BUMP && !DEMO ? undefined : built.hearts ?? (levelSpec(n).role === 'rest' || levelSpec(n).role === 'intro' ? undefined : 3);
+  maxHearts = hearts ?? 0;
+  flow = new PlayFlow(built.level, hearts, BUMP);
   addViews(built.level);
   refreshHud();
-  shownHearts = built.hearts ?? 0;
+  shownHearts = hearts ?? 0;
   beginTutorials(built.level);
 }
+
+/**
+ * Bump rule: take back the last tap. The level is built afresh and every earlier tap replayed at once, so moved
+ * animals, cracked crates and animals already out come back exactly as they were.
+ */
+function undoTap(): void {
+  if (!flow || !flow.log.length || anyRunning()) return;
+  const log = flow.log.slice(0, -1);
+  const n = levelNumber;
+  clearBoard();
+  const built = buildLevel(n);
+  if (!built) return;
+  const st = stageFor(n);
+  stage.setBoard(built.level, st.theme, n, st.stage);
+  const replay = new PlayFlow(built.level, undefined, true);
+  log.forEach((id, i) => replay.tap(id, i * 1000));
+  replay.traffic.clear();
+  flow = replay;
+  addViews(built.level);
+  for (const [id, v] of views) {
+    if (replay.state.alive.has(id)) v.setHead(replay.headAt(id));
+    else { stage.scene.remove(v.group); v.dispose(); views.delete(id); }
+  }
+  stage.updateCrates(replay.state.level, replay.state.alive);
+  refreshHud();
+}
+
+/** Bump rule: after a tap, say so when no order of taps can clear the board any more. */
+function checkStuck(): void {
+  const s = current();
+  if (!BUMP || !s || isCleared(s)) return;
+  if (solvableBump(s.level, s.alive) === false) {
+    $('msg').textContent = '길이 꼬였어요. 되돌리기를 눌러요';
+    $('undo').classList.add('nudge');
+  } else $('undo').classList.remove('nudge');
+}
+
+$('undo').addEventListener('click', () => { sound.unlock(); undoTap(); checkStuck(); });
+if (!BUMP) $('undo').hidden = true;
 
 /** True when the object and all its parents are drawn (the raycaster also hits hidden objects). */
 const drawn = (o: THREE.Object3D | null): boolean => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
@@ -375,7 +424,11 @@ function onTap(id: number): TapOutcome {
   if (isCleared(flow.state) || flow.lost) return 'level over';
   // null: a repeat on an animal still shaking from its blocked tap, the same tap (no second heart)
   const ev = flow.tap(id, performance.now());
-  if (!ev) return 'repeat (R1)';
+  if (!ev) {
+    // a push while an animal still runs waits for the board to settle (flow.ts); a repeat blocked tap is the same tap
+    if (anyRunning()) $('msg').textContent = '친구가 지나간 다음에 눌러요';
+    return 'repeat (R1)';
+  }
   if (ev.type === 'ignored') {
     const runner = flow.traffic.get(id)?.state;
     return runner === 'waiting' ? 'ignored: waiting' : runner ? 'ignored: running' : 'ignored: gone';
@@ -399,16 +452,26 @@ function onTap(id: number): TapOutcome {
     $('msg').textContent = '';
     crackCrates();
   } else if (ev.type === 'blocked' && view) {
-    // 2.5D: the head shake alone (no stars, no "!"); Classic 3D as before
-    view.bump();
-    if (!view.cards) fx.stars(view.headWorld());
-    if (ev.blockers.length > 0) collide(id, view, !view.cards);
-    else if (cooled(id)) sound.play('wall');
-    for (const b of ev.blockers) views.get(b)?.pulse();
-    if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
+    const feedback = (): void => {
+      // 2.5D: the head shake alone (no stars, no "!"); Classic 3D as before
+      view.bump();
+      if (!view.cards) fx.stars(view.headWorld());
+      if (ev.blockers.length > 0) collide(id, view, !view.cards);
+      else if (cooled(id)) sound.play('wall');
+      for (const b of ev.blockers) views.get(b)?.pulse();
+      if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
+    };
+    // bump rule: it runs up to what stops it first, and the bump comes on arrival
+    if (ev.moved) {
+      if (tutorialShown?.target === id) tutorialTapped();
+      tutorialCheck = true;
+      sound.play('move');
+      view.slideTo(flow.headAt(id), feedback);
+    } else feedback();
     $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 옆 친구가 나가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
+  checkStuck();
   // the level is lost at once (taps on the board stop now); the card waits for the last heart to break or the bomb to go off
   if (flow.lost && flow.state.exploded) blowUp(flow.state);
   else if (flow.lost) {
@@ -442,6 +505,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
   bomb: '폭탄이 터지기 전에\n길을 비워줘!',
+  bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
 };
 /**
  * The tap's round target around the animal, in board cells on screen; never under SPOT_MIN (the finger's target stays
@@ -562,8 +626,10 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
           else endTutorial();
           return;
         }
-        // only a tap that lets the animal out: never a blocked tap (no heart lost) and never another animal
-        if (s && s.alive.has(target) && canExit(s.level, target, s.alive)) onTap(target);
+        // only the tap the tutorial shows: the animal leaving, or (bump) running up to what stops it; never another animal
+        const piece = s?.level.pieces.find((p) => p.id === target);
+        const does = s && piece && s.alive.has(target) && (id === 'bump' ? bumpAdvance(s.level, piece, s.alive) > 0 : canExit(s.level, target, s.alive));
+        if (does) onTap(target);
         else endTutorial();
       },
       onSkip: () => endTutorial(id),
@@ -621,7 +687,9 @@ function situationalTutorial(): void {
   if (anyRunning() || tutorial.visible || !$('popup').hidden || !$('modal').hidden) return;
   tutorialCheck = false;
   const s = flow.state;
-  if (!readSeen().includes('arrow')) showTapTutorial('arrow', arrowTargets(s.level, s.alive));
+  if (!readSeen().includes('arrow') && showTapTutorial('arrow', arrowTargets(s.level, s.alive))) return;
+  // the first knot: nothing can leave, so the chick shows the push that untangles it
+  if (BUMP && !readSeen().includes('bump')) showTapTutorial('bump', bumpTargets(s.level, s.alive));
 }
 
 /** After the arrow tutorial's tap: bounce the tile once the animal's head reaches it. */
@@ -788,9 +856,10 @@ let hintTimer: number | undefined;
 function showHint(): void {
   const state = current();
   if (!state || isCleared(state) || isFailed(state)) return;
-  const id = pickHint(state.level, state.alive, state.fuses);
+  // nothing can leave: the push that untangles the knot, if there is one
+  const id = pickHint(state.level, state.alive, state.fuses) ?? (BUMP ? pickPush(state.level, state.alive) : null);
   const view = id === null ? undefined : views.get(id);
-  if (!view) { $('msg').textContent = '지금은 움직일 수 있는 친구가 없어요'; return; }
+  if (!view) { $('msg').textContent = BUMP ? '길이 꼬였어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
   sound.play('select');
   view.showPath(true);
   window.clearTimeout(hintTimer);
@@ -1122,5 +1191,9 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
     const top = document.elementFromPoint(clientX, clientY);
     return { seen, part, hitY: hit ? +hit.point.y.toFixed(2) : null, picked: pick(clientX, clientY), grid: stage.screenToGrid(clientX, clientY), top: top === stage.renderer.domElement ? 'canvas' : (top?.id || top?.tagName || null) };
   },
-  state: () => { const s = current(); return s && { taps: s.taps, blocked: s.blockedTaps, hearts: s.hearts, fuses: { ...s.fuses }, alive: [...s.alive], cleared: isCleared(s), failed: isFailed(s) }; },
+  state: () => {
+    const s = current();
+    // cells: where every animal stands by the rules (pushes move them)
+    return s && { taps: s.taps, blocked: s.blockedTaps, hearts: s.hearts, fuses: { ...s.fuses }, alive: [...s.alive], cleared: isCleared(s), failed: isFailed(s), cells: Object.fromEntries(s.level.pieces.map((p) => [p.id, p.cells])) };
+  },
 };

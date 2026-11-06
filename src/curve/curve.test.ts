@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, levelSpec, stageFor } from './curve';
+import { aimAt, boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, knotLevel, levelSpec, stageFor } from './curve';
+import { gradeKnot } from '../core/bump';
+import { createGame, isCleared, tap } from '../core/game';
 import { winnable } from '../solver/plan';
+import pickedSeeds from './seeds.json';
 
 describe('levelSpec', () => {
   it('assigns roles on a 30-level chapter', () => {
@@ -29,9 +32,11 @@ describe('levelSpec', () => {
 
 describe('generateLevelFor', () => {
   it('is deterministic and meets the level target', () => {
+    // the shipped seeds: on a knot level a seed may take no knot and yield null
     for (const n of [1, 5, 12]) {
-      const a = generateLevelFor(n, 7);
-      const b = generateLevelFor(n, 7);
+      const seed = (pickedSeeds as Record<string, number>)[n];
+      const a = generateLevelFor(n, seed);
+      const b = generateLevelFor(n, seed);
       expect(a).not.toBeNull();
       expect(a!.level).toEqual(b!.level);
       const [lo, hi] = levelSpec(n).target.rounds!;
@@ -57,21 +62,27 @@ describe('fixtures and hearts on the curve', () => {
     expect(arrows(10)).toBeGreaterThan(arrows(9));
     expect(arrows(30)).toBeGreaterThan(arrows(29) - 1);
   });
-  it('gives hearts from an easy ordinary level on (not the first tough one, not with the first arrows), never on rest levels', () => {
-    for (const n of [1, 5, 6, 15, 25]) expect(levelSpec(n).hearts).toBeUndefined();
-    for (const n of [7, 8, 9, 10, 12, 20, 29, 30]) expect(levelSpec(n).hearts).toBeGreaterThanOrEqual(3);
-    for (const n of [7, 8, 9]) expect(levelSpec(n).hearts).toBe(3);
+  it('gives no level hearts under the bump rule (a wrong tap moves an animal instead)', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).hearts, `level ${n}`).toBeUndefined();
   });
-  it('every level with hearts has exactly three', () => {
-    for (let n = 1; n <= 180; n++) {
-      const h = levelSpec(n).hearts;
-      if (h !== undefined) expect(h, `level ${n}`).toBe(3);
-    }
+  it('knots every level but the intro, rest and hand-made ones, and aims lower as the game goes on with a wave inside each stage', () => {
+    // hand-made lessons (1, 2, 6, 7, 11) never knot either
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 11, 15, 25, 31, 34, 35, 95, 155]) expect(knotLevel(n), `level ${n}`).toBe(false);
+    for (const n of [8, 9, 10, 20, 30, 36, 59, 60, 180]) expect(knotLevel(n), `level ${n}`).toBe(true);
+    for (const n of [1, 5, 35]) expect(aimAt(n)).toBe(1);
+    expect(aimAt(6)).toBeGreaterThan(aimAt(20));
+    expect(aimAt(20)).toBeGreaterThan(aimAt(60));
+    expect(aimAt(66)).toBeGreaterThan(aimAt(176));
+    // inside a stage: the first level easy, the tenth the peak
+    expect(aimAt(36)).toBeGreaterThan(aimAt(39));
+    expect(aimAt(39)).toBeGreaterThan(aimAt(40));
+    expect(aimAt(41)).toBeGreaterThan(aimAt(40));
   });
-  it('generated levels carry the requested number of arrow tiles', () => {
-    const r = generateLevelFor(8, 1);
+  it('generated levels carry at most the requested number of arrow tiles (tiles that turn no one are dropped)', () => {
+    const r = generateLevelFor(8, (pickedSeeds as Record<string, number>)[8]);
     expect(r).not.toBeNull();
-    expect(r!.level.arrows).toHaveLength(levelSpec(8).params.arrowCount!);
+    expect(r!.level.arrows?.length ?? 0).toBeGreaterThan(0);
+    expect(r!.level.arrows!.length).toBeLessThanOrEqual(levelSpec(8).params.arrowCount!);
   });
 });
 
@@ -104,7 +115,15 @@ describe('bomb levels as the game builds them', () => {
       const built = buildGameLevel(n);
       if (!built || !built.level.pieces.some((p) => p.fuse !== undefined)) continue;
       checked++;
-      if (winnable(built.level) !== true) bad.push(n);
+      if (!knotLevel(n)) {
+        // a level that peels: the exact search over free taps, fuses included
+        if (winnable(built.level) !== true) bad.push(n);
+        continue;
+      }
+      // a knot level: its winning line, fuses included, must get every bomb out before its fuse runs out
+      let s = createGame(built.level);
+      for (const m of gradeKnot(built.level).line ?? []) s = tap(s, m.id).state;
+      if (!isCleared(s) || s.exploded) bad.push(n);
     }
     expect(checked).toBeGreaterThan(20);
     expect(bad).toEqual([]);

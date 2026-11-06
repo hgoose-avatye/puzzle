@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { gradeKnot } from '../core/bump';
+import { createGame, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import type { Level } from '../core/types';
-import { buildGameLevel } from '../curve/curve';
-import { arrowTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
+import { buildGameLevel, knotLevel } from '../curve/curve';
+import { arrowTargets, bumpTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
 
 const levelOf = (n: number): Level => buildGameLevel(n)!.level;
 const everyone = (l: Level): Set<number> => new Set(l.pieces.map((p) => p.id));
@@ -71,6 +73,20 @@ describe('tutorialPlan', () => {
     const targets = arrowTargets(l, alive);
     expect(targets.length).toBeGreaterThan(0);
     for (const id of targets) expect(canExit(l, id, alive)).toBe(true);
+  });
+
+  it('points the bump tutorial at the push of the winning line once nothing can leave (the first knot level)', () => {
+    let n = 1;
+    while (!knotLevel(n)) n++;
+    const l = levelOf(n);
+    let s = createGame(l);
+    expect(bumpTargets(s.level, s.alive)).toEqual([]);
+    for (const m of gradeKnot(l).line ?? []) {
+      if (m.kind === 'push') break;
+      s = tap(s, m.id).state;
+    }
+    expect(s.level.pieces.some((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive))).toBe(false);
+    expect(bumpTargets(s.level, s.alive)).toEqual([gradeKnot(l).line!.find((m) => m.kind === 'push')!.id]);
   });
 
   it('lights up after the tap the animal it changed: the lock opened, the sleeper woken, the bomb cleared', () => {

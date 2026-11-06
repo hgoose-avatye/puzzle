@@ -72,7 +72,8 @@ export interface PlayResult {
 
 /** Play one level to the end (cleared or failed). */
 export function playOnce(level: Level, profile: Profile, rng: Rng, hearts?: number): PlayResult {
-  let state: GameState = createGame(level, hearts === undefined ? {} : { hearts });
+  // the old rule: this player reads the board once and never pushes, so a blocked tap must leave the board as it was
+  let state: GameState = createGame(level, { bump: false, ...(hearts === undefined ? {} : { hearts }) });
   let looks = 0;
   const byId = new Map(level.pieces.map((p) => [p.id, p]));
   for (let guard = 0; guard < 2000 && !isCleared(state) && !isFailed(state); guard++) {

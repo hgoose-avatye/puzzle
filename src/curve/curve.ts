@@ -1,11 +1,14 @@
 import { createRng } from '../core/rng';
+import { gradeKnot, type KnotGrade } from '../core/bump';
 import type { Level } from '../core/types';
 import { generateMatching, type DifficultyTarget, type GenParams } from '../generator/generate';
+import { knotFrom } from '../generator/knot';
 import type { Metrics } from '../solver/metrics';
 import type { BoardShape } from '../core/shapes';
 import { animalCount, arrowsAllowed, boardFor, bombSlackFor, cratesFor, finaleExtras, mechanicsFor, occupancyTarget, type Mechanics } from './chapterPlan';
 import pickedSeeds from './seeds.json';
 import bakedLevels from './levels.json';
+import handLevels from './handLevels.json';
 
 export type Role = 'intro' | 'rest' | 'ordinary' | 'tough' | 'finale';
 
@@ -28,14 +31,18 @@ export const CHAPTER_LENGTH = 30;
  * comes from the board's effective cells (chapterPlan.ts animalCount); change a number and rerun
  * scripts/pick-seeds.ts and scripts/build-levels.ts to retune.
  */
-export const HEARTS = 3;
+/**
+ * No level has hearts since the bump rule (2026-11-06): a wrong tap moves an animal and can knot the board, which is
+ * cost enough, and 되돌리기 takes it back. Kept as a constant so hearts can come back for an experiment.
+ */
+export const HEARTS: number | undefined = undefined;
 /** scale of the depth (rounds) targets on ordinary, tough and finale levels, kept from when it also scaled the animal count */
 export const DEPTH_SCALE = 0.6;
 /** share of the base arrow count kept (at least one where any were planned) */
 export const ARROW_SHARE = 0.5;
 
-/** Hearts for a level that has them: always HEARTS. Kept as a function so the count can depend on the level again. */
-export function heartsFor(_pieceCount: number): number {
+/** Hearts for a level that would have them: HEARTS. Kept as a function so the count can depend on the level again. */
+export function heartsFor(_pieceCount: number): number | undefined {
   return HEARTS;
 }
 
@@ -171,6 +178,48 @@ export function levelSpec(levelNumber: number): LevelSpec {
   return tune(spec, mechanics);
 }
 
+/**
+ * Difficulty curve under the bump rule (2026-11-06 playtest feedback): rising overall like a stock chart, easy and hard
+ * mixed level by level. A knot level is one the player cannot clear by taking free animals out alone: somewhere a
+ * blocked animal must be pushed to the right spot (generator/knot.ts). Its aim is the guessWin of core/bump.ts, the
+ * chance that pushing at random still clears it: lower is harder. TREND falls over the game, WAVE moves each level of
+ * a ten-level stage around it (easy first, a test at 4, a rest at 5, a bigger test at 9, the peak at 10). Intro and
+ * rest levels have no knot: the first five levels teach the tap, each chapter's first levels teach their mechanic.
+ */
+const TREND: ReadonlyArray<[number, number]> = [[6, 0.75], [20, 0.45], [60, 0.2], [180, 0.12]];
+const WAVE = [0.15, 0.05, 0, -0.1, 0, 0.1, 0, -0.05, -0.12, -0.18];
+const AIM_MIN = 0.05;
+const AIM_MAX = 0.9;
+
+export function trendAt(n: number): number {
+  const i = TREND.findIndex(([at]) => at >= n);
+  if (i === 0) return TREND[0][1];
+  if (i < 0) return TREND[TREND.length - 1][1];
+  const [a, va] = TREND[i - 1];
+  const [b, vb] = TREND[i];
+  return va + ((vb - va) * (n - a)) / (b - a);
+}
+
+/** Levels designed by hand (the first-play lessons, scripts/build-levels.ts): they ship as written, knot or not. */
+export const HAND_LEVELS = new Set(Object.keys(handLevels as Record<string, unknown>).map(Number));
+
+/** Does level `n` need a push (a knot)? Intro, rest and hand-made levels never do. */
+export function knotLevel(n: number): boolean {
+  if (HAND_LEVELS.has(n)) return false;
+  const role = levelSpec(n).role;
+  return role !== 'intro' && role !== 'rest';
+}
+
+/** The guessWin level `n` aims at; 1 for a level without a knot. */
+export function aimAt(n: number): number {
+  if (!knotLevel(n)) return 1;
+  const level = ((n - 1) % CHAPTER_LENGTH) + 1;
+  return Math.min(AIM_MAX, Math.max(AIM_MIN, trendAt(n) + WAVE[(level - 1) % 10]));
+}
+
+/** Flip variants tried per generated board on a knot level; the one nearest the aim is kept (hard aims are rare). */
+export const KNOT_TRIES = 30;
+
 function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mechanics } {
   if (!Number.isInteger(levelNumber) || levelNumber < 1) throw new Error(`invalid level number ${levelNumber}`);
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
@@ -199,17 +248,24 @@ function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mecha
   return { spec: { ...raw, chapter, params, target, hearts }, mechanics };
 }
 
-/** Deterministic: the same (levelNumber, baseSeed) always yields the same level. */
+/**
+ * Deterministic: the same (levelNumber, baseSeed) always yields the same level. On a knot level the generated board is
+ * knotted afterwards (knotFrom, the same rng) and comes with its grade; a board that takes no knot yields null.
+ */
 export function generateLevelFor(
   levelNumber: number,
   baseSeed: number,
   overrides: Partial<GenParams> = {},
-): { spec: LevelSpec; level: Level; metrics: Metrics } | null {
+): { spec: LevelSpec; level: Level; metrics: Metrics; grade: KnotGrade } | null {
   const base = levelSpec(levelNumber);
   const spec = { ...base, params: { ...base.params, ...overrides } };
   const rng = createRng(baseSeed * 1000 + levelNumber);
   const result = generateMatching(spec.params, spec.target, rng, 300);
-  return result ? { spec, ...result } : null;
+  if (!result) return null;
+  if (!knotLevel(levelNumber)) return { spec, ...result, grade: gradeKnot(result.level) };
+  // the metrics stay those of the board before the knot: the peeling solver they come from cannot read a knot
+  const knotted = knotFrom(result.level, rng, aimAt(levelNumber), KNOT_TRIES, spec.params.bombSlack ?? 3);
+  return knotted ? { spec, level: knotted.level, metrics: result.metrics, grade: knotted.grade } : null;
 }
 
 /** Seed picked per level by scripts/pick-seeds.ts so difficulty climbs smoothly inside a chapter. */

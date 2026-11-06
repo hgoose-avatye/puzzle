@@ -10,12 +10,9 @@ import pickedSeeds from './seeds.json';
 const ordinary = ordinaryLevels(180);
 
 describe('hand-set seeds', () => {
-  it('are the seeds the game ships, on levels that are neither intro, rest nor finale', () => {
-    const seeds = pickedSeeds as Record<string, number>;
-    for (const [n, { seed }] of Object.entries(SEED_OVERRIDES)) {
-      expect(seeds[n]).toBe(seed);
-      expect(['ordinary', 'tough']).toContain(levelSpec(Number(n)).role);
-    }
+  it('name only levels that are neither intro, rest nor finale (the bump-rule picks of scripts/pick-seeds-curve.ts do not use them)', () => {
+    expect(Object.keys(pickedSeeds)).toHaveLength(180);
+    for (const n of Object.keys(SEED_OVERRIDES)) expect(['ordinary', 'tough']).toContain(levelSpec(Number(n)).role);
   });
 });
 

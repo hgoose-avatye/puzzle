@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { blockersOf, canExit, lockedBy, traceExit, validateLevel } from '../core/rules';
+import { blockersOf, canExit, headDirection, lockedBy, traceExit, validateLevel } from '../core/rules';
 import type { Level } from '../core/types';
+import { gradeKnot } from '../core/bump';
+import { MIN_KNOT } from '../generator/knot';
 import { solve } from '../solver/solver';
-import { buildGameLevel, levelSpec } from './curve';
+import { buildGameLevel, knotLevel, levelSpec } from './curve';
 import handLevels from './handLevels.json';
 
 /**
@@ -20,18 +22,41 @@ const holdsAlone = (l: Level, id: number): boolean => {
 };
 
 describe('shipped levels', () => {
-  it('all 180 are valid and solvable, with the hearts the curve asks for', () => {
+  // one grade per level, shared by the checks below (a knot search over 180 levels takes a few seconds)
+  const grades = new Map(levels.map(({ n, level }) => [n, gradeKnot(level)]));
+
+  it('all 180 are valid and can be cleared under the bump rule, with the hearts the curve asks for', () => {
     for (const { n, level, hearts } of levels) {
       expect(validateLevel(level), `level ${n}`).toEqual([]);
-      expect(solve(level).solvable, `level ${n}`).toBe(true);
+      expect(grades.get(n)!.solvable, `level ${n}`).toBe(true);
       expect(hearts, `level ${n}`).toBe(levelSpec(n).hearts);
     }
-  });
+  }, 60_000);
 
-  it('every arrow tile lies on the way out of some animal', () => {
+  it('knot levels need a push and the others peel without one', () => {
     for (const { n, level } of levels) {
-      const onPaths = new Set(level.pieces.flatMap((p) => traceExit(level, p).cells.map((c) => `${c.x},${c.y}`)));
-      for (const a of level.arrows ?? []) expect(onPaths.has(`${a.x},${a.y}`), `level ${n} arrow (${a.x},${a.y})`).toBe(true);
+      const g = grades.get(n)!;
+      if (knotLevel(n)) expect(g.knot, `level ${n}`).toBeGreaterThanOrEqual(MIN_KNOT);
+      else {
+        expect(g.knot, `level ${n}`).toBe(0);
+        expect(solve(level).solvable, `level ${n}`).toBe(true);
+      }
+    }
+  }, 60_000);
+
+  it('every arrow tile turns some animal on its way out (one that only runs over it straight does nothing)', () => {
+    for (const { n, level } of levels) {
+      const turns = new Set<string>();
+      for (const p of level.pieces) {
+        let dir = headDirection(p);
+        for (const c of traceExit(level, p).cells) {
+          const tile = level.arrows?.find((a) => a.x === c.x && a.y === c.y);
+          if (!tile) continue;
+          if (tile.dir !== dir) turns.add(`${c.x},${c.y}`);
+          dir = tile.dir;
+        }
+      }
+      for (const a of level.arrows ?? []) expect(turns.has(`${a.x},${a.y}`), `level ${n} arrow (${a.x},${a.y})`).toBe(true);
     }
   });
 

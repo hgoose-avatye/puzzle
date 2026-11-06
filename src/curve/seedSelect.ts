@@ -37,10 +37,8 @@ export const PEAK_RUNS = 400;
  * animals (seeds from a wider search, arrows checked in sight on the 2.5D board; level 12 was seed 11 before).
  */
 export const SEED_OVERRIDES: Readonly<Record<number, { seed: number; reason: string }>> = {
-  8: { seed: 21, reason: 'L7 onboarding: fewer 3-cell animals, arrows in sight' },
-  12: { seed: 297, reason: 'L7 onboarding: fewer 3-cell animals, arrows in sight' },
-  66: { seed: 3, reason: 'arrow tile hidden at start' },
-  133: { seed: 2, reason: 'arrow tiles hidden at start' },
+  // none since the bump rule (2026-11-06): the knot turns animals around, so the boards these seeds were chosen for
+  // no longer exist; the picks of scripts/pick-seeds-curve.ts stand on their own
 };
 
 const roleOf = (n: number): Role => levelSpec(n).role;
