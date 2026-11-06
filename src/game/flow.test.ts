@@ -65,11 +65,12 @@ function playRandom(level: Level, hearts: number | undefined, rng: Rng, gaps: Ga
       expect(after).toBe(before);
     } else if (ev.type === 'blocked') {
       if (before.hearts !== undefined) expect(after.hearts).toBe(before.hearts - 1);
-      expect(after.fuses).toEqual(before.fuses);
+      // a push burns every bomb on the board once; a blocked tap that goes nowhere burns nothing
+      for (const id of Object.keys(before.fuses).filter((i) => before.alive.has(Number(i)))) expect(after.fuses[Number(id)]).toBe(before.fuses[Number(id)] - (ev.moved ? 1 : 0));
       expect(after.alive).toEqual(before.alive);
     } else {
       expect(after.hearts).toBe(before.hearts);
-      for (const id of bombsLeft) expect(after.fuses[Number(id)]).toBe(before.fuses[Number(id)] - 1);
+      for (const id of bombsLeft) expect(after.fuses[Number(id)]).toBe(before.fuses[Number(id)]); // exits burn nothing
       expect(after.alive.has(pick.id)).toBe(false);
       expect(flow.traffic.get(pick.id)).toBeDefined();
     }
@@ -131,7 +132,11 @@ describe('play flow: scenarios', () => {
       { id: 4, cells: [{ x: 5, y: 0 }], dir: 'down' },
     ],
   });
+  /** The cross with the pushes a fuse counts: 6 runs one cell up to 3, then 7 one cell up to 6. Neither blocks anyone. */
+  const crossBomb = (fuse: number): Level => ({ ...cross(fuse), pieces: [...cross(fuse).pieces, { id: 6, cells: [{ x: 7, y: 7 }], dir: 'up' }, { id: 7, cells: [{ x: 7, y: 8 }], dir: 'up' }] });
   const noGaps = (): Gaps => ({ runners: Infinity, standing: Infinity });
+  /** A push: its tap, then the frames until the board is still again (a push waits for a still board). */
+  const push = (flow: PlayFlow, id: number, now: number): void => { run(flow, 3, noGaps(), new Set()); expect(flow.tap(id, now)).toMatchObject({ type: 'blocked' }); };
 
   it('a follower runs up as far as it can, waits, and goes on by itself; fuses stay put meanwhile', () => {
     const flow = new PlayFlow(cross(9), 3);
@@ -153,49 +158,55 @@ describe('play flow: scenarios', () => {
     expect(flow.traffic.runners).toHaveLength(0);
   });
 
-  it('tapping animals one after another burns each fuse once per exit, never again while they wait', () => {
-    const flow = new PlayFlow(cross(9), 3);
-    flow.tap(1, 0);
-    flow.tap(3, 10);
-    expect(flow.state.fuses[2]).toBe(7);
-    flow.tap(4, 15);
-    expect(flow.state.fuses[2]).toBe(7);
+  it('exits burn no fuse, a push burns it once, and nothing burns while runners wait', () => {
+    const flow = new PlayFlow(crossBomb(9));
+    push(flow, 6, 0); // 6 runs up to 3 (still there): the one push
+    expect(flow.state.fuses[2]).toBe(8);
+    flow.tap(1, 5000);
+    flow.tap(3, 5010);
+    expect(flow.state.fuses[2]).toBe(8);
+    flow.tap(4, 5015);
+    expect(flow.state.fuses[2]).toBe(8);
     const fuses = { ...flow.state.fuses };
     run(flow, 3, noGaps(), new Set());
     expect(flow.state.fuses).toEqual(fuses);
-    expect(flow.state.taps).toBe(3);
+    expect(flow.state.taps).toBe(4);
   });
 
   it('the bomb waiting behind a runner is already safe: it left by the rules when tapped', () => {
-    const flow = new PlayFlow(cross(2), 3);
-    flow.tap(1, 0);
+    const flow = new PlayFlow(crossBomb(2));
+    push(flow, 6, 0);
     expect(flow.state.fuses[2]).toBe(1);
-    flow.tap(2, 10);
-    flow.tap(3, 20);
+    flow.tap(1, 5000);
+    flow.tap(2, 5010);
+    push(flow, 7, 10000); // the last push comes once the bomb has left by the rules: nothing to burn
     expect(flow.state.exploded).toBe(false);
     run(flow, 5, noGaps(), new Set());
     expect(flow.state.exploded).toBe(false);
   });
 
-  it('at fuse 1, bomb then another: saved even though the bomb still waits behind a runner', () => {
-    const flow = new PlayFlow(cross(2), 3);
-    flow.tap(1, 0);
-    flow.tap(2, 10);
-    flow.tap(3, 20);
+  it('at fuse 1, bomb then another push: saved even though the bomb still waits behind a runner', () => {
+    const flow = new PlayFlow(crossBomb(2));
+    push(flow, 6, 0);
+    flow.tap(1, 5000);
+    flow.tap(2, 5010);
     const waits = new Set<number>();
     run(flow, 10, noGaps(), waits);
     expect(waits.has(2)).toBe(true);
+    push(flow, 7, 20000);
     expect(flow.lost).toBe(false);
+    run(flow, 3, noGaps(), new Set());
     expect(flow.traffic.runners).toHaveLength(0);
   });
 
-  it('at fuse 1, another then bomb: it blows on the other tap, the bomb tap is ignored, runners still finish', () => {
-    const flow = new PlayFlow(cross(2), 3);
-    flow.tap(1, 0);
-    flow.tap(3, 10);
+  it('at fuse 1, another push then bomb: it blows on that push, the bomb tap is ignored, runners still finish', () => {
+    const flow = new PlayFlow(crossBomb(2));
+    push(flow, 6, 0);
+    flow.tap(1, 5000);
+    push(flow, 7, 10000);
     expect(flow.lost).toBe(true);
     expect(flow.state.exploded).toBe(true);
-    expect(flow.tap(2, 20)).toEqual({ type: 'ignored', id: 2 });
+    expect(flow.tap(2, 10020)).toEqual({ type: 'ignored', id: 2 });
     expect(flow.traffic.get(2)).toBeUndefined();
     run(flow, 10, noGaps(), new Set());
     expect(flow.traffic.runners).toHaveLength(0);

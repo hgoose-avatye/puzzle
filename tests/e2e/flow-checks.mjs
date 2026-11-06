@@ -255,11 +255,11 @@ export async function runFlowChecks(browser, base, report) {
   });
 
   await scenario('bomb fail', null, async (p) => {
-    for (let k = 0; k < 40 && !(await ui(p)).popup; k++) {
-      const id = await p.evaluate(() => { const g = window.__game; const s = g.state(); return g.free().find((i) => s.fuses[i] === undefined) ?? null; });
-      if (id === null) break;
+    // the demo's two pushers: each push burns the fuse (2) once
+    for (const id of [5, 6]) {
       await p.evaluate((i) => window.__game.tap(i), id);
-      await sleep(300);
+      for (let k = 0; k < 60 && await p.evaluate(() => [...window.__game.views().values()].some((v) => v.running)); k++) await sleep(50);
+      await sleep(150);
     }
     const a = await waitPopup(p, 4000);
     const hearts = await p.evaluate(() => document.querySelectorAll('#popupHearts .heart').length);
@@ -363,12 +363,13 @@ export async function runFlowChecks(browser, base, report) {
   });
 
   await scenario('tutorial: the result popup comes before a tutorial', null, async (p) => {
-    // level 121 opens on the bomb tutorial; the bomb goes off on taps made around it (the test hook, not a finger)
-    await withSeen(p, ALL_TIPS.filter((id) => id !== 'bomb'), '?level=121');
+    // level 40 (the first dynamite) opens on the bomb tutorial; pushes made around it (the test hook, not a finger) set it off
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'bomb'), '?level=40');
     const t = await tut(p);
-    for (let k = 0; k < 12 && await p.evaluate(() => document.getElementById('popup').hidden); k++) {
-      await p.evaluate((target) => { const g = window.__game; const s = g.state(); const id = g.free().find((i) => i !== target && s.fuses[i] === undefined); if (id !== undefined) g.tap(id); }, t.target);
-      await sleep(200);
+    // pushes burn the fuse: push blocked animals (not the one the chick points at) until it goes off
+    for (let k = 0; k < 24 && await p.evaluate(() => document.getElementById('popup').hidden); k++) {
+      await p.evaluate((target, k) => { const g = window.__game; const free = g.free(); const ids = g.ids().filter((i) => i !== target && !free.includes(i)); if (ids.length) g.tap(ids[k % ids.length]); }, t.target, k);
+      await settle(p);
     }
     await sleep(600);
     const popup = await p.evaluate(() => document.getElementById('popup').hidden ? null : document.getElementById('popupTitle').textContent);

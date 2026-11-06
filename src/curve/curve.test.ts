@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { aimAt, boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, knotLevel, levelSpec, stageFor } from './curve';
 import { gradeKnot } from '../core/bump';
 import { createGame, isCleared, tap } from '../core/game';
-import { winnable } from '../solver/plan';
 import pickedSeeds from './seeds.json';
 
 describe('levelSpec', () => {
@@ -108,19 +107,14 @@ describe('chapters after the first introduce one mechanic each', () => {
 });
 
 describe('bomb levels as the game builds them', () => {
-  it('every level with bombs in chapters 5 and 6 can be won', () => {
+  it('every level with bombs (chapter 2 peaks, chapters 5 and 6) can be won within its push budget', () => {
     const bad: number[] = [];
     let checked = 0;
-    for (let n = 121; n <= 180; n++) {
+    for (let n = 1; n <= 180; n++) {
       const built = buildGameLevel(n);
       if (!built || !built.level.pieces.some((p) => p.fuse !== undefined)) continue;
       checked++;
-      if (!knotLevel(n)) {
-        // a level that peels: the exact search over free taps, fuses included
-        if (winnable(built.level) !== true) bad.push(n);
-        continue;
-      }
-      // a knot level: its winning line, fuses included, must get every bomb out before its fuse runs out
+      // the winning line (free exits, and on a knot level the pushes) must get every bomb out before its fuse runs out
       let s = createGame(built.level);
       for (const m of gradeKnot(built.level).line ?? []) s = tap(s, m.id).state;
       if (!isCleared(s) || s.exploded) bad.push(n);

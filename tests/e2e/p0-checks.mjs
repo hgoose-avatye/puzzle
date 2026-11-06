@@ -94,16 +94,18 @@ export async function runP0Checks(browser, base, report) {
     const f0 = await st(p);
     await tap(p, blocked); await sleep(80); await tap(p, blocked);
     const f1 = await st(p);
+    const moved = JSON.stringify(f0.cells[blocked]) !== JSON.stringify(f1.cells[blocked]);
     const drop = Object.keys(f0.fuses).map((k) => f0.fuses[k] - f1.fuses[k]);
-    check('R1+R3 bomb level: double tap on a blocked animal counts once, burns no fuse, costs no heart', drop.every((d) => d === 0) && f1.blocked === 1 && f1.hearts == null, `fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
+    // a push burns every fuse once; the repeat within 0.4 s is the same tap (R1); a blocked tap that goes nowhere burns nothing
+    check('R1 bomb level: double tap on a blocked animal counts once and burns each fuse at most once, no heart', drop.every((d) => d === (moved ? 1 : 0)) && f1.blocked === 1 && f1.hearts == null, `moved ${moved}, fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
     const free = await p.evaluate(() => { const g = window.__game; const s = g.state(); return g.free().find((i) => s.fuses[i] === undefined); });
     await tap(p, free); await sleep(80); await tap(p, free);
     const f2 = await st(p);
     const drop2 = Object.keys(f1.fuses).map((k) => f1.fuses[k] - (f2.fuses[k] ?? NaN));
-    check('R3 bomb level: one exit (tapped twice) lowers every fuse exactly once', drop2.every((d) => d === 1) && !f2.alive.includes(free), `fuse drops ${drop2}`);
+    check('bomb level: an exit (tapped twice) lowers no fuse', drop2.every((d) => d === 0) && !f2.alive.includes(free), `fuse drops ${drop2}`);
     await sleep(2500);
     const f3 = await st(p);
-    check('R3 bomb level: fuses unchanged while the runner finishes', JSON.stringify(f3.fuses) === JSON.stringify(f2.fuses), JSON.stringify(f3.fuses));
+    check('bomb level: fuses unchanged while the runner finishes', JSON.stringify(f3.fuses) === JSON.stringify(f2.fuses), JSON.stringify(f3.fuses));
     report.info(`bomb chip: ${await p.evaluate(() => document.getElementById('bombChip').textContent)}`);
   });
 
@@ -194,7 +196,7 @@ export async function runP0Checks(browser, base, report) {
     check('tap picks the animal drawn there (level 10): at least 90%, another animal at most 3%', t.ok / n >= 0.9 && t.wrong / n <= 0.03, `ok ${(100 * t.ok / n).toFixed(1)}%, wrong ${(100 * t.wrong / n).toFixed(1)}%, miss ${(100 * t.miss / n).toFixed(1)}% of ${n} points`);
   });
 
-  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1
+  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1; 5 then 6 can be pushed one cell each (the fuse counts pushes)
   const BOMB = url('?demo=bomb');
   /** The bomb chip under the hearts and the warning above the buttons (null when hidden). */
   // 2.5D draws the clay bomb picture where Classic 3D writes 💣 (status icons 2026-11-05): read the picture as the emoji
@@ -205,11 +207,11 @@ export async function runP0Checks(browser, base, report) {
 
   await scenario('bomb warning at 1', BOMB, async (p) => {
     const before = await bombUi(p);
-    await tap(p, 1); await sleep(150);
+    await tap(p, 5); await sleep(150); // a push: 5 runs one cell up to 3
     const at1 = await bombUi(p);
     if (process.env.E2E_SHOTS) await p.screenshot({ path: `${process.env.E2E_SHOTS}/bomb-bar-at-1.png` });
     check('bomb chip shows 2 at the start, no warning yet', before.chip?.text === '💣 2' && before.chip.cls === 'warn' && before.warn === null, JSON.stringify(before));
-    check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 다른 친구가 1번 더 나가면 펑!', JSON.stringify(at1));
+    check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 한 번 더 밀면 펑!', JSON.stringify(at1));
   });
 
   // two bombs (level 131): the chip follows the closest one as fuses burn, and goes once no bomb is left
@@ -234,6 +236,7 @@ export async function runP0Checks(browser, base, report) {
   });
 
   await scenario('bomb at 1: bomb first is saved while it waits', BOMB, async (p) => {
+    await tap(p, 5); await settled(p); // fuse 1
     await tap(p, 1); await sleep(30); await tap(p, 2); await sleep(30); await tap(p, 3);
     let waited = false;
     for (let k = 0; k < 300 && (await p.evaluate(() => window.__game.traffic.runners.length)) > 0; k++) {
@@ -245,7 +248,8 @@ export async function runP0Checks(browser, base, report) {
   });
 
   await scenario('bomb at 1: another first sets it off', BOMB, async (p) => {
-    await tap(p, 1); await sleep(30); await tap(p, 3); await sleep(30); await tap(p, 2);
+    await tap(p, 5); await settled(p); // fuse 1
+    await tap(p, 6); await sleep(30); await tap(p, 2); // the second push sets it off; the bomb's tap comes too late
     const a = await st(p);
     // 2.5D shows the bomb card after the burst (BOMB_BLAST_MS 400 in game/main.ts)
     for (let k = 0; k < 50 && (await popup(p)) === null; k++) await sleep(20);

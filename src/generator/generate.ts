@@ -3,7 +3,6 @@ import { canExit, directionVector, headDirection, onBoard, traceExit } from '../
 import { shapeVoids, type BoardShape } from '../core/shapes';
 import type { ArrowTile, Cell, Crate, Direction, Level, Piece } from '../core/types';
 import { computeMetrics, type Metrics } from '../solver/metrics';
-import { rescueSchedule } from '../solver/plan';
 
 export interface GenParams {
   width: number;
@@ -229,11 +228,10 @@ function buildOnce(params: GenParams, rng: Rng): Level | null {
     const pool = params.teach ? blocked : [...blocked, ...plain.filter((id) => !blocked.includes(id))];
     if (pool.length < bombCount) return null;
     const chosen = new Set(pool.slice(0, bombCount));
-    // one shared schedule: taps spent on one bomb burn the others' fuses too
-    const schedule = rescueSchedule(level, [...chosen]);
-    if (!schedule) return null;
+    // the fuse counts pushes (docs/rules.md 5): slack alone on a board that peels; generator/knot.ts adds the pushes
+    // a knot needs. bombSlack was written for exits (3, or 2 on tight levels): a push is a bigger decision, so one less.
     const fuses = new Map<number, number>();
-    for (const id of chosen) fuses.set(id, schedule.get(id)! + (params.bombSlack ?? 3));
+    for (const id of chosen) fuses.set(id, Math.max(1, (params.bombSlack ?? 3) - 1));
     level.pieces = level.pieces.map((p) => (fuses.has(p.id) ? { ...p, fuse: fuses.get(p.id) } : p));
   }
   return withoutIdleArrows(level);

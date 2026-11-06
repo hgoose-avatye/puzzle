@@ -86,7 +86,8 @@ export function crossLevel(): Level {
  */
 export function bombLevel(): Level {
   const level = crossLevel();
-  return { ...level, pieces: level.pieces.map((p) => (p.id === 2 ? { ...p, fuse: 2 } : p)) };
+  // the pushes the fuse counts: 5 runs one cell up to 3, then 6 one cell up to 5. Neither blocks the bomb's way.
+  return { ...level, pieces: [...level.pieces.map((p) => (p.id === 2 ? { ...p, fuse: 2 } : p)), { id: 5, cells: [{ x: 7, y: 7 }], dir: 'up' }, { id: 6, cells: [{ x: 7, y: 8 }], dir: 'up' }] };
 }
 
 /**
