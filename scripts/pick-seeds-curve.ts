@@ -4,13 +4,15 @@
  * npx tsx scripts/pick-seeds-curve.ts [lastLevel=180] [candidates=40]
  *
  * Levels without a knot (intro, rest) keep the first seed that makes a level. A knot level whose first `candidates`
- * seeds take no knot draws three times as many before the script gives up. (The hand-set seeds of
- * seedSelect.ts SEED_OVERRIDES belong to the old picks and are not used.) Writes src/curve/seeds.json and
+ * seeds take no knot draws three times as many before the script gives up. A hand-set seed (seedSelect.ts
+ * SEED_OVERRIDES) is kept when it makes a level, whatever its grade; hand-made levels (handLevels.json) are skipped,
+ * build-levels.ts ships them as written. Writes src/curve/seeds.json and
  * docs/sim/curve-selection.json (every level's aim, pick and grade); then run scripts/build-levels.ts. Rerun both
  * whenever the generator or the curve changes.
  */
 import { writeFileSync } from 'node:fs';
-import { aimAt, generateLevelFor, knotLevel, levelSpec } from '../src/curve/curve';
+import { aimAt, generateLevelFor, HAND_LEVELS, knotLevel, levelSpec } from '../src/curve/curve';
+import { SEED_OVERRIDES } from '../src/curve/seedSelect';
 
 const last = Number(process.argv[2] ?? 180);
 const candidates = Number(process.argv[3] ?? 40);
@@ -26,8 +28,13 @@ for (let n = 1; n <= last; n++) {
   let best: { seed: number; g: NonNullable<ReturnType<typeof generateLevelFor>>['grade'] } | null = null;
   let tried = 0;
   let ok = 0;
+  if (HAND_LEVELS.has(n)) { seeds[n] = 1; continue; }
+  const forced = SEED_OVERRIDES[n]?.seed;
+  const kept = forced === undefined ? null : generateLevelFor(n, forced);
+  if (kept) { tried = 1; ok = 1; best = { seed: forced!, g: kept.grade }; }
+  else if (forced !== undefined) process.stderr.write(`level ${n}: hand-set seed ${forced} makes no level here, picking anew\n`);
   const limit = knot ? candidates : 10;
-  for (let seed = 1; seed <= limit * 3 && (seed <= limit || !best); seed++) {
+  for (let seed = 1; !kept && seed <= limit * 3 && (seed <= limit || !best); seed++) {
     tried++;
     const r = generateLevelFor(n, seed);
     if (!r) continue;

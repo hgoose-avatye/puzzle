@@ -1499,10 +1499,16 @@
    "n": 140,
    "role": "tough",
    "target": 47.30042016806723,
-   "seed": 15,
-   "score": 35.25,
-   "pairs": 0,
-   "onTarget": 0
+   "seed": 19,
+   "score": 45.5,
+   "pairs": 1,
+   "onTarget": 5,
+   "preference": {
+    "nearestScore": 48.25,
+    "nearestMeaningful": 1,
+    "nearestBlockers": 1.25,
+    "nearestPairs": 2
+   }
   },
   {
    "n": 141,
@@ -1618,8 +1624,8 @@
    "onTarget": 3,
    "finale": {
     "wanted": 55.71848739495798,
-    "guard": 45.75,
-    "hardestTough": 40.75,
+    "guard": 50.5,
+    "hardestTough": 45.5,
     "issues": []
    }
   },

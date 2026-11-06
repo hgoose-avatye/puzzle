@@ -197,8 +197,9 @@ export async function runP0Checks(browser, base, report) {
   // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1
   const BOMB = url('?demo=bomb');
   /** The bomb chip under the hearts and the warning above the buttons (null when hidden). */
+  // 2.5D draws the clay bomb picture where Classic 3D writes 💣 (status icons 2026-11-05): read the picture as the emoji
   const bombUi = (p) => p.evaluate(() => {
-    const read = (id) => { const e = document.getElementById(id); return e.hidden ? null : { text: e.textContent, cls: e.className }; };
+    const read = (id) => { const e = document.getElementById(id); return e.hidden ? null : { text: (e.querySelector('img.statusIcon[src$="/bomb.png"]') ? '💣 ' : '') + e.textContent, cls: e.className }; };
     return { chip: read('bombChip'), warn: read('bombBar') };
   });
 
@@ -216,7 +217,8 @@ export async function runP0Checks(browser, base, report) {
     const read = () => p.evaluate(() => {
       const s = window.__game.state();
       const left = Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([, f]) => f);
-      return { chip: document.getElementById('bombChip').hidden ? null : document.getElementById('bombChip').textContent, min: left.length && !s.failed ? Math.min(...left) : null, bombs: left.length };
+      const c = document.getElementById('bombChip');
+      return { chip: c.hidden ? null : (c.querySelector('img.statusIcon[src$="/bomb.png"]') ? '💣 ' : '') + c.textContent, min: left.length && !s.failed ? Math.min(...left) : null, bombs: left.length };
     });
     const seen = [];
     // play the way the hint button suggests (bombs first), reading the chip after every tap
@@ -244,6 +246,8 @@ export async function runP0Checks(browser, base, report) {
   await scenario('bomb at 1: another first sets it off', BOMB, async (p) => {
     await tap(p, 1); await sleep(30); await tap(p, 3); await sleep(30); await tap(p, 2);
     const a = await st(p);
+    // 2.5D shows the bomb card after the burst (BOMB_BLAST_MS 400 in game/main.ts)
+    for (let k = 0; k < 50 && (await popup(p)) === null; k++) await sleep(20);
     check('bomb at 1: tapping another animal first explodes it, the bomb tap after that is ignored', a.failed && a.alive.includes(2) && (await popup(p)) === '펑! 폭탄이 터졌어요', `${JSON.stringify(a)}, popup ${await popup(p)}`);
   });
 

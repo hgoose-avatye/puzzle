@@ -1,5 +1,5 @@
 import { peel, pickPush } from '../core/bump';
-import { canExit, traceExit } from '../core/rules';
+import { blockersOf, canExit, cratesInWay, isAsleep, lockedBy, traceExit } from '../core/rules';
 import { nextTapToward } from '../solver/plan';
 import type { Level, Piece } from '../core/types';
 import { pickHint } from './hint';
@@ -10,13 +10,16 @@ import { pickHint } from './hint';
  * thing or skipped it. At most one tutorial per level.
  *
  * Start tutorials show as the level opens, on an animal that can leave right away: the first rule, the key, the
- * sleeper's neighbour, the way clear for a bomb. The arrow tutorial waits for its moment: an animal whose way out bends
- * on an arrow becomes free. A tutorial with no animal it can point at is not forced: it waits for the next level where
+ * sleeper's neighbour, the way clear for a bomb. The one exception is the blocked animal (level 2, no hearts): it points
+ * at an animal that cannot leave, so its tap shows the shake, and then lights up the animal in its way. The arrow
+ * tutorial waits for its moment: an animal whose way out bends on an arrow becomes free. A tutorial with no animal it can point at is not forced: it waits for the next level where
  * it can. Hearts and crates teach themselves in play (the heart that pops, the crate that cracks).
  */
-export type TutorialId = 'basic' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb';
+export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb';
 /** Start tutorials, in the order a level is checked for them. */
-export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'key', 'sleep', 'bomb'];
+export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'blocked', 'key', 'sleep', 'bomb'];
+/** The level that teaches the blocked animal: hand-made with no hearts, so the shake costs nothing. */
+export const BLOCKED_LEVEL = 2;
 
 const key = (c: { x: number; y: number }): string => `${c.x},${c.y}`;
 const free = (level: Level, alive: ReadonlySet<number>): number[] =>
@@ -40,6 +43,7 @@ function neighbours(level: Level, piece: Piece): Set<number> {
 export function usesRule(level: Level, id: TutorialId): boolean {
   switch (id) {
     case 'basic': return true;
+    case 'blocked': return true;
     case 'arrow': return (level.arrows?.length ?? 0) > 0;
     case 'bump': return peel(level, new Set(level.pieces.map((p) => p.id))).size > 0;
     case 'key': return level.pieces.some((p) => p.key !== undefined);
@@ -49,8 +53,9 @@ export function usesRule(level: Level, id: TutorialId): boolean {
 }
 
 /**
- * Animals a start tutorial may point at, most helpful first; every one can leave right now. Empty when the rule is
- * on the level but no such animal is there (the tutorial then waits for another level).
+ * Animals a start tutorial may point at, most helpful first; every one can leave right now (the blocked tutorial's
+ * cannot, by design). Empty when the rule is on the level but no such animal is there (the tutorial then waits for
+ * another level).
  */
 export function startTargets(level: Level, alive: ReadonlySet<number>, id: TutorialId, fuses: Readonly<Record<number, number>> = {}): number[] {
   const open = free(level, alive);
@@ -60,6 +65,13 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
       const best = pickHint(level, alive, fuses);
       return first([...(best === null ? [] : [best]), ...open]);
     }
+    case 'blocked':
+      // held only by animals, every one of which can leave now: the tap shakes it, and the one in front is the answer
+      return level.pieces.filter((p) => {
+        if (!alive.has(p.id) || open.includes(p.id) || !traceExit(level, p).reachesEdge) return false;
+        if (lockedBy(level, p, alive) !== undefined || isAsleep(level, p, alive) || cratesInWay(level, p, alive).length) return false;
+        return blockersOf(level, p, alive).every((b) => open.includes(b));
+      }).map((p) => p.id);
     case 'key':
       // the key carrier goes first; a carrier that is blocked itself cannot be shown yet
       return first(level.pieces.filter((p) => alive.has(p.id) && p.key !== undefined && level.pieces.some((q) => alive.has(q.id) && q.lock === p.key)).map((p) => p.id));
@@ -95,12 +107,14 @@ export function arrowTargets(level: Level, alive: ReadonlySet<number>): number[]
 
 /**
  * The start tutorial a level opens with, if any: the first start rule that is on the level and not learnt yet. The
- * first rule only teaches a newcomer: on level 1, or on any level for a save that has learnt nothing.
+ * first rule only teaches a newcomer: on level 1, or on any level for a save that has learnt nothing. The blocked
+ * animal is taught on BLOCKED_LEVEL only: anywhere else a blocked tap may cost a heart.
  */
 export function startTutorial(level: Level, seen: readonly string[], levelNumber: number): TutorialId | null {
   for (const id of START_TUTORIALS) {
     if (seen.includes(id) || !usesRule(level, id)) continue;
     if (id === 'basic' && levelNumber !== 1 && seen.length > 0) continue;
+    if (id === 'blocked' && levelNumber !== BLOCKED_LEVEL) continue;
     return id;
   }
   return null;
@@ -108,11 +122,13 @@ export function startTutorial(level: Level, seen: readonly string[], levelNumber
 
 /**
  * The animals a start tutorial's tap changes, for the moment after it: the locked animal the key opens, the sleeper
- * next to the tapped animal (it wakes), the bomb closest to going off (its way was cleared). Empty for other tutorials.
+ * next to the tapped animal (it wakes), the bomb closest to going off (its way was cleared), the animals in the way of
+ * the blocked one (what it shook against). Empty for other tutorials.
  */
 export function resultSubjects(level: Level, id: TutorialId, target: number): number[] {
   const tapped = level.pieces.find((p) => p.id === target);
   if (!tapped) return [];
+  if (id === 'blocked') return blockersOf(level, tapped, new Set(level.pieces.map((p) => p.id)));
   if (id === 'key') return level.pieces.filter((p) => p.lock !== undefined && p.lock === tapped.key).map((p) => p.id);
   if (id === 'sleep') return level.pieces.filter((p) => p.sleeping && neighbours(level, p).has(target)).map((p) => p.id);
   if (id === 'bomb') return level.pieces.filter((p) => p.fuse !== undefined && p.id !== target).sort((a, b) => a.fuse! - b.fuse! || a.id - b.id).slice(0, 1).map((p) => p.id);

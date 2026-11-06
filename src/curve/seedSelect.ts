@@ -33,12 +33,12 @@ export const PEAK_RUNS = 400;
  * Seeds set by hand, which scripts/pick-seeds.ts keeps instead of its own pick (ordinary and tough levels only). The pick
  * script scores each one like a candidate and warns when it is off target. 2026-11-03: in the picked levels an animal
  * standing on the camera-side cell hid the level's arrow tiles at the start; these seeds are on target with every arrow
- * in sight (level 12's seed 11 came from a wider search than the usual ten candidates).
+ * in sight. 2026-11-05: levels 8 and 12 follow the hand-made lessons (src/curve/handLevels.json) with few 3-cell
+ * animals (seeds from a wider search, arrows checked in sight on the 2.5D board; level 12 was seed 11 before).
  */
 export const SEED_OVERRIDES: Readonly<Record<number, { seed: number; reason: string }>> = {
-  12: { seed: 11, reason: 'arrow tile hidden at start' },
-  66: { seed: 3, reason: 'arrow tile hidden at start' },
-  133: { seed: 2, reason: 'arrow tiles hidden at start' },
+  // none since the bump rule (2026-11-06): the knot turns animals around, so the boards these seeds were chosen for
+  // no longer exist; the picks of scripts/pick-seeds-curve.ts stand on their own
 };
 
 const roleOf = (n: number): Role => levelSpec(n).role;

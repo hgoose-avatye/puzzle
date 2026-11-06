@@ -1,31 +1,5 @@
 [
  {
-  "n": 1,
-  "role": "intro",
-  "knot": false,
-  "aim": 1,
-  "seed": 1,
-  "guessWin": 1,
-  "knotSize": 0,
-  "answers": 1,
-  "keyMoves": 0,
-  "seedsTried": 1,
-  "seedsOk": 1
- },
- {
-  "n": 2,
-  "role": "intro",
-  "knot": false,
-  "aim": 1,
-  "seed": 1,
-  "guessWin": 1,
-  "knotSize": 0,
-  "answers": 1,
-  "keyMoves": 0,
-  "seedsTried": 1,
-  "seedsOk": 1
- },
- {
   "n": 3,
   "role": "intro",
   "knot": false,
@@ -65,43 +39,17 @@
   "seedsOk": 1
  },
  {
-  "n": 6,
-  "role": "ordinary",
-  "knot": true,
-  "aim": 0.85,
-  "seed": 22,
-  "guessWin": 0.8333333333333334,
-  "knotSize": 7,
-  "answers": 168,
-  "keyMoves": 0,
-  "seedsTried": 40,
-  "seedsOk": 16
- },
- {
-  "n": 7,
-  "role": "ordinary",
-  "knot": true,
-  "aim": 0.7285714285714285,
-  "seed": 1,
-  "guessWin": 1,
-  "knotSize": 4,
-  "answers": 10,
-  "keyMoves": 0,
-  "seedsTried": 40,
-  "seedsOk": 10
- },
- {
   "n": 8,
   "role": "ordinary",
   "knot": true,
   "aim": 0.6571428571428571,
-  "seed": 3,
+  "seed": 21,
   "guessWin": 1,
-  "knotSize": 3,
+  "knotSize": 7,
   "answers": 4,
   "keyMoves": 0,
-  "seedsTried": 40,
-  "seedsOk": 14
+  "seedsTried": 1,
+  "seedsOk": 1
  },
  {
   "n": 9,
@@ -128,19 +76,6 @@
   "keyMoves": 0,
   "seedsTried": 40,
   "seedsOk": 22
- },
- {
-  "n": 11,
-  "role": "ordinary",
-  "knot": true,
-  "aim": 0.7928571428571429,
-  "seed": 25,
-  "guessWin": 0.8148148148148149,
-  "knotSize": 7,
-  "answers": 6,
-  "keyMoves": 0,
-  "seedsTried": 40,
-  "seedsOk": 15
  },
  {
   "n": 12,
@@ -849,13 +784,13 @@
   "role": "ordinary",
   "knot": true,
   "aim": 0.29600000000000004,
-  "seed": 33,
-  "guessWin": 0.25,
-  "knotSize": 8,
-  "answers": 32,
+  "seed": 3,
+  "guessWin": 0.6,
+  "knotSize": 6,
+  "answers": 3,
   "keyMoves": 0,
-  "seedsTried": 40,
-  "seedsOk": 21
+  "seedsTried": 1,
+  "seedsOk": 1
  },
  {
   "n": 67,

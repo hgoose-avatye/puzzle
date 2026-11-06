@@ -487,18 +487,20 @@ const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(
 const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch { /* ignore */ } };
 
 /**
- * The chick's first-time tutorials (tutorial.ts draws the chick and the finger, src/game/tutorialPlan.ts decides). Five,
- * each one tap on an animal: the first rule (level 1), the arrow tile (once an animal whose way bends on one can leave),
- * the key, the sleeper's neighbour, the way clear for a bomb. At most one per level; nothing shows while an animal
- * runs or once the level is over; a tutorial with no animal on screen to point at is not forced and waits for another
- * level. The scene darkens with only that animal lit and breathing (stage.ts setFocus, PieceView.setBreathe). The
- * rule is learnt when the animal really leaves on that tap, or on 건너뛰기. After the key, sleep and bomb taps the
- * animal that changed is lit for a moment (RESULT_MS) and play goes on by itself.
+ * The chick's first-time tutorials (tutorial.ts draws the chick and the finger, src/game/tutorialPlan.ts decides). Six,
+ * each one tap on an animal: the first rule (level 1), the blocked animal that only shakes (level 2), the arrow tile
+ * (once an animal whose way bends on one can leave), the key, the sleeper's neighbour, the way clear for a bomb. At most
+ * one per level; nothing shows while an animal runs or once the level is over; a tutorial with no animal on screen to
+ * point at is not forced and waits for another level. The scene darkens with only that animal lit and breathing
+ * (stage.ts setFocus, PieceView.setBreathe). The rule is learnt when the animal really leaves on that tap (shakes, for
+ * the blocked one), or on 건너뛰기. After the blocked, key, sleep and bomb taps the animal that stood in the way or
+ * changed is lit for a moment (RESULT_MS) and play goes on by itself.
  */
 const tutorial = new Tutorial('/assets/ui/result/chick.png');
 /** The chick's words: one or two short lines, broken by hand where the phrase breaks (\n). */
 const TUTORIAL_TEXT: Record<TutorialId, string> = {
   basic: '이 친구를 눌러봐!',
+  blocked: '앞이 막힌 친구를\n눌러봐!',
   arrow: '화살표에서\n꺾이는 걸 봐!',
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
@@ -517,7 +519,7 @@ const SPOT_RECHECK = 300;
 /** How long the animal a tap changed (unlocked, woken, its way cleared) stays lit after the tap (ms). */
 const RESULT_MS = 800;
 /** Tutorials whose tap changes another animal, shown for RESULT_MS. */
-const WITH_RESULT: readonly TutorialId[] = ['key', 'sleep', 'bomb'];
+const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb'];
 /** This level's one tutorial is taken (shown, or the level's own start rule is waiting for its animal). */
 let tutorialUsed = true;
 /** Look for the arrow tutorial on the next frame where nothing runs. */
@@ -618,6 +620,12 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
       spot: follow,
       onAction: () => {
         const s = current();
+        // the blocked tutorial's tap is the shake itself (its level has no hearts), then the animal in its way lights up
+        if (id === 'blocked') {
+          if (s && s.hearts === undefined && s.alive.has(target) && onTap(target) === 'blocked') tutorialTapped();
+          else endTutorial();
+          return;
+        }
         // only the tap the tutorial shows: the animal leaving, or (bump) running up to what stops it; never another animal
         const piece = s?.level.pieces.find((p) => p.id === target);
         const does = s && piece && s.alive.has(target) && (id === 'bump' ? bumpAdvance(s.level, piece, s.alive) > 0 : canExit(s.level, target, s.alive));
@@ -632,8 +640,8 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
 }
 
 /**
- * The tutorial's animal has left on its tap: the rule is learnt. The key, sleep and bomb tutorials light up the animal
- * that changed for a moment; the arrow tutorial watches for the tile; then play goes on.
+ * The tutorial's animal has left on its tap (or, for the blocked tutorial, shook): the rule is learnt. The blocked, key,
+ * sleep and bomb tutorials light up the animal that changed (or stood in the way) for a moment; the arrow tutorial watches for the tile; then play goes on.
  */
 function tutorialTapped(): void {
   const shown = tutorialShown;

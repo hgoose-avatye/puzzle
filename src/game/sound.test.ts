@@ -77,6 +77,14 @@ describe('sound system', () => {
     expect(r.played[0].args).toEqual([0, 0.49, 0.15]);
   });
 
+  it('trimmed sounds stop at the end of their tail, and collision skips its silent lead-in', async () => {
+    const r = rig();
+    await ready(r);
+    r.sound.play('collision');
+    r.sound.play('rescued');
+    expect(r.played.map((p) => p.args)).toEqual([[0, 0.09, 0.36], [0, 0, 2.36]]);
+  });
+
   it('a new select cuts the previous one, so rapid taps never pile up pops', async () => {
     const r = rig();
     await ready(r);
@@ -196,12 +204,25 @@ describe('sound system', () => {
     expect(r.sound.play('collision')).toBe(false); // inside cooldown
   });
 
-  it('no more than four sounds at once, but the result sounds always get through', async () => {
+  it('a third rescued stops the oldest one, so rescued never holds more than two voices', async () => {
     const r = rig();
     await ready(r);
-    const names: SoundName[] = ['move', 'rescued', 'wall', 'arrive', 'collision'];
-    const results = names.map((n) => { r.advance(200); return r.sound.play(n); });
-    expect(results.filter(Boolean).length).toBeLessThanOrEqual(4);
+    // fill every other voice first: the new rescued still gets in by freeing the oldest rescued
+    r.sound.play('rescued');
+    r.advance(200);
+    r.sound.play('rescued');
+    for (let i = 0; i < 4; i++) { r.advance(200); r.sound.play('move'); }
+    r.advance(200);
+    expect(r.sound.play('rescued')).toBe(true);
+    expect(r.played.map((p) => p.stopped)).toEqual([true, false, false, false, false, false, false]);
+  });
+
+  it('no more than six sounds at once, but the result sounds always get through', async () => {
+    const r = rig();
+    await ready(r);
+    // the test sources never end, so each move holds its voice
+    const results = Array.from({ length: 8 }, () => { r.advance(200); return r.sound.play('move'); });
+    expect(results).toEqual([true, true, true, true, true, true, false, false]);
     expect(r.sound.play('clear')).toBe(true);
   });
 

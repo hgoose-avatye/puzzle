@@ -65,9 +65,10 @@ describe('fixtures and hearts on the curve', () => {
   it('gives no level hearts under the bump rule (a wrong tap moves an animal instead)', () => {
     for (let n = 1; n <= 180; n++) expect(levelSpec(n).hearts, `level ${n}`).toBeUndefined();
   });
-  it('knots every level but the intro and rest ones, and aims lower as the game goes on with a wave inside each stage', () => {
-    for (const n of [1, 2, 3, 4, 5, 15, 25, 31, 34, 35, 95, 155]) expect(knotLevel(n), `level ${n}`).toBe(false);
-    for (const n of [6, 9, 10, 20, 30, 36, 59, 60, 180]) expect(knotLevel(n), `level ${n}`).toBe(true);
+  it('knots every level but the intro, rest and hand-made ones, and aims lower as the game goes on with a wave inside each stage', () => {
+    // hand-made lessons (1, 2, 6, 7, 11) never knot either
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 11, 15, 25, 31, 34, 35, 95, 155]) expect(knotLevel(n), `level ${n}`).toBe(false);
+    for (const n of [8, 9, 10, 20, 30, 36, 59, 60, 180]) expect(knotLevel(n), `level ${n}`).toBe(true);
     for (const n of [1, 5, 35]) expect(aimAt(n)).toBe(1);
     expect(aimAt(6)).toBeGreaterThan(aimAt(20));
     expect(aimAt(20)).toBeGreaterThan(aimAt(60));

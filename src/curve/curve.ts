@@ -8,6 +8,7 @@ import type { BoardShape } from '../core/shapes';
 import { animalCount, arrowsAllowed, boardFor, bombSlackFor, cratesFor, finaleExtras, mechanicsFor, occupancyTarget, type Mechanics } from './chapterPlan';
 import pickedSeeds from './seeds.json';
 import bakedLevels from './levels.json';
+import handLevels from './handLevels.json';
 
 export type Role = 'intro' | 'rest' | 'ordinary' | 'tough' | 'finale';
 
@@ -199,8 +200,12 @@ export function trendAt(n: number): number {
   return va + ((vb - va) * (n - a)) / (b - a);
 }
 
-/** Does level `n` need a push (a knot)? Intro and rest levels never do. */
+/** Levels designed by hand (the first-play lessons, scripts/build-levels.ts): they ship as written, knot or not. */
+export const HAND_LEVELS = new Set(Object.keys(handLevels as Record<string, unknown>).map(Number));
+
+/** Does level `n` need a push (a knot)? Intro, rest and hand-made levels never do. */
 export function knotLevel(n: number): boolean {
+  if (HAND_LEVELS.has(n)) return false;
   const role = levelSpec(n).role;
   return role !== 'intro' && role !== 'rest';
 }
@@ -225,7 +230,7 @@ function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mecha
   const mechanics = mechanicsFor(chapter, level, role);
   const crateCount = cratesFor(obstaclesFor(chapter, level, role), board, mechanics);
   const extras = role === 'finale' ? finaleExtras(chapter) : {};
-  const bombSlack = bombSlackFor(chapter, role, mechanics);
+  const bombSlack = bombSlackFor(chapter, level, role, mechanics);
   // crates are taught with a single crack on intro levels, two everywhere else
   const params: GenParams = {
     ...raw.params, ...board, crateCount, crateHits: role === 'intro' ? 1 : 2, ...mechanicParams(mechanics),

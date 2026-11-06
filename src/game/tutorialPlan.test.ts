@@ -3,7 +3,7 @@ import { gradeKnot } from '../core/bump';
 import { createGame, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import type { Level } from '../core/types';
-import { buildGameLevel } from '../curve/curve';
+import { buildGameLevel, knotLevel } from '../curve/curve';
 import { arrowTargets, bumpTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
 
 const levelOf = (n: number): Level => buildGameLevel(n)!.level;
@@ -23,7 +23,22 @@ describe('tutorialPlan', () => {
   it('teaches the first rule later only to a save that has learnt nothing', () => {
     expect(startTutorial(levelOf(10), [], 10)).toBe('basic');
     expect(startTutorial(levelOf(10), ['hearts'], 10)).toBeNull();
-    expect(startTutorial(levelOf(2), ['basic'], 2)).toBeNull();
+    expect(startTutorial(levelOf(3), ['basic'], 3)).toBeNull();
+  });
+
+  it('teaches the blocked animal on level 2 only: it points at an animal held by others that can all leave', () => {
+    const l = levelOf(2);
+    expect(startTutorial(l, ['basic'], 2)).toBe('blocked');
+    expect(startTutorial(l, ['basic', 'blocked'], 2)).toBeNull();
+    expect(startTutorial(levelOf(7), ['basic', 'arrow'], 7)).toBeNull();
+    const targets = startTargets(l, everyone(l), 'blocked');
+    expect(targets.length).toBeGreaterThan(0);
+    for (const id of targets) {
+      expect(canExit(l, id, everyone(l))).toBe(false);
+      const inWay = resultSubjects(l, 'blocked', id);
+      expect(inWay.length).toBeGreaterThan(0);
+      for (const b of inWay) expect(canExit(l, b, everyone(l))).toBe(true);
+    }
   });
 
   it('points the key tutorial at the free key carrier of level 61', () => {
@@ -51,24 +66,19 @@ describe('tutorialPlan', () => {
     expect(canExit(l, target, everyone(l))).toBe(true);
   });
 
-  it('finds the arrow moment on the first level with an arrow tile: once an animal whose way bends on it can leave', () => {
-    // the first shipped level with a tile; play its winning line until such an animal is free
-    let n = 6;
-    while (!(levelOf(n).arrows?.length)) n++;
-    const l = levelOf(n);
-    let s = createGame(l);
-    let found = arrowTargets(s.level, s.alive);
-    for (const m of gradeKnot(l).line ?? []) {
-      if (found.length) break;
-      s = tap(s, m.id).state;
-      found = arrowTargets(s.level, s.alive);
-    }
-    expect(found.length, `level ${n}`).toBeGreaterThan(0);
-    for (const id of found) expect(canExit(s.level, id, s.alive)).toBe(true);
+  it('has the arrow moment on level 6 right at the start, on an animal that can leave', () => {
+    const l = levelOf(6);
+    const alive = everyone(l);
+    expect(startTutorial(l, ['basic', 'blocked'], 6)).toBeNull();
+    const targets = arrowTargets(l, alive);
+    expect(targets.length).toBeGreaterThan(0);
+    for (const id of targets) expect(canExit(l, id, alive)).toBe(true);
   });
 
-  it('points the bump tutorial at the push of the winning line once nothing can leave (level 6)', () => {
-    const l = levelOf(6);
+  it('points the bump tutorial at the push of the winning line once nothing can leave (the first knot level)', () => {
+    let n = 1;
+    while (!knotLevel(n)) n++;
+    const l = levelOf(n);
     let s = createGame(l);
     expect(bumpTargets(s.level, s.alive)).toEqual([]);
     for (const m of gradeKnot(l).line ?? []) {
