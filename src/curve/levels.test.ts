@@ -86,6 +86,10 @@ describe('shipped levels', () => {
     expect(bombBlocked / bombs).toBeGreaterThanOrEqual(0.8);
   });
 
+  it('count bombs sit only on 2-3 cell animals (the dynamite goes on the body block)', () => {
+    for (const { n, level } of levels) for (const p of level.pieces) if (p.fuse !== undefined) expect(p.cells.length, `level ${n} animal ${p.id}`).toBeGreaterThan(1);
+  });
+
   it('every hand-made level ships exactly as written in handLevels.json', () => {
     for (const n of Object.keys(HAND)) expect(buildGameLevel(+n), `level ${n}`).toEqual(HAND[n]);
   });

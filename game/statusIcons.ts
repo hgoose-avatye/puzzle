@@ -130,3 +130,54 @@ export function statusTexture(items: string[], count?: number): { tex: THREE.Can
   if (later.length) void Promise.all(later).then(() => { paint(); tex.needsUpdate = true; });
   return { tex, w, h };
 }
+
+/**
+ * Count dynamite on 2-3 cell bodies (2.5D, 2026-11-05; one-cell animals carry no bombs): the bundle picture and, apart from it, the screen plate with the
+ * count, so the plate can be drawn over everything while the bundle stays behind the blocks in front of it.
+ * Sizes in css px; the count is the same 17px Pretendard Bold as the bomb icon.
+ */
+export const DYNAMITE = {
+  w: 64 * (796 / 788), // whole picture; its opaque bundle is 64 css px wide
+  aspect: 522 / 796,
+  screen: { cx: 0.5558, cy: 0.5413, d: 373 / 796 },
+};
+export function dynamiteBundleTexture(): THREE.CanvasTexture {
+  const w = DYNAMITE.w, h = w * DYNAMITE.aspect;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(w * RES);
+  c.height = Math.ceil(h * RES);
+  const ctx = c.getContext('2d')!;
+  const img = image('count_dynamite');
+  const paint = (): void => {
+    ctx.clearRect(0, 0, c.width, c.height);
+    if (img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, c.width, c.height);
+  };
+  paint();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  if (!img.complete) void img.decode().catch(() => undefined).then(() => { paint(); tex.needsUpdate = true; });
+  return tex;
+}
+export function dynamiteScreenTexture(count: number): { tex: THREE.CanvasTexture; size: number } {
+  const size = DYNAMITE.w * DYNAMITE.screen.d;
+  const c = document.createElement('canvas');
+  c.width = c.height = Math.ceil(size * RES);
+  const ctx = c.getContext('2d')!;
+  const img = image('count_dynamite_screen');
+  const paint = (): void => {
+    ctx.clearRect(0, 0, c.width, c.height);
+    if (img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, c.width, c.height);
+    ctx.font = fontOf(COUNT_FONT_PX * RES);
+    ctx.fillStyle = COUNT_COLOR;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(count), c.width / 2, c.height / 2 + RES);
+  };
+  paint();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const later: Promise<unknown>[] = img.complete ? [] : [img.decode().catch(() => undefined)];
+  if (!document.fonts.check(fontOf(COUNT_FONT_PX))) later.push(document.fonts.load(fontOf(COUNT_FONT_PX), '0123456789'));
+  if (later.length) void Promise.all(later).then(() => { paint(); tex.needsUpdate = true; });
+  return { tex, size };
+}

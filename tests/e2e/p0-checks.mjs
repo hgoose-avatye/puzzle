@@ -89,16 +89,18 @@ export async function runP0Checks(browser, base, report) {
     check('R1 repeat after the way opened still exits', !a.alive.includes(4) && a.hearts === 2, `alive ${a.alive}, hearts ${a.hearts}`);
   });
 
-  await scenario('R1+R3 bomb level', url('?level=124'), async (p) => {
-    const blocked = await p.evaluate(() => { const g = window.__game; const free = g.free(); return g.ids().find((i) => !free.includes(i)); });
+  // the demo bomb board: 5 can be pushed one cell, 1 can leave, the bomb (2) starts at 2
+  await scenario('R1 bomb level', url('?demo=bomb'), async (p) => {
+    const blocked = 5;
     const f0 = await st(p);
     await tap(p, blocked); await sleep(80); await tap(p, blocked);
     const f1 = await st(p);
     const moved = JSON.stringify(f0.cells[blocked]) !== JSON.stringify(f1.cells[blocked]);
     const drop = Object.keys(f0.fuses).map((k) => f0.fuses[k] - f1.fuses[k]);
     // a push burns every fuse once; the repeat within 0.4 s is the same tap (R1); a blocked tap that goes nowhere burns nothing
-    check('R1 bomb level: double tap on a blocked animal counts once and burns each fuse at most once, no heart', drop.every((d) => d === (moved ? 1 : 0)) && f1.blocked === 1 && f1.hearts == null, `moved ${moved}, fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
-    const free = await p.evaluate(() => { const g = window.__game; const s = g.state(); return g.free().find((i) => s.fuses[i] === undefined); });
+    // (the demo keeps the old rule's three hearts for these checks: the double tap costs one, as R1 says)
+    check('R1 bomb level: double tap on a blocked animal counts once and burns each fuse at most once', drop.every((d) => d === (moved ? 1 : 0)) && f1.blocked === 1 && (f0.hearts == null ? f1.hearts == null : f1.hearts === f0.hearts - 1), `moved ${moved}, fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
+    const free = 1;
     await tap(p, free); await sleep(80); await tap(p, free);
     const f2 = await st(p);
     const drop2 = Object.keys(f1.fuses).map((k) => f1.fuses[k] - (f2.fuses[k] ?? NaN));
@@ -196,7 +198,7 @@ export async function runP0Checks(browser, base, report) {
     check('tap picks the animal drawn there (level 10): at least 90%, another animal at most 3%', t.ok / n >= 0.9 && t.wrong / n <= 0.03, `ok ${(100 * t.ok / n).toFixed(1)}%, wrong ${(100 * t.wrong / n).toFixed(1)}%, miss ${(100 * t.miss / n).toFixed(1)}% of ${n} points`);
   });
 
-  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2, which has to wait behind 1; 5 then 6 can be pushed one cell each (the fuse counts pushes)
+  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2 (two cells), which has to wait behind 1; 5 then 6 can be pushed one cell each (the fuse counts pushes)
   const BOMB = url('?demo=bomb');
   /** The bomb chip under the hearts and the warning above the buttons (null when hidden). */
   // 2.5D draws the clay bomb picture where Classic 3D writes 💣 (status icons 2026-11-05): read the picture as the emoji
@@ -214,8 +216,8 @@ export async function runP0Checks(browser, base, report) {
     check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 한 번 더 밀면 펑!', JSON.stringify(at1));
   });
 
-  // two bombs (level 131): the chip follows the closest one as fuses burn, and goes once no bomb is left
-  await scenario('bomb chip with two bombs', url('?level=131'), async (p) => {
+  // two bombs (level 139): the chip follows the closest one as fuses burn, and goes once no bomb is left
+  await scenario('bomb chip with two bombs', url('?level=139'), async (p) => {
     const read = () => p.evaluate(() => {
       const s = window.__game.state();
       const left = Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([, f]) => f);

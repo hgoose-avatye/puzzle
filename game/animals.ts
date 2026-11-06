@@ -5,7 +5,7 @@ import type { Level, Piece } from '../src/core/types';
 import { routeOf } from '../src/game/flow';
 import { trackAt, type Track } from '../src/game/smooth';
 import { buildAnimal } from './blocks';
-import { statusPixelScale, statusTexture } from './statusIcons';
+import { DYNAMITE, dynamiteBundleTexture, dynamiteScreenTexture, statusPixelScale, statusTexture } from './statusIcons';
 
 /** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
 const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
@@ -349,12 +349,18 @@ export class PieceView {
 
   /** 2.5D only: a bomb at zero swells its icon for BOMB_SWELL and then the icon is gone. False in Classic 3D (unchanged). */
   explode(): boolean {
+    if (this.cards && this.dynBundle?.visible) { this.dynBlowT = BOMB_SWELL; return true; }
     if (!this.cards || !this.badge.visible) return false;
     this.blowT = BOMB_SWELL;
     return true;
   }
 
   setBadges(items: string[], number?: number): void {
+    if (this.cards && this.bodyLen >= 2) {
+      const bomb = items.includes('💣') && number !== undefined;
+      this.showDynamite(bomb ? number : undefined);
+      if (bomb) { items = items.filter((it) => it !== '💣'); number = undefined; }
+    }
     if (this.cards) {
       this.badgeItems = items;
       this.badgeCount = number;
@@ -365,6 +371,62 @@ export class PieceView {
   }
 
   private badgeCount: number | undefined;
+  /** 2.5D count dynamite on the body block of a 2-3 cell animal (bundle behind the blocks in front, screen on top) */
+  private dynBundle: THREE.Sprite | null = null;
+  private dynScreen: THREE.Sprite | null = null;
+  private dynCount: number | undefined;
+  private dynSize = 0;
+  private dynPopT = 0;
+  private dynBlowT: number | null = null;
+
+  private showDynamite(count: number | undefined): void {
+    if (count === undefined) { if (this.dynBundle) this.dynBundle.visible = this.dynScreen!.visible = false; return; }
+    if (!this.dynBundle) {
+      this.dynBundle = new THREE.Sprite(new THREE.SpriteMaterial({ map: dynamiteBundleTexture(), transparent: true, alphaTest: 0.5, depthWrite: false, sizeAttenuation: false }));
+      this.dynBundle.center.set(DYNAMITE.screen.cx, 1 - DYNAMITE.screen.cy);
+      this.dynBundle.renderOrder = 9;
+      this.dynScreen = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, sizeAttenuation: false }));
+      this.dynScreen.renderOrder = 10;
+      this.group.add(this.dynBundle, this.dynScreen);
+    }
+    if (count === this.dynCount && this.dynBundle.visible) return;
+    if (this.dynBlowT !== null) return;
+    if (this.dynCount !== undefined && count < this.dynCount) this.dynPopT = BADGE_POP;
+    this.dynCount = count;
+    const mat = this.dynScreen!.material as THREE.SpriteMaterial;
+    mat.map?.dispose();
+    const scr = dynamiteScreenTexture(count);
+    mat.map = scr.tex;
+    mat.needsUpdate = true;
+    this.dynSize = scr.size;
+    this.dynBundle.visible = this.dynScreen!.visible = true;
+  }
+
+  private animateDynamite(dt: number): void {
+    if (!this.dynBundle?.visible) return;
+    const tip = this.segments[1]?.userData.bodyTip as THREE.Vector3 | undefined;
+    if (tip) {
+      // a little toward the camera (58° up, no yaw) so the bundle is in front of its own body card, behind the head at 0°
+      const toCam = new THREE.Vector3(0, Math.sin((58 * Math.PI) / 180), Math.cos((58 * Math.PI) / 180)).multiplyScalar(0.12);
+      this.dynBundle.position.copy(tip).add(toCam);
+      this.dynScreen!.position.copy(this.dynBundle.position);
+    }
+    let k = 1;
+    if (this.dynBlowT !== null) {
+      this.dynBlowT = Math.max(0, this.dynBlowT - dt);
+      if (this.dynBlowT === 0) { this.dynBundle.visible = this.dynScreen!.visible = false; return; }
+      k = 1 + (1 - this.dynBlowT / BOMB_SWELL) * 0.5;
+    } else {
+      if (this.dynPopT > 0) {
+        this.dynPopT = Math.max(0, this.dynPopT - dt);
+        k += Math.sin((1 - this.dynPopT / BADGE_POP) * Math.PI) * 0.35;
+      }
+      if (this.dynCount !== undefined && this.dynCount <= 2) k += Math.max(0, Math.sin(this.clock * 7)) * 0.12;
+    }
+    const px = statusPixelScale() * k;
+    this.dynBundle.scale.set(DYNAMITE.w * px, DYNAMITE.w * DYNAMITE.aspect * px, 1);
+    this.dynScreen!.scale.set(this.dynSize * px, this.dynSize * px, 1);
+  }
 
   private showBadge(items: string[], number?: number): void {
     if (items.length === 0) {
@@ -646,6 +708,7 @@ export class PieceView {
     this.zzzT += dt;
     if (this.zzz.visible) this.animateZzz();
     this.animateBadge(dt);
+    this.animateDynamite(dt);
     if (this.alertT > 0) this.alertT = Math.max(0, this.alertT - dt);
     if (this.anim.kind === 'run') {
       this.place(this.anim.s);
