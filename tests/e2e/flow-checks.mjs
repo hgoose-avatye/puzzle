@@ -43,7 +43,19 @@ export async function runFlowChecks(browser, base, report) {
     await sleep(100);
   };
   /** Send out every animal (rules decide at once); returns the number of taps. */
-  const clearAll = (p) => p.evaluate(() => { let n = 0; for (let k = 0; k < 200; k++) { const f = window.__game.free(); if (!f.length) break; window.__game.tap(f[0]); n++; } return n; });
+  const clearFree = (p) => p.evaluate(() => { let n = 0; for (let k = 0; k < 200; k++) { const f = window.__game.free(); if (!f.length) break; window.__game.tap(f[0]); n++; } return n; });
+  // taps what the hint suggests until the level is over: free animals, and at a knot the push that untangles it (a
+  // push is held back while an animal still runs, so it is tried again after a moment)
+  const clearAll = async (p) => {
+    let n = 0;
+    for (let k = 0; k < 300; k++) {
+      const r = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (!s || s.cleared || s.failed) return null; const id = g.hint(); return id === null ? null : g.tap(id); });
+      if (r === null) break;
+      n++;
+      if (r === 'repeat (R1)') await sleep(250);
+    }
+    return n;
+  };
   const waitPopup = async (p, ms = 15000) => { for (let t = 0; t < ms; t += 100) { const s = await ui(p); if (s.popup) return s; await sleep(100); } return ui(p); };
 
   async function scenario(name, saved, body, query = '') {
@@ -140,35 +152,34 @@ export async function runFlowChecks(browser, base, report) {
     check('flow: 홈으로 on the success popup -> title offering 이어하기 at level 2', a.title && a.popup === null && a.resume && a.where.startsWith('레벨 2'), JSON.stringify(a));
   });
 
-  await scenario('fail -> retry and home', '7', async (p) => {
+  await scenario('knotted board -> undo and home', '9', async (p) => {
+    // (settle is defined with the tutorial checks further down; this one waits the same way)
+    const settle = async (p) => { for (let t = 0; t < 80 && await p.evaluate(() => [...window.__game.views().values()].some((v) => v.running)); t++) await sleep(100); await sleep(150); };
     await p.click('#tContinue');
     await sleep(400);
     await closeTips(p);
-    // three blocked taps (another animal each time, or the same one after its 0.4 s shake)
-    for (let k = 0; k < 3; k++) {
-      await p.evaluate(() => { const g = window.__game; const free = g.free(); const blocked = g.ids().filter((i) => !free.includes(i)); g.tap(blocked[0]); });
-      await sleep(450);
+    // take every free animal out (and let them run off: a push waits for a still board), then push knotted animals
+    // until one knots the board for good
+    await clearFree(p);
+    await settle(p);
+    let stuck = null;
+    for (let k = 0; k < 12 && !stuck; k++) {
+      const pushed = await p.evaluate((k) => { const g = window.__game; const free = g.free(); const knotted = g.ids().filter((i) => !free.includes(i)); const id = knotted[k % knotted.length]; return id === undefined ? null : [id, g.tap(id)]; }, k);
+      if (!pushed) break;
+      await settle(p);
+      const m = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge') }));
+      if (m.msg.includes('꼬였')) stuck = m;
+      else if (pushed[1] === 'blocked') { await p.click('#undo'); await settle(p); }
     }
-    const a = await ui(p);
-    check('flow: fail popup with 다시 하기 and 홈으로', a.popup === '하트가 모두 떨어졌어요' && a.popupHome, JSON.stringify(a));
-    const shown = await p.evaluate(() => document.querySelectorAll('#popupHearts .heart.empty').length);
-    check('flow: hearts-out popup shows the used (empty) hearts', shown === 3, `empty hearts ${shown}`);
-    // the fail popup's 다시 하기 retries at once: the retry question is only for the bottom bar
-    await p.click('#popupBtn');
-    await sleep(500);
-    const b = await ui(p);
-    const hearts = await p.evaluate(() => window.__game.state().hearts);
-    const asked = await p.evaluate(() => !document.getElementById('modal').hidden);
-    check('flow: 다시 하기 -> the same level 7, three hearts, no retry question', b.label === '레벨 7' && b.popup === null && hearts === 3 && !asked, `${JSON.stringify(b)}, hearts ${hearts}, asked ${asked}`);
-    for (let k = 0; k < 3; k++) {
-      await p.evaluate(() => { const g = window.__game; const free = g.free(); const blocked = g.ids().filter((i) => !free.includes(i)); g.tap(blocked[0]); });
-      await sleep(450);
-    }
-    await waitPopup(p, 2000);
-    await p.click('#popupHome');
+    check('flow: a push that knots the board says 길이 꼬였어요 and the undo button nudges', stuck?.nudge === true, JSON.stringify(stuck));
+    await p.click('#undo');
+    await settle(p);
+    const back = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), hearts: window.__game.state().hearts }));
+    check('flow: 되돌리기 clears the knot message; no hearts anywhere', !back.nudge && !back.msg.includes('꼬였') && back.hearts == null, JSON.stringify(back));
+    await p.click('#home');
     await sleep(400);
     const c = await ui(p);
-    check('flow: 홈으로 on the fail popup -> title, save still 7', c.title && c.popup === null && c.saved === '7', JSON.stringify(c));
+    check('flow: 홈으로 in play -> title, save still 9', c.title && c.popup === null && c.saved === '9', JSON.stringify(c));
   });
 
   // the last level: clearing it starts the journey over (the save goes back to 1, as the game always did)
@@ -217,7 +228,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#retryYes');
     await sleep(400);
     const reset = await p.evaluate(() => window.__game.state());
-    check('retry: 다시 하기 in the question restarts level 7', !(await modalUi(p)).open && reset.taps === 0 && reset.hearts === 3 && (await ui(p)).label === '레벨 7', JSON.stringify(reset));
+    check('retry: 다시 하기 in the question restarts level 7 (no hearts)', !(await modalUi(p)).open && reset.taps === 0 && reset.hearts == null && (await ui(p)).label === '레벨 7', JSON.stringify(reset));
   });
 
   // UI v0.2: the sound switch (#mute) lives in the settings card, opened from the settings button on the title and in play
@@ -329,18 +340,16 @@ export async function runFlowChecks(browser, base, report) {
     check('tutorial: level 61 opens with the key on the free key carrier, and 건너뛰기 learns it without a tap', t?.id === 'key' && (await restored(p)) && (await seenNow(p)).includes('key') && s.taps === 0, `${JSON.stringify(t)}, taps ${s.taps}`);
   });
 
-  await scenario('tutorial: hearts and crates teach themselves in play (no tutorial), a lost heart pops', null, async (p) => {
-    // level 7 brings hearts and level 11 crates: no chick for either; the heart a blocked tap takes pops once
-    await withSeen(p, ['basic', 'arrow'], '?level=7');
-    await p.evaluate(() => { const g = window.__game; const f = new Set(g.free()); g.tap(g.ids().find((i) => !f.has(i))); });
-    await sleep(120);
-    const pop = await p.evaluate(() => document.querySelectorAll('#hearts .heart.pop').length);
-    await sleep(500);
+  await scenario('tutorial: a blocked tap and crates teach themselves in play (no tutorial on 7 and 11)', null, async (p) => {
+    // level 7 (hand-made): a blocked tap costs nothing and moves the animal when it has room; level 11 brings crates
+    await withSeen(p, ['basic', 'blocked', 'arrow', 'bump'], '?level=7');
+    const moved = await p.evaluate(() => { const g = window.__game; const f = new Set(g.free()); const id = g.ids().find((i) => !f.has(i)); const before = JSON.stringify(g.state().cells[id]); const r = g.tap(id); return { r, moved: JSON.stringify(g.state().cells[id]) !== before, hearts: g.state().hearts }; });
+    await settle(p);
     const seven = await tut(p);
-    await withSeen(p, ['basic', 'arrow'], '?level=11');
+    await withSeen(p, ['basic', 'blocked', 'arrow', 'bump'], '?level=11');
     let eleven = null;
     for (let k = 0; k < 40; k++) { const id = await p.evaluate(() => window.__game.free()[0] ?? null); if (id === null) break; await p.evaluate((i) => window.__game.tap(i), id); await settle(p); eleven ??= await tut(p); }
-    check('tutorial: no tutorial on levels 7 and 11, and the heart lost to a blocked tap pops', seven === null && eleven === null && pop === 1, `7 ${JSON.stringify(seven)}, 11 ${JSON.stringify(eleven)}, pops ${pop}`);
+    check('tutorial: no tutorial on levels 7 and 11; the blocked tap on 7 is blocked, takes no heart', seven === null && eleven === null && moved.r === 'blocked' && moved.hearts == null, `7 ${JSON.stringify(seven)}, 11 ${JSON.stringify(eleven)}, blocked tap ${JSON.stringify(moved)}`);
   });
 
   await scenario('tutorial: after the key tap the unlocked animal is lit for a moment, then play goes on', null, async (p) => {
