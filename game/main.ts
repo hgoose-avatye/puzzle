@@ -1040,7 +1040,8 @@ else goHome();
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   /** The animal the hint button would light up (bombs first). */
-  hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) : null; },
+  // the hint button's pick: a free animal, or (nothing free) the push that untangles the knot
+  hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) ?? (BUMP ? pickPush(s.level, s.alive) : null) : null; },
   free: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive)).map((p) => p.id) : []; },
   views: () => views,
   runSpeed: () => runSpeed(),

@@ -95,7 +95,7 @@ export async function runP0Checks(browser, base, report) {
     await tap(p, blocked); await sleep(80); await tap(p, blocked);
     const f1 = await st(p);
     const drop = Object.keys(f0.fuses).map((k) => f0.fuses[k] - f1.fuses[k]);
-    check('R1+R3 bomb level: double tap on a blocked animal costs one heart and no fuse', drop.every((d) => d === 0) && f1.blocked === 1 && f1.hearts === f0.hearts - 1, `fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
+    check('R1+R3 bomb level: double tap on a blocked animal counts once, burns no fuse, costs no heart', drop.every((d) => d === 0) && f1.blocked === 1 && f1.hearts == null, `fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
     const free = await p.evaluate(() => { const g = window.__game; const s = g.state(); return g.free().find((i) => s.fuses[i] === undefined); });
     await tap(p, free); await sleep(80); await tap(p, free);
     const f2 = await st(p);
@@ -224,8 +224,9 @@ export async function runP0Checks(browser, base, report) {
     // play the way the hint button suggests (bombs first), reading the chip after every tap
     for (let k = 0; k < 60; k++) {
       seen.push(await read());
-      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (s.cleared || s.failed) return true; const id = g.hint(); if (id === null) return true; g.tap(id); return false; });
-      if (done) break;
+      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (s.cleared || s.failed) return true; const id = g.hint(); if (id === null) return true; return g.tap(id) === 'repeat (R1)' ? 'wait' : false; });
+      if (done === true) break;
+      if (done === 'wait') await sleep(250); // a push waits for the board to settle
     }
     const wrong = seen.filter((r) => (r.min === null ? r.chip !== null : r.chip !== `💣 ${r.min}`));
     const counts = [...new Set(seen.map((r) => r.bombs))];
