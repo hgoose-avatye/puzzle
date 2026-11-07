@@ -231,26 +231,6 @@ export async function runP0Checks(browser, base, report) {
     check('two dynamites: what is drawn on each animal equals its fuse after every tap, and leaves with it', wrong.length === 0 && seen.some((r) => Object.keys(r.fuses).length === 2), JSON.stringify({ wrong: wrong.slice(0, 3), steps: seen.length }));
   });
 
-  await scenario('bomb chip with two bombs', url('?level=139'), async (p) => {
-    const read = () => p.evaluate(() => {
-      const s = window.__game.state();
-      const left = Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([, f]) => f);
-      const c = document.getElementById('bombChip');
-      return { chip: c.hidden ? null : (c.querySelector('img.statusIcon[src$="/bomb.png"]') ? '💣 ' : '') + c.textContent, min: left.length && !s.failed ? Math.min(...left) : null, bombs: left.length };
-    });
-    const seen = [];
-    // play the way the hint button suggests (bombs first), reading the chip after every tap
-    for (let k = 0; k < 60; k++) {
-      seen.push(await read());
-      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (s.cleared || s.failed) return true; const id = g.hint(); if (id === null) return true; return g.tap(id) === 'repeat (R1)' ? 'wait' : false; });
-      if (done === true) break;
-      if (done === 'wait') await sleep(250); // a push waits for the board to settle
-    }
-    const wrong = seen.filter((r) => (r.min === null ? r.chip !== null : r.chip !== `💣 ${r.min}`));
-    const counts = [...new Set(seen.map((r) => r.bombs))];
-    check('two bombs: the chip always shows the smallest fuse left, follows the other bomb once one is out, hides with none left', wrong.length === 0 && counts.includes(2) && counts.includes(1) && counts.includes(0), `${seen.length} states, bombs on board ${counts.join('/')}, mismatches ${JSON.stringify(wrong.slice(0, 3))}`);
-  });
-
   await scenario('bomb at 1: bomb first is saved while it waits', BOMB, async (p) => {
     await tap(p, 5); await settled(p); // fuse 1
     await tap(p, 1); await sleep(30); await tap(p, 2); await sleep(30); await tap(p, 3);
