@@ -4,12 +4,12 @@ import { createGame, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import type { Level } from '../core/types';
 import { buildGameLevel, knotLevel } from '../curve/curve';
-import { arrowTargets, bumpTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
+import { arrowTargets, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
 
 const levelOf = (n: number): Level => buildGameLevel(n)!.level;
 const everyone = (l: Level): Set<number> => new Set(l.pieces.map((p) => p.id));
 /** Every rule learnt except these. */
-const allBut = (...left: string[]): string[] => ['basic', 'arrow', 'hearts', 'crate', 'key', 'sleep', 'bomb'].filter((id) => !left.includes(id));
+const allBut = (...left: string[]): string[] => ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2', 'crateBreak', 'key', 'sleep', 'bomb'].filter((id) => !left.includes(id));
 
 describe('tutorialPlan', () => {
   it('opens level 1 with the first rule on an animal that can leave right away', () => {
@@ -98,5 +98,30 @@ describe('tutorialPlan', () => {
     const l = levelOf(1);
     expect(startTargets(l, everyone(l), 'key')).toEqual([]);
     expect(arrowTargets(l, everyone(l))).toEqual([]);
+  });
+});
+
+describe('crate lessons (2026-11-07)', () => {
+  it('level 11 opens on crate: a free neighbour of its one-crack crate, and the held animal is the result', () => {
+    const l = buildGameLevel(11)!.level;
+    expect(startTutorial(l, [], 11)).toBe('basic'); // a newcomer learns the tap first
+    expect(startTutorial(l, ['basic', 'blocked'], 11)).toBe('crate');
+    const [target] = startTargets(l, everyone(l), 'crate');
+    expect(target).toBe(2);
+    expect(resultSubjects(l, 'crate', target)).toEqual([1]);
+    expect(crateBreakTargets(l, everyone(l))).toEqual([]);
+  });
+  it('level 12 opens on crate2 (the whole two-crack crate), and once a neighbour has left, crateBreak points at the other', () => {
+    const l = buildGameLevel(12)!.level;
+    expect(startTutorial(l, ['basic', 'blocked', 'crate'], 12)).toBe('crate2');
+    expect(startTargets(l, everyone(l), 'crate2')).toEqual([6]);
+    // 6 gone: one crack; 8 is not free yet (it needs the knot's push), so the break lesson waits
+    const after6 = new Set([...everyone(l)].filter((id) => id !== 6));
+    expect(crateBreakTargets(l, after6)).toEqual([]);
+    expect(startTargets(l, after6, 'crate2')).toEqual([]); // a cracked crate is no longer the whole one
+  });
+  it('a level without a one-crack crate never asks for the crate lesson, nor a level without a two-crack crate for crate2', () => {
+    expect(startTutorial(buildGameLevel(12)!.level, ['basic', 'blocked'], 12)).toBe('crate2');
+    expect(startTutorial(buildGameLevel(9)!.level, ['basic', 'blocked'], 9)).toBeNull();
   });
 });

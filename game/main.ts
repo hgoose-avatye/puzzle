@@ -15,7 +15,7 @@ import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
-import { arrowTargets, bumpTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
+import { arrowTargets, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
 import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -564,6 +564,9 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   sleep: '옆 친구를 보내서\n깨워봐!',
   bomb: '폭탄 친구가 부딪히기 전에\n길을 비워줘!',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
+  crate: '옆 친구가 나가면\n상자가 부서져!',
+  crate2: '옆 친구가 나가면\n점이 하나 줄어!',
+  crateBreak: '한 명 더 나가면\n상자가 부서져!',
 };
 /**
  * The tap's round target around the animal, in board cells on screen; never under SPOT_MIN (the finger's target stays
@@ -577,7 +580,7 @@ const SPOT_RECHECK = 300;
 /** How long the animal a tap changed (unlocked, woken, its way cleared) stays lit after the tap (ms). */
 const RESULT_MS = 800;
 /** Tutorials whose tap changes another animal, shown for RESULT_MS. */
-const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb'];
+const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb', 'crate', 'crate2', 'crateBreak'];
 /** This level's one tutorial is taken (shown, or the level's own start rule is waiting for its animal). */
 let tutorialUsed = true;
 /** Look for the arrow tutorial on the next frame where nothing runs. */
@@ -713,6 +716,18 @@ function tutorialTapped(): void {
     const tile = traceExit(s.level, piece).cells.find((c) => arrows.has(`${c.x},${c.y}`));
     if (tile) arrowWatch = { id: shown.target, x: tile.x, y: tile.y, at: stage.worldOf(s.level, tile.x, tile.y) };
   }
+  // crate2: the crate the tapped animal stood by lights up as its dot goes; then the level waits for crateBreak
+  if (shown.id === 'crate2') {
+    const piece = s.level.pieces.find((p) => p.id === shown.target);
+    const crate = piece && (s.level.crates ?? []).find((k) => piece.cells.some((c) => Math.abs(c.x - k.x) + Math.abs(c.y - k.y) === 1));
+    const obj = crate ? stage.crateObjectAt(crate.x, crate.y) : null;
+    if (obj) {
+      stage.setFocus([obj]);
+      tutorial.result(() => { const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6)); return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) }; });
+      resultTimer = window.setTimeout(() => { endTutorial(); tutorialUsed = false; tutorialCheck = true; }, RESULT_MS);
+    } else { endTutorial(); tutorialUsed = false; tutorialCheck = true; }
+    return;
+  }
   const changed = WITH_RESULT.includes(shown.id) ? resultSubjects(s.level, shown.id, shown.target).filter((id) => s.alive.has(id) && views.has(id)) : [];
   if (!changed.length) { endTutorial(); return; }
   stage.setFocus(changed.map((id) => views.get(id)!.group));
@@ -745,6 +760,8 @@ function situationalTutorial(): void {
   if (anyRunning() || tutorial.visible || !$('popup').hidden || !$('modal').hidden) return;
   tutorialCheck = false;
   const s = flow.state;
+  // the second crate lesson: a cracked crate's free neighbour, whose leaving breaks it
+  if (!readSeen().includes('crateBreak') && showTapTutorial('crateBreak', crateBreakTargets(s.level, s.alive))) return;
   if (!readSeen().includes('arrow') && showTapTutorial('arrow', arrowTargets(s.level, s.alive))) return;
   // the first knot: nothing can leave, so the chick shows the push that untangles it
   if (BUMP && !readSeen().includes('bump')) showTapTutorial('bump', bumpTargets(s.level, s.alive, s.fuses));

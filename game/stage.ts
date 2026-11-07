@@ -219,6 +219,8 @@ export class Stage {
       this.board.add(ob);
     }
     // crates take the stage's obstacle look, plus crack lines that show once they are hit
+    for (const sh of this.shards) this.board.remove(sh.mesh);
+    this.shards = [];
     this.crates = [];
     for (const k of level.crates ?? []) {
       const obj = obstacleFor(theme, stage, orng);
@@ -426,6 +428,11 @@ export class Stage {
       const k = Math.sin((1 - a.t / ARROW_BOUNCE) * Math.PI);
       a.obj.scale.set(1 + 0.12 * k, 1 + 0.6 * k, 1 + 0.12 * k);
     }
+  }
+
+  /** The crate drawn at a cell (the chick tutorial lights it up), if one stands there. */
+  crateObjectAt(x: number, y: number): THREE.Object3D | null {
+    return this.crates.find((c) => c.crate.x === x && c.crate.y === y && c.obj.visible)?.obj ?? null;
   }
 
   /** A short bounce of the arrow tile at a cell (the chick tutorial: the moment an animal turns on it). */
