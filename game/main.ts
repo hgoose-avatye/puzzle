@@ -464,7 +464,7 @@ function onTap(id: number): TapOutcome {
   const view = views.get(id);
   if (ev.type === 'exited' && view) {
     // a tap tutorial is done once its animal really leaves
-    if (tutorialShown?.target === id) tutorialTapped();
+    if (tutorialShown?.target === id && !tutorialInfo) tutorialTapped();
     tutorialCheck = true;
     // The rules treat it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
     fx.launch(view.headWorld());
@@ -492,7 +492,7 @@ function onTap(id: number): TapOutcome {
     };
     // bump rule: it runs up to what stops it first, and the bump comes on arrival
     if (ev.moved) {
-      if (tutorialShown?.target === id) tutorialTapped();
+      if (tutorialShown?.target === id && !tutorialInfo) tutorialTapped();
       tutorialCheck = true;
       sound.play('move');
       view.slideTo(flow.headAt(id), feedback);
@@ -560,6 +560,8 @@ let tutorialUsed = true;
 let tutorialCheck = false;
 /** The tutorial on screen: its rule and the animal to tap. */
 let tutorialShown: { id: TutorialId; target: number } | null = null;
+/** The lesson on screen has nothing to tap (showInfoTutorial): a board tap on its animal is not its tap. */
+let tutorialInfo = false;
 let resultTimer: number | undefined;
 /** After the arrow tutorial's tap: the tile it turns on, bounced when the animal's head reaches it. */
 let arrowWatch: { id: number; x: number; y: number; at: THREE.Vector3 } | null = null;
@@ -573,6 +575,7 @@ function endTutorial(learnt?: TutorialId): void {
   stage.setFocus([]);
   tutorial.hide();
   tutorialShown = null;
+  tutorialInfo = false;
 }
 /** Close any tutorial; nothing more this level (a new level starts afresh). */
 function stopTutorials(): void {
@@ -682,6 +685,7 @@ function showInfoTutorial(id: TutorialId, target: number): boolean {
   const view = views.get(target);
   if (!spot || !view) return false;
   tutorialShown = { id, target };
+  tutorialInfo = true;
   tutorialUsed = true;
   stage.setFocus([view.group]);
   view.setBreathe(true);
@@ -1163,7 +1167,7 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   build: () => BUILD,
   /** every animal's dynamite as drawn: its number and whether it shows red (at 1) */
-  dynamite: () => [...views.entries()].filter(([, v]) => v.dynamite).map(([id, v]) => ({ id, ...v.dynamite! })),
+  dynamite: () => { const s = current(); return [...views.entries()].filter(([id, v]) => v.dynamite && s?.alive.has(id)).map(([id, v]) => ({ id, ...v.dynamite! })); },
   playlog: () => playlog?.all ?? [],
   /** The animal the hint button would light up (bombs first). */
   // the hint button's pick: a free animal, or (nothing free) the push that untangles the knot

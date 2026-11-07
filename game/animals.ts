@@ -389,6 +389,8 @@ export class PieceView {
       this.showBadge(this.asleep ? [...items, '💤'] : items, number);
       return;
     }
+    // Classic 3D: the count on the bomb badge (the `dynamite` getter reads it)
+    this.badgeCount = number;
     this.showBadge(items, number);
   }
 

@@ -410,7 +410,8 @@ export async function runFlowChecks(browser, base, report) {
     const t = await tut(p);
     // the dynamite counts its own collisions: push an animal that collides with it (the dev hook lists them) until it goes off
     for (let k = 0; k < 24 && await p.evaluate(() => document.getElementById('popup').hidden); k++) {
-      await p.evaluate((target, k) => { const g = window.__game; const free = g.free(); const ids = g.bombTouches().filter((i) => i !== target); const rest = g.ids().filter((i) => i !== target && !free.includes(i)); const pool = ids.length ? ids : rest; if (pool.length) g.tap(pool[k % pool.length]); }, t.target, k);
+      // the lesson on 40 sits on the dynamite itself (no tap leads to it), so the dynamite is a push like any other here
+      await p.evaluate((k) => { const g = window.__game; const free = g.free(); const ids = g.bombTouches(); const rest = g.ids().filter((i) => !free.includes(i)); const pool = ids.length ? ids : rest; if (pool.length) g.tap(pool[k % pool.length]); }, k);
       await settle(p);
     }
     await sleep(600);
