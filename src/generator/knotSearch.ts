@@ -29,6 +29,8 @@ export interface KnotShape {
   knotMin: number;
   /** least chance that random pushes clear the board (rest levels: a knot that hardly fails) */
   guessWinMin?: number;
+  /** true: a wrong push that leaves the board stuck at once is not held against the board (hidden traps earn nothing) */
+  fairTraps?: boolean;
 }
 
 export interface KnotCandidate {
@@ -180,8 +182,8 @@ export function shapeScore(grade: KnotGrade, shape: KnotShape, openTraps: number
   d += Math.max(0, grade.answers - shape.answersMax);
   d += 20 * Math.max(0, shape.knotMin - grade.knot);
   if (shape.guessWinMin !== undefined) d += Math.round(200 * Math.max(0, shape.guessWinMin - grade.guessWin));
-  // a trap in plain sight is half a trap
-  d += traps ? Math.round((10 * openTraps) / traps) : 0;
+  // a trap in plain sight is half a trap, unless the shape asks for fair traps (experiments/knot-small)
+  if (!shape.fairTraps) d += traps ? Math.round((10 * openTraps) / traps) : 0;
   // the slope between two forced pushes: every decision on the line that is not yet forced counts its spare good
   // pushes and, more, its missing options (a knot with one answer and two options is a dead end for the climb), and a
   // line shorter than the forced pushes it needs counts its missing pushes

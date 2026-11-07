@@ -1,5 +1,6 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
+import { LEVELS as EXP_LEVELS } from '../experiments/knot-small/levels';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
 import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
@@ -105,6 +106,9 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
     return { level: board.level };
   }
   if (DEMO) return { level: demoLevel(), hearts: 3 };
+  // ?exp=<name>: a level of the small whole-knot experiment (experiments/knot-small), dev only
+  const exp = params.get('exp');
+  if (import.meta.env.DEV && exp && EXP_LEVELS[exp]) return { level: EXP_LEVELS[exp] };
   return buildGameLevel(n);
 }
 
