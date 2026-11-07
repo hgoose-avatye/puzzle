@@ -43,6 +43,10 @@ function groundTexture(color: number): THREE.CanvasTexture {
 }
 
 /** Cream pill with one brown dot per hit a crate has left. */
+/** Bubble size on the board (cells): wide enough for its dots, 1.5 x the first size (2026-11-07). */
+const PIP_W = (left: number): number => 0.5 + 0.27 * left;
+const PIP_H = 0.5;
+
 function pipTexture(left: number): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   const w = 64 + 34 * left;
@@ -67,8 +71,14 @@ function pipTexture(left: number): THREE.CanvasTexture {
   return tex;
 }
 
-const CRACK_GEO = new THREE.BoxGeometry(0.42, 0.02, 0.035);
-const CRACK_MAT = new THREE.MeshBasicMaterial({ color: 0x3b2a1e });
+const CRACK_GEO = new THREE.BoxGeometry(0.5, 0.03, 0.07);
+const CRACK_MAT = new THREE.MeshBasicMaterial({ color: 0x1e1208 });
+/** How long a crack's pip pop and a breaking crate's fall take (s); the shards fly for SHARD_LIFE. */
+const CRACK_POP = 0.3;
+const BREAK_FALL = 0.3;
+const SHARD_LIFE = 0.55;
+const SHARD_GEO = new THREE.BoxGeometry(0.22, 0.14, 0.22);
+const SHARD_MAT = new THREE.MeshStandardMaterial({ color: 0xc08a52, roughness: 0.9 });
 
 /** Free what a board group created for itself; scenery meshes share cached geometry and materials and are skipped. */
 function disposeOwned(root: THREE.Object3D): void {
@@ -100,7 +110,9 @@ export class Stage {
   private level: Level | null = null;
   private readonly ray = new THREE.Raycaster();
   private readonly hemi = new THREE.HemisphereLight(0xffffff, 0xb9c9a4, 1.05);
-  private crates: Array<{ crate: Crate; obj: THREE.Object3D; crack: THREE.Object3D; pips: THREE.Sprite; cracks: number; shakeT: number }> = [];
+  private crates: Array<{ crate: Crate; obj: THREE.Object3D; crack: THREE.Object3D; pips: THREE.Sprite; cracks: number; shakeT: number; popT: number; breakT: number }> = [];
+  /** Pieces of a breaking crate flying off, each with its velocity (per second) and time left. */
+  private shards: Array<{ mesh: THREE.Mesh; v: THREE.Vector3; t: number }> = [];
   /** Miniature look of the reference: the board stays sharp, the scenery above and below softens. */
   private composer!: EffectComposer;
   /** The chick tutorial's focus: off unless a tutorial lights an animal up (setFocus). */
@@ -220,14 +232,15 @@ export class Stage {
       }
       crack.visible = false;
       obj.add(crack);
-      // a small bubble with one dot per hit left, so any crate look (hay, rock, log) reads as "this breaks"
+      // a bubble with one dot per hit left, so any crate look (hay, rock, log) reads as "this breaks"; big enough to
+      // tell two dots from one on a phone (2026-11-07 playtest: the change was not seen at the old size)
       const pips = new THREE.Sprite(new THREE.SpriteMaterial({ map: pipTexture(k.hits), transparent: true, depthTest: false }));
-      pips.scale.set(0.34 + 0.18 * k.hits, 0.34, 1);
-      pips.position.set(0, 1.15, 0);
+      pips.scale.set(PIP_W(k.hits), PIP_H, 1);
+      pips.position.set(0, 1.25, 0);
       pips.renderOrder = 9;
       obj.add(pips);
       this.board.add(obj);
-      this.crates.push({ crate: k, obj, crack, pips, cracks: 0, shakeT: 0 });
+      this.crates.push({ crate: k, obj, crack, pips, cracks: 0, shakeT: 0, popT: 0, breakT: 0 });
     }
     this.arrowTiles.clear();
     for (const a of level.arrows ?? []) {
@@ -352,15 +365,26 @@ export class Stage {
       if (cracks <= c.cracks) continue;
       c.cracks = cracks;
       const broke = cracks >= c.crate.hits;
-      if (broke) c.obj.visible = false;
-      else {
+      if (broke) {
+        // the crate falls in for BREAK_FALL while its pieces fly off, then it is gone
+        c.breakT = BREAK_FALL;
+        c.pips.visible = false;
+        for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+          const mesh = new THREE.Mesh(SHARD_GEO, SHARD_MAT);
+          mesh.position.copy(c.obj.position).add(new THREE.Vector3(dx * 0.18, 0.5, dz * 0.18));
+          this.board.add(mesh);
+          this.shards.push({ mesh, v: new THREE.Vector3(dx * 1.6, 2.6, dz * 1.6), t: SHARD_LIFE });
+        }
+      } else {
+        // a crack: the lines show, the crate shakes and the bubble pops as one dot goes
         c.crack.visible = true;
         c.shakeT = 0.35;
+        c.popT = CRACK_POP;
         const m = c.pips.material;
         m.map?.dispose();
         m.map = pipTexture(c.crate.hits - cracks);
         m.needsUpdate = true;
-        c.pips.scale.x = 0.34 + 0.18 * (c.crate.hits - cracks);
+        c.pips.scale.x = PIP_W(c.crate.hits - cracks);
       }
       out.push({ pos: c.obj.position.clone(), broke });
     }
@@ -369,11 +393,33 @@ export class Stage {
 
   update(dt: number): void {
     for (const c of this.crates) {
+      if (c.breakT > 0) {
+        c.breakT = Math.max(0, c.breakT - dt);
+        const k = c.breakT / BREAK_FALL;
+        c.obj.scale.set(0.3 + 0.7 * k, 0.1 + 0.9 * k * k, 0.3 + 0.7 * k);
+        if (c.breakT === 0) c.obj.visible = false;
+        continue;
+      }
+      if (c.popT > 0) {
+        c.popT = Math.max(0, c.popT - dt);
+        const k = 1 + 0.5 * Math.sin((1 - c.popT / CRACK_POP) * Math.PI);
+        c.pips.scale.set(PIP_W(c.crate.hits - c.cracks) * k, PIP_H * k, 1);
+      }
       if (c.shakeT <= 0) continue;
       c.shakeT = Math.max(0, c.shakeT - dt);
       c.obj.rotation.z = Math.sin(c.shakeT * 50) * 0.08 * (c.shakeT / 0.35);
       c.obj.scale.setScalar(1 - 0.06 * Math.sin((c.shakeT / 0.35) * Math.PI));
     }
+    for (const sh of this.shards) {
+      sh.t -= dt;
+      sh.v.y -= 9 * dt;
+      sh.mesh.position.addScaledVector(sh.v, dt);
+      sh.mesh.rotation.x += 6 * dt;
+      sh.mesh.rotation.z += 4 * dt;
+      sh.mesh.scale.setScalar(Math.max(0.01, sh.t / SHARD_LIFE));
+      if (sh.t <= 0) this.board.remove(sh.mesh);
+    }
+    this.shards = this.shards.filter((sh) => sh.t > 0);
     for (const a of this.arrowTiles.values()) {
       if (a.t <= 0) continue;
       a.t = Math.max(0, a.t - dt);
