@@ -2,7 +2,8 @@ import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
-import { bumpAdvance, bumpResult, burnOnCollision, pickPush, solvableBump } from '../src/core/bump';
+import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
+import { stuckAtOnce } from '../src/generator/knotSearch';
 import { distanceToPolyline } from '../src/game/path';
 import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
@@ -32,6 +33,17 @@ let flow = null as PlayFlow | null;
 const current = (): GameState | null => flow?.state ?? null;
 let views = new Map<number, PieceView>();
 let levelNumber = 1;
+/**
+ * Undos per level (2026-11-07): with undo free, a knot was solved by trying pushes rather than reading them (ten levels
+ * of chapter 5 in under five minutes, playtest 2026-11-06). Each undo takes back the last push and what came after it;
+ * with none left, a board that is physically stuck is lost and the level starts over.
+ */
+const UNDO_PER_LEVEL = 3;
+let undosLeft = UNDO_PER_LEVEL;
+/** The push hint shows once per level: for a knot it is the answer. */
+let hintPushUsed = false;
+/** The board is physically stuck with no undo left: the level is over (showEnd), taps are ignored. */
+let stuckOut = false;
 /** Hearts the level started with, for the empty-heart outlines in the HUD. */
 let maxHearts = 0;
 let loadToken = 0;
@@ -278,19 +290,33 @@ async function loadLevel(n: number): Promise<void> {
   const hearts = BUMP && !DEMO ? undefined : built.hearts ?? (levelSpec(n).role === 'rest' || levelSpec(n).role === 'intro' ? undefined : 3);
   maxHearts = hearts ?? 0;
   flow = new PlayFlow(built.level, hearts, BUMP);
+  undosLeft = UNDO_PER_LEVEL;
+  hintPushUsed = false;
+  stuckOut = false;
+  paintUndo();
   addViews(built.level);
   refreshHud();
   shownHearts = hearts ?? 0;
   beginTutorials(built.level);
 }
 
+/** The undo button shows how many are left this level. */
+function paintUndo(): void {
+  const label = $('undo').querySelector('span');
+  if (label) label.textContent = `되돌리기 ${undosLeft}`;
+  $('undo').classList.toggle('spent', undosLeft === 0);
+}
+
 /**
- * Bump rule: take back the last tap. The level is built afresh and every earlier tap replayed at once, so moved
- * animals, cracked crates and animals already out come back exactly as they were.
+ * Bump rule: take back the last push and every tap after it (exits never hurt, so there is nothing to take back before
+ * a push). The level is built afresh and the earlier taps replayed at once, so moved animals, cracked crates and
+ * animals already out come back exactly as they were. Costs one of the level's undos.
  */
 function undoTap(): void {
-  if (!flow || !flow.log.length || anyRunning()) return;
-  const log = flow.log.slice(0, -1);
+  if (!flow || !flow.pushes.length || anyRunning() || stuckOut) return;
+  if (undosLeft <= 0) { $('msg').textContent = '되돌리기를 다 썼어요'; return; }
+  undosLeft--;
+  const log = flow.log.slice(0, flow.pushes[flow.pushes.length - 1]);
   const n = levelNumber;
   clearBoard();
   const built = buildLevel(n);
@@ -307,17 +333,27 @@ function undoTap(): void {
     else { stage.scene.remove(v.group); v.dispose(); views.delete(id); }
   }
   stage.updateCrates(replay.state.level, replay.state.alive);
+  paintUndo();
   refreshHud();
 }
 
-/** Bump rule: after a tap, say so when no order of taps can clear the board any more. */
+/**
+ * Bump rule: after a tap, say so when nothing on the board can leave or move any more. Only what the player can see
+ * counts (2026-11-07): the game no longer tells whether a push knotted the board for good, because that answer made
+ * every wrong push free to take back. With no undo left, a stuck board is a lost level.
+ */
 function checkStuck(): void {
   const s = current();
-  if (!BUMP || !s || isCleared(s)) return;
-  if (solvableBump(s.level, s.alive, undefined, s.fuses) === false) {
-    $('msg').textContent = '길이 꼬였어요. 되돌리기를 눌러요';
+  if (!BUMP || !s || isCleared(s) || isFailed(s) || stuckOut) return;
+  if (!stuckAtOnce(s.level, s.alive)) { $('undo').classList.remove('nudge'); return; }
+  if (undosLeft > 0) {
+    $('msg').textContent = `길이 막혔어요. 되돌리기 ${undosLeft}번 남았어요`;
     $('undo').classList.add('nudge');
-  } else $('undo').classList.remove('nudge');
+    return;
+  }
+  stuckOut = true;
+  playGameover();
+  showEnd(false);
 }
 
 $('undo').addEventListener('click', () => { sound.unlock(); undoTap(); checkStuck(); });
@@ -421,7 +457,7 @@ type TapOutcome = 'exited' | 'blocked' | 'repeat (R1)' | 'ignored: running' | 'i
 
 function onTap(id: number): TapOutcome {
   if (!flow) return 'no level';
-  if (isCleared(flow.state) || flow.lost) return 'level over';
+  if (isCleared(flow.state) || flow.lost || stuckOut) return 'level over';
   // null: a repeat on an animal still shaking from its blocked tap, the same tap (no second heart)
   const ev = flow.tap(id, performance.now());
   if (!ev) {
@@ -783,12 +819,12 @@ function showEnd(won: boolean): void {
   $('popup').hidden = false;
   $('msg').textContent = '';
   $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
-  $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : '하트가 모두 떨어졌어요';
+  $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : stuckOut ? '길이 막혔어요' : '하트가 모두 떨어졌어요';
   // the rescue card celebrates the friends saved and the stage step it filled; hearts left are not a score, so only a
   // lost level shows them (and a bomb ends the level whatever the hearts are, so the bomb card shows none)
   $('popupRescue').innerHTML = won ? `친구<b>${state.level.pieces.length}</b>마리를 구했어요` : '';
   $('popupStage').innerHTML = won ? stageProgressMarkup(levelNumber) : '';
-  $('popupHearts').innerHTML = won || state.hearts === undefined || state.exploded ? '' : heartsMarkup(state.hearts, maxHearts);
+  $('popupHearts').innerHTML = won || state.hearts === undefined || state.exploded || stuckOut ? '' : heartsMarkup(state.hearts, maxHearts);
   // the level is over: a retry question still open is moot
   if (modal.kind === 'retry') modal.close();
   $('popupBtn').className = dialogButton(won ? 'primary' : 'retry');
@@ -852,14 +888,21 @@ $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 $('next').hidden = !params.has('dev');
 
 let hintTimer: number | undefined;
-/** Light up the most helpful animal and its way out for a moment. Free for now; ads may gate it later. */
+/**
+ * Light up the most helpful animal and its way out for a moment. A free animal is shown any time; the push that
+ * untangles a knot is the level's answer, so it shows once per level.
+ */
 function showHint(): void {
   const state = current();
-  if (!state || isCleared(state) || isFailed(state)) return;
-  // nothing can leave: the push that untangles the knot, if there is one
-  const id = pickHint(state.level, state.alive, state.fuses) ?? (BUMP ? pickPush(state.level, state.alive, state.fuses) : null);
+  if (!state || isCleared(state) || isFailed(state) || stuckOut) return;
+  let id = pickHint(state.level, state.alive, state.fuses);
+  if (id === null && BUMP) {
+    if (hintPushUsed) { $('msg').textContent = '밀기 힌트는 한 판에 한 번이에요'; return; }
+    id = pickPush(state.level, state.alive, state.fuses);
+    if (id !== null) hintPushUsed = true;
+  }
   const view = id === null ? undefined : views.get(id);
-  if (!view) { $('msg').textContent = BUMP ? '길이 꼬였어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
+  if (!view) { $('msg').textContent = BUMP ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
   sound.play('select');
   view.showPath(true);
   window.clearTimeout(hintTimer);
@@ -1045,6 +1088,9 @@ if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   // animals whose push right now collides with a dynamite (the browser checks set one off with these)
   bombTouches: () => { const s = current(); if (!s) return []; return s.level.pieces.filter((p) => s.alive.has(p.id) && !canExit(s.level, p.id, s.alive)).filter((p) => { const b = bumpResult(s.level, p, s.alive); return !!b && burnOnCollision(s.fuses, s.alive, p.id, b.stopper).exploded; }).map((p) => p.id); },
   free: () => { const s = current(); return s ? s.level.pieces.filter((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive)).map((p) => p.id) : []; },
+  /** nothing can leave or move (what checkStuck reads), and the undos left this level */
+  stuck: () => { const s = current(); return s ? stuckAtOnce(s.level, s.alive) : false; },
+  undos: () => undosLeft,
   views: () => views,
   runSpeed: () => runSpeed(),
   get traffic() { return flow?.traffic; },

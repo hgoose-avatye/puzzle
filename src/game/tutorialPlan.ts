@@ -79,9 +79,14 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
       // a free neighbour of a sleeper: its leaving wakes it
       return first(level.pieces.filter((p) => alive.has(p.id) && p.sleeping).flatMap((p) => [...neighbours(level, p)].filter((n) => alive.has(n))));
     case 'bomb': {
-      // the tap that clears the way of the bomb closest to going off (the bomb itself once its way is clear)
+      // the tap that clears the way of the bomb closest to going off (the bomb itself once its way is clear); on a
+      // knot level the dynamite sits inside the knot, where no free animal leads to it, so the lesson shows on any
+      // free animal (the words carry the rule; the tap is a safe exit)
       const bombs = level.pieces.filter((p) => alive.has(p.id) && p.fuse !== undefined).sort((a, b) => (fuses[a.id] ?? a.fuse!) - (fuses[b.id] ?? b.fuse!) || a.id - b.id);
-      return first(bombs.map((b) => nextTapToward(level, alive, b.id)).filter((t): t is number => t !== null));
+      const toward = first(bombs.map((b) => nextTapToward(level, alive, b.id)).filter((t): t is number => t !== null));
+      if (toward.length || !bombs.length) return toward;
+      const best = pickHint(level, alive, fuses);
+      return first([...(best === null ? [] : [best]), ...open]);
     }
     default:
       return [];

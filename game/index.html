@@ -108,6 +108,7 @@
       #undo span { white-space: nowrap; }
       /* the board is knotted: the way back asks to be pressed */
       #undo.nudge { animation: undoNudge 1s ease-in-out infinite; }
+      #undo.spent { opacity: .55; }
       @keyframes undoNudge { 50% { transform: scale(1.1); } }
       @media (max-width: 340px) { #bar { gap: 4px; } #bar .gb-bar:not(.gb-secondary) { --w: 84px; } #undo { width: 76px; } }
 

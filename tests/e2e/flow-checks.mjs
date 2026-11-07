@@ -152,34 +152,32 @@ export async function runFlowChecks(browser, base, report) {
     check('flow: 홈으로 on the success popup -> title offering 이어하기 at level 2', a.title && a.popup === null && a.resume && a.where.startsWith('레벨 2'), JSON.stringify(a));
   });
 
-  await scenario('knotted board -> undo and home', '9', async (p) => {
+  await scenario('stuck board -> undo and home', '10', async (p) => {
     // (settle is defined with the tutorial checks further down; this one waits the same way)
     const settle = async (p) => { for (let t = 0; t < 80 && await p.evaluate(() => [...window.__game.views().values()].some((v) => v.running)); t++) await sleep(100); await sleep(150); };
     await p.click('#tContinue');
     await sleep(400);
     await closeTips(p);
-    // take every free animal out (and let them run off: a push waits for a still board), then push knotted animals
-    // until one knots the board for good
+    const undos0 = await p.evaluate(() => ({ undos: window.__game.undos(), label: document.querySelector('#undo span').textContent }));
+    check('flow: a level starts with three undos, shown on the button', undos0.undos === 3 && undos0.label === '되돌리기 3', JSON.stringify(undos0));
+    // level 10 (baked 2026-11-07): once every free animal is out, pushing animal 3 and taking out whatever that frees
+    // leaves a board where nothing can leave or move (scratchpad stuckpath.ts over levels.json; re-check after a rebake)
     await clearFree(p);
     await settle(p);
-    let stuck = null;
-    for (let k = 0; k < 12 && !stuck; k++) {
-      const pushed = await p.evaluate((k) => { const g = window.__game; const free = g.free(); const knotted = g.ids().filter((i) => !free.includes(i)); const id = knotted[k % knotted.length]; return id === undefined ? null : [id, g.tap(id)]; }, k);
-      if (!pushed) break;
-      await settle(p);
-      const m = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge') }));
-      if (m.msg.includes('꼬였')) stuck = m;
-      else if (pushed[1] === 'blocked') { await p.click('#undo'); await settle(p); }
-    }
-    check('flow: a push that knots the board says 길이 꼬였어요 and the undo button nudges', stuck?.nudge === true, JSON.stringify(stuck));
+    const pushed = await p.evaluate(() => window.__game.tap(3));
+    await settle(p);
+    await clearFree(p);
+    await settle(p);
+    const stuck = await p.evaluate(() => ({ stuck: window.__game.stuck(), msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), undos: window.__game.undos() }));
+    check('flow: a board where nothing can move says 길이 막혔어요 with the undos left, and the undo button nudges', pushed === 'blocked' && stuck.stuck && stuck.nudge && stuck.msg.includes('막혔') && stuck.msg.includes('3번'), `${pushed} ${JSON.stringify(stuck)}`);
     await p.click('#undo');
     await settle(p);
-    const back = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), hearts: window.__game.state().hearts }));
-    check('flow: 되돌리기 clears the knot message; no hearts anywhere', !back.nudge && !back.msg.includes('꼬였') && back.hearts == null, JSON.stringify(back));
+    const back = await p.evaluate(() => ({ stuck: window.__game.stuck(), msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), undos: window.__game.undos(), hearts: window.__game.state().hearts }));
+    check('flow: 되돌리기 takes the last push back (board no longer stuck), costs one undo; no hearts anywhere', !back.stuck && !back.nudge && back.undos === 2 && back.hearts == null, JSON.stringify(back));
     await p.click('#home');
     await sleep(400);
     const c = await ui(p);
-    check('flow: 홈으로 in play -> title, save still 9', c.title && c.popup === null && c.saved === '9', JSON.stringify(c));
+    check('flow: 홈으로 in play -> title, save still 10', c.title && c.popup === null && c.saved === '10', JSON.stringify(c));
   });
 
   // the last level: clearing it starts the journey over (the save goes back to 1, as the game always did)

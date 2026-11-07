@@ -170,8 +170,9 @@ describe('traffic', () => {
   it('random rapid play on generated levels: everybody gets out, nobody overlaps, nobody waits forever', () => {
     let played = 0;
     let waits = 0;
-    // rest levels: they peel with free taps alone (a knot level needs a push, which is the rules', not traffic's, business)
-    for (const n of [5, 15, 25, 35, 45, 55]) {
+    // levels that peel with free taps alone: the lessons, the first rest level and the hand-made ones (every other
+    // level is a knot since 2026-11-07 and needs a push, which is the rules', not traffic's, business)
+    for (const n of [3, 4, 5, 6, 7, 11, 91]) {
       const gen = buildGameLevel(n);
       if (!gen) continue;
       played++;

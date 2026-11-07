@@ -131,14 +131,18 @@ export interface KnotGrade {
   line: BumpMove[] | null;
   /** the pushes of that line alone */
   pushes: number[] | null;
+  /** at every decision of that line: pushes that keep the board solvable, and pushes possible at all */
+  decisions: Decision[];
   nodes: number;
 }
+
+export interface Decision { good: number; options: number }
 
 export const ANSWER_CAP = 200;
 const GRADE_BUDGET = 40_000;
 
 /** A state's search result; `pushes` is the best winning push sequence from here (exits are implied: peel first). */
-interface Node { guessWin: number; answers: number; keyMoves: number; pushes: number[] | null }
+interface Node { guessWin: number; answers: number; keyMoves: number; pushes: number[] | null; decisions: Decision[] }
 
 /**
  * The full line for a push sequence from a state: the exits that peel at each step (in a tap order that works), then
@@ -175,13 +179,13 @@ export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(lev
   let first: { good: number; options: number } | null = null;
   const go = (lv: Level, al: ReadonlySet<number>, fz: Readonly<Record<number, number>>, depth: number): Node => {
     const rest = peel(lv, al);
-    if (rest.size === 0) return { guessWin: 1, answers: 1, keyMoves: 0, pushes: [] };
+    if (rest.size === 0) return { guessWin: 1, answers: 1, keyMoves: 0, pushes: [], decisions: [] };
     const k = stateKey(lv, rest, fz);
     const seen = memo.get(k);
     if (seen) return seen;
-    if (++nodes > budget) { over = true; return { guessWin: 0, answers: 0, keyMoves: 0, pushes: null }; }
+    if (++nodes > budget) { over = true; return { guessWin: 0, answers: 0, keyMoves: 0, pushes: null, decisions: [] }; }
     // the memo entry goes in first so a loop back to this state reads as a dead end, not as endless recursion
-    memo.set(k, { guessWin: 0, answers: 0, keyMoves: 0, pushes: null });
+    memo.set(k, { guessWin: 0, answers: 0, keyMoves: 0, pushes: null, decisions: [] });
     // every push a player could make; one that sets a bomb off is a dead end (it still counts as a choice)
     const options: Array<{ id: number; level: Level; fuses: Readonly<Record<number, number>>; dead: boolean }> = [];
     for (const p of lv.pieces) {
@@ -196,7 +200,7 @@ export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(lev
     let good = 0;
     let best: { node: Node; id: number } | null = null;
     for (const o of options) {
-      const child = o.dead ? { guessWin: 0, answers: 0, keyMoves: 0, pushes: null } : go(o.level, rest, o.fuses, depth + 1);
+      const child = o.dead ? { guessWin: 0, answers: 0, keyMoves: 0, pushes: null, decisions: [] } : go(o.level, rest, o.fuses, depth + 1);
       if (over) break;
       if (child.guessWin > 0) {
         good++;
@@ -205,13 +209,17 @@ export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(lev
         if (!best || child.keyMoves > best.node.keyMoves || (child.keyMoves === best.node.keyMoves && child.guessWin > best.node.guessWin)) best = { node: child, id: o.id };
       }
     }
-    if (depth === 0) first = { good, options: options.length };
-    const keyHere = good === 1 && options.length >= 3 ? 1 : 0;
+    // a push that sets a dynamite off is no choice to a player who reads the number: forced pushes and decisions
+    // count the live options only (guessWin keeps every option: it models pushing at random)
+    const live = options.filter((o) => !o.dead).length;
+    if (depth === 0) first = { good, options: live };
+    const keyHere = good === 1 && live >= 3 ? 1 : 0;
     const node: Node = {
       guessWin: options.length ? sum / options.length : 0,
       answers,
       keyMoves: best ? best.node.keyMoves + keyHere : 0,
       pushes: best ? [best.id, ...(best.node.pushes ?? [])] : null,
+      decisions: best ? [{ good, options: live }, ...best.node.decisions] : [],
     };
     memo.set(k, node);
     return node;
@@ -228,6 +236,7 @@ export function gradeKnot(level: Level, alive: ReadonlySet<number> = new Set(lev
     keyMoves: root.keyMoves,
     line: root.pushes ? lineFor(level, alive, root.pushes) : null,
     pushes: root.pushes,
+    decisions: root.decisions,
     nodes,
   };
 }
