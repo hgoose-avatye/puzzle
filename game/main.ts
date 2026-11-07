@@ -496,6 +496,7 @@ function onTap(id: number): TapOutcome {
     // The rules treat it as gone right away; on the board it runs out through traffic and may wait behind earlier runners.
     fx.launch(view.headWorld());
     sound.play('move');
+    view.setHalo(false);
     pendingExits.add(id);
     view.runOut(() => { if (flow?.won && !anyRunning()) winLevel(); }, () => {
       pendingExits.delete(id);
@@ -911,6 +912,9 @@ $('next').addEventListener('click', () => void loadLevel(levelNumber + 1));
 $('next').hidden = !params.has('dev');
 
 let hintTimer: number | undefined;
+/** How long the hint's halo and path stay (ms), from the button (2026-11-07: the old 1 s pulse was not noticed). */
+const HINT_MS = 3000;
+let hintView: PieceView | null = null;
 /**
  * Light up the most helpful animal and its way out for a moment. A free animal is shown any time; the push that
  * untangles a knot is the level's answer, so it shows once per level.
@@ -928,15 +932,20 @@ function showHint(): void {
   if (!view) { $('msg').textContent = BUMP ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
   playlog?.hint();
   sound.play('select');
-  view.showPath(true);
+  // the halo and the path stay HINT_MS from the button, whatever the finger does; three pulses draw the eye first
   window.clearTimeout(hintTimer);
-  // three pulses so the eye finds it, then the path fades
+  if (hintView && hintView !== view) { hintView.setHalo(false); if (!flow?.input.isPressed(hintView.piece.id)) hintView.showPath(false); }
+  hintView = view;
+  view.setHalo(true);
+  view.showPath(true);
   let n = 0;
-  const beat = (): void => {
-    if (n++ < 3) { view.pulse(); hintTimer = window.setTimeout(beat, 450); return; }
-    if (!flow?.input.isPressed(view.piece.id)) view.showPath(false);
-  };
+  const beat = (): void => { if (n++ < 3) { view.pulse(); window.setTimeout(beat, 450); } };
   beat();
+  hintTimer = window.setTimeout(() => {
+    view.setHalo(false);
+    if (!flow?.input.isPressed(view.piece.id)) view.showPath(false);
+    if (hintView === view) hintView = null;
+  }, HINT_MS);
 }
 $('hint').addEventListener('click', () => { sound.unlock(); showHint(); });
 

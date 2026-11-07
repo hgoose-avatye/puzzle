@@ -26,6 +26,12 @@ export function speciesFor(piece: Piece): string {
 
 /** 2.5D cards (approved 2026-11-02): the plate under each cell is a soft shadow pad, not the animal's hue */
 const CARD_PLATE = { color: 0x000000, opacity: 0.1 };
+/**
+ * The hint's halo (2026-11-07): an orange ring on the floor under every cell of the animal, wider than its plate so it
+ * shows around the picture or block without covering the head, scarf, badges or dynamite. Orange, thick: the one
+ * colour that read on every stage in the 2026-11-04 glow check.
+ */
+const HALO = { color: 0xff8a1c, opacity: 0.9, width: 1.18, depth: 1.3, height: 0.07 };
 const RUN_SPEED = 7.5;
 /** Current running speed in cells/s (on the dev server, tests may override it with window.__runSpeed). */
 export const runSpeed = (): number => (import.meta.env.DEV && typeof window !== 'undefined' ? (window as unknown as { __runSpeed?: number }).__runSpeed : undefined) ?? RUN_SPEED;
@@ -191,6 +197,7 @@ export class PieceView {
   readonly headStart: number;
   private readonly segments: THREE.Group[];
   private readonly plates: THREE.Mesh[] = [];
+  private readonly halos: THREE.Mesh[] = [];
   private readonly markers: THREE.Object3D[] = [];
   private readonly chevrons = new THREE.Group();
   /** low mark on the floor at the front edge of a one-cell animal's tile, showing which way it faces */
@@ -257,6 +264,11 @@ export class PieceView {
       this.plates.push(plate);
       this.markers.push(plate);
       this.group.add(plate);
+      const halo = new THREE.Mesh(new RoundedBoxGeometry(HALO.width, HALO.height, HALO.depth, 2, 0.05), new THREE.MeshBasicMaterial({ color: HALO.color, transparent: true, opacity: HALO.opacity }));
+      halo.visible = false;
+      halo.renderOrder = -1;
+      this.halos.push(halo);
+      this.group.add(halo);
     }
 
     // 2.5D: a fixed size on the screen (statusPixelScale), anchored at its bottom centre on the top of the picture
@@ -303,6 +315,11 @@ export class PieceView {
       const part = seg.children[0];
       part.position.y = running ? Math.abs(Math.sin(phase)) * 0.09 : Math.sin(phase) * 0.018;
     });
+    this.halos.forEach((halo, i) => {
+      const q = trackAt(this.track, sHead - i * BLOCK_SPACING);
+      halo.position.copy(this.world(q.x, q.y)).setY(0.02);
+      halo.rotation.y = q.angle;
+    });
     this.plates.forEach((plate, i) => {
       const q = trackAt(this.track, sHead - i * BLOCK_SPACING);
       plate.position.copy(this.world(q.x, q.y)).setY(0.05);
@@ -345,6 +362,11 @@ export class PieceView {
 
   showPath(visible: boolean): void {
     this.chevrons.visible = visible;
+  }
+
+  /** The hint's halo under every cell of the animal. */
+  setHalo(on: boolean): void {
+    for (const h of this.halos) h.visible = on;
   }
 
   /** 2.5D only: a bomb at zero swells its icon for BOMB_SWELL and then the icon is gone. False in Classic 3D (unchanged). */
