@@ -40,8 +40,11 @@ let levelNumber = 1;
  */
 const UNDO_PER_LEVEL = 3;
 let undosLeft = UNDO_PER_LEVEL;
-/** The push hint shows once per level: for a knot it is the answer. */
-let hintPushUsed = false;
+/**
+ * The push hint shows once per level number: for a knot it is the answer. Kept across retries (a retry and a hint
+ * would otherwise give the next push of the answer for free, as many times as wanted) until the level is cleared.
+ */
+const hintPushUsed = new Set<number>();
 /** The board is physically stuck with no undo left: the level is over (showEnd), taps are ignored. */
 let stuckOut = false;
 /** Hearts the level started with, for the empty-heart outlines in the HUD. */
@@ -291,7 +294,6 @@ async function loadLevel(n: number): Promise<void> {
   maxHearts = hearts ?? 0;
   flow = new PlayFlow(built.level, hearts, BUMP);
   undosLeft = UNDO_PER_LEVEL;
-  hintPushUsed = false;
   stuckOut = false;
   paintUndo();
   addViews(built.level);
@@ -897,9 +899,9 @@ function showHint(): void {
   if (!state || isCleared(state) || isFailed(state) || stuckOut) return;
   let id = pickHint(state.level, state.alive, state.fuses);
   if (id === null && BUMP) {
-    if (hintPushUsed) { $('msg').textContent = '밀기 힌트는 한 판에 한 번이에요'; return; }
+    if (hintPushUsed.has(levelNumber)) { $('msg').textContent = '밀기 힌트는 한 판에 한 번이에요'; return; }
     id = pickPush(state.level, state.alive, state.fuses);
-    if (id !== null) hintPushUsed = true;
+    if (id !== null) hintPushUsed.add(levelNumber);
   }
   const view = id === null ? undefined : views.get(id);
   if (!view) { $('msg').textContent = BUMP ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
