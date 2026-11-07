@@ -130,15 +130,15 @@ function paintBombBar(): void {
   const n = Math.min(...left);
   chip.hidden = false;
   chip.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
-  chip.setAttribute('aria-label', `폭탄: ${n}번 더 부딪히면 터져요`);
+  chip.setAttribute('aria-label', `다이너마이트: 이 친구가 다른 친구와 ${n}번 더 부딪히면 터져요`);
   warn.hidden = n > 1;
   // 2.5D: the same clay bomb as over the animals (status UI 2026-11-05); Classic 3D keeps its emoji
   if ([...views.values()].some((v) => v.cards)) {
     chip.innerHTML = `${BOMB_ICON}${n}`;
-    warn.innerHTML = `${BOMB_ICON}한 번 더 부딪히면 펑!`;
+    warn.innerHTML = `${BOMB_ICON}이 친구가 한 번 더 부딪히면 펑!`;
   } else {
     chip.textContent = `💣 ${n}`;
-    warn.textContent = '💣 한 번 더 부딪히면 펑!';
+    warn.textContent = '💣 이 친구가 한 번 더 부딪히면 펑!';
   }
 }
 
@@ -514,7 +514,9 @@ function onTap(id: number): TapOutcome {
       sound.play('move');
       view.slideTo(flow.headAt(id), feedback);
     } else feedback();
-    $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 옆 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 옆 친구가 나가면 부서져요' : '앞이 막혔어요';
+    // the words follow the rules exactly (2026-11-07 audit): a crate cracks per neighbour that leaves, as many times as
+    // its dots show; a sleeper's neighbours are whoever stands next to it now
+    $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
   checkStuck();
