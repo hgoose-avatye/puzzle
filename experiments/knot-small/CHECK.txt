@@ -1,0 +1,104 @@
+== easy (6x8, 8 animals)
+ . . . . . .
+ . . . . . .
+ . . . . . .
+ . . . . . .
+>1 . . .·2 .
+^3<4·4 .v2 .
+ .v7 . .<6 .
+ .>8^5 . . .
+free at start: []  knot: [1,2,3,4,5,6,7,8] (8/8)
+solvable: true  forced pushes: 0  answers: 3  pushes on line: 1  (graded in 2ms, 3 nodes)
+line: push 1, out 3, out 4, out 5, out 8, out 7, out 6, out 2, out 1
+  push 1: moves 3 to 2 -> frees [1,2,3,4,5,6,7,8] -> CLEARS
+  push 2: cannot move
+  push 3: cannot move
+  push 4: cannot move
+  push 5: moves 1 to 4 -> frees [7,8] -> still solvable
+  push 6: moves 2 to 7 -> frees [1,2,3,4] -> stuck at once
+  push 7: cannot move
+  push 8: cannot move
+
+== gen1 (6x8, 8 animals)
+ . . . . . .
+ . . . .·8 .
+>2 . . .v8 .
+ .·3>3v6 . .
+ . .^4 .<7 .
+ . .·4<5<1 .
+ . . . . . .
+ . . . . . .
+free at start: []  knot: [3,6,1,7,5,8,2,4] (8/8)
+solvable: true  forced pushes: 1  answers: 2  pushes on line: 2  (graded in 2ms, 13 nodes)
+line: push 2, push 6, out 3, out 4, out 5, out 6, out 1, out 7, out 8, out 2
+  push 3: cannot move
+  push 6: moves 1 to 5 -> frees [3,6,1,7,5,8,2,4] -> CLEARS
+  push 1: cannot move
+  push 7: moves 1 to 4 -> frees [] -> dead (not visible yet)
+  push 5: cannot move
+  push 8: moves 1 to 7 -> frees [] -> dead (not visible yet)
+  push 2: moves 3 to 8 -> frees [] -> still solvable
+  push 4: cannot move
+
+== gen2 (6x8, 8 animals)
+ . . . . . .
+ .·3 . . .<7
+ .·3·2 . . .
+ .v3·2v1 . .
+ . .v2 . . .
+ . . . . . .
+ .v8 . .<4·4
+ .·6·6>6^5 .
+free at start: []  knot: [2,6,8,5,7,3,1,4] (8/8)
+solvable: true  forced pushes: 1  answers: 4  pushes on line: 3  (graded in 2ms, 18 nodes)
+line: push 7, push 3, out 7, push 4, out 5, out 6, out 8, out 3, out 4, out 2, out 1
+  push 2: moves 2 to 6 -> frees [] -> dead (not visible yet)
+  push 6: cannot move
+  push 8: cannot move
+  push 5: cannot move
+  push 7: moves 3 to 3 -> frees [] -> still solvable
+  push 3: moves 2 to 8 -> frees [7] -> still solvable
+  push 1: moves 3 to 6 -> frees [] -> dead (not visible yet)
+  push 4: moves 2 to 8 -> frees [2,6,8,5,7,3,1,4] -> CLEARS
+
+== gen3 (6x8, 8 animals)
+ . . . . . .
+ .·2 . .>4 .
+v8v2<3·3·3 .
+ . . . .^1 .
+·7>7 . .·1 .
+ . .^5 .·1 .
+ . .·5^6 . .
+ . .·5·6 . .
+free at start: [4]  knot: [5,3,2,7,8,6,1] (7/8)
+solvable: true  forced pushes: 1  answers: 5  pushes on line: 3  (graded in 2ms, 18 nodes)
+line: out 4, push 2, push 8, push 7, out 2, out 8, out 3, out 1, out 7, out 6, out 5
+  push 5: moves 2 to 3 -> frees [] -> dead (not visible yet)
+  push 3: cannot move
+  push 2: moves 1 to 7 -> frees [] -> still solvable
+  push 7: moves 2 to 1 -> frees [5,3,2,7,8,6,1] -> CLEARS
+  push 8: moves 1 to 7 -> frees [] -> still solvable
+  push 6: moves 3 to 3 -> frees [] -> dead (not visible yet)
+  push 1: cannot move
+
+== gen4 (6x8, 9 animals)
+ . . .<6·6·6
+ . . .v7 . .
+ . . .v1 . .
+ .·9 . . . .
+ .v9<4·4·4 .
+ .>5 . .^8 .
+>2 .^3 .·8 .
+ . .·3 . . .
+free at start: [6]  knot: [9,2,3,5,8,1,7,4] (8/9)
+solvable: true  forced pushes: 1  answers: 3  pushes on line: 3  (graded in 2ms, 24 nodes)
+line: out 6, push 1, push 7, push 5, out 9, out 4, out 3, out 8, out 2, out 5, out 1, out 7
+  push 9: cannot move
+  push 2: moves 1 to 3 -> frees [] -> dead (not visible yet)
+  push 3: moves 1 to 4 -> frees [] -> dead (not visible yet)
+  push 5: moves 2 to 8 -> frees [9,2,3,5,8,1,7,4] -> CLEARS
+  push 8: cannot move
+  push 1: moves 1 to 4 -> frees [] -> still solvable
+  push 7: cannot move
+  push 4: cannot move
+

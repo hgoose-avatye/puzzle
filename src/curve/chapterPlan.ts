@@ -70,6 +70,9 @@ export function boardFor(chapter: number, level: number, role: Role, own: readon
 const mech = (lockCount: number, sleepCount: number, bombCount: number): Mechanics => ({ lockCount, sleepCount, bombCount });
 const NONE = mech(0, 0, 0);
 
+/** Chapter 5 levels (1-30) that carry dynamite: 15 of its 27 knot levels (2026-11-07). */
+export const CHAPTER_FIVE_BOMB_LEVELS: ReadonlySet<number> = new Set([1, 2, 4, 7, 9, 10, 12, 14, 17, 19, 20, 22, 24, 27, 29, 30]);
+
 /**
  * Locks, sleepers and bombs. At most one lock per level: the badges do not show which key opens which lock
  * (docs/POLISH.md L10). A new mechanic is first taught alone, then joins one learned before. Ordinary levels never
@@ -81,27 +84,32 @@ export function mechanicsFor(chapter: number, level: number, role: Role): Mechan
   // chapter 2's three peaks bring the first dynamite: a push budget on top of the knot (2026-11-06)
   if (chapter === 2) return slot === 't10' || slot === 't20' || slot === 'fin' ? mech(0, 0, 1) : NONE;
   const stageOne = role === 'intro' || slot === 's1a' || slot === 's1b';
-  if (chapter === 3) return mech(1, 0, 0);
+  // chapter 3 has no mechanic of its own since locks went (2026-11-06): its knots carry it
+  if (chapter === 3) return NONE;
   if (chapter === 4) {
     if (stageOne) return mech(0, 1, 0);
     if (slot === 't10') return mech(0, 3, 0);
     if (slot === 's2a' || slot === 's2b') return mech(0, 2, 0);
-    return mech(1, 2, 0); // tough 20, stage three and the finale: sleepers with a lock
+    return mech(0, 2, 0); // tough 20, stage three and the finale
   }
   if (chapter === 5) {
+    // dynamite on about half the chapter (CHAPTER_FIVE_BOMB_LEVELS): the first lesson, the stage tests and peaks, and
+    // every fifth level between; the rest are knots alone. A dynamite at 1 shows which pushes not to make, so a
+    // chapter full of them read easier than chapter 4 (2026-11-07 trial player, docs/POLISH.md D7)
+    if (!CHAPTER_FIVE_BOMB_LEVELS.has(level)) return NONE;
     if (stageOne) return mech(0, 0, 1);
     if (slot === 't10') return mech(0, 0, 3);
     if (slot === 's2a' || slot === 's2b') return mech(0, 0, 2);
-    if (slot === 's3a' || slot === 's3b') return mech(1, 0, 1);
-    return mech(1, 0, 2); // tough 20 and the finale: bombs with a lock
+    if (slot === 's3a' || slot === 's3b') return mech(0, 0, 1);
+    return mech(0, 0, 2); // tough 20 and the finale
   }
-  // chapter 6 brings the three back, two at a time
-  if (role === 'intro') return [mech(1, 0, 0), mech(0, 1, 0), mech(0, 0, 1)][level % 3];
-  if (slot === 's1a' || slot === 's1b' || slot === 't10') return mech(1, 1, 0);
+  // chapter 6 brings sleepers and dynamite back, mixed
+  if (role === 'intro') return [mech(0, 1, 0), mech(0, 0, 1), mech(0, 1, 0)][level % 3];
+  if (slot === 's1a' || slot === 's1b' || slot === 't10') return mech(0, 1, 1);
   if (slot === 's2a' || slot === 't20') return mech(0, 1, 1);
-  if (slot === 's2b') return mech(1, 0, 1);
-  if (slot === 'fin') return mech(1, 1, 0);
-  return [mech(1, 1, 0), mech(0, 1, 1), mech(1, 0, 1)][level % 3]; // stage three
+  if (slot === 's2b') return mech(0, 1, 1);
+  if (slot === 'fin') return mech(0, 1, 2);
+  return [mech(0, 1, 1), mech(0, 2, 0), mech(0, 0, 2)][level % 3]; // stage three
 }
 
 /** Kinds among locks, sleepers and bombs that a level switches on. */

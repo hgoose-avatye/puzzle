@@ -152,34 +152,32 @@ export async function runFlowChecks(browser, base, report) {
     check('flow: 홈으로 on the success popup -> title offering 이어하기 at level 2', a.title && a.popup === null && a.resume && a.where.startsWith('레벨 2'), JSON.stringify(a));
   });
 
-  await scenario('knotted board -> undo and home', '9', async (p) => {
+  await scenario('stuck board -> undo and home', '10', async (p) => {
     // (settle is defined with the tutorial checks further down; this one waits the same way)
     const settle = async (p) => { for (let t = 0; t < 80 && await p.evaluate(() => [...window.__game.views().values()].some((v) => v.running)); t++) await sleep(100); await sleep(150); };
     await p.click('#tContinue');
     await sleep(400);
     await closeTips(p);
-    // take every free animal out (and let them run off: a push waits for a still board), then push knotted animals
-    // until one knots the board for good
+    const undos0 = await p.evaluate(() => ({ undos: window.__game.undos(), label: document.querySelector('#undo span').textContent }));
+    check('flow: a level starts with three undos, shown on the button', undos0.undos === 3 && undos0.label === '되돌리기 3', JSON.stringify(undos0));
+    // level 10 (baked 2026-11-07): once every free animal is out, pushing animal 3 and taking out whatever that frees
+    // leaves a board where nothing can leave or move (scratchpad stuckpath.ts over levels.json; re-check after a rebake)
     await clearFree(p);
     await settle(p);
-    let stuck = null;
-    for (let k = 0; k < 12 && !stuck; k++) {
-      const pushed = await p.evaluate((k) => { const g = window.__game; const free = g.free(); const knotted = g.ids().filter((i) => !free.includes(i)); const id = knotted[k % knotted.length]; return id === undefined ? null : [id, g.tap(id)]; }, k);
-      if (!pushed) break;
-      await settle(p);
-      const m = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge') }));
-      if (m.msg.includes('꼬였')) stuck = m;
-      else if (pushed[1] === 'blocked') { await p.click('#undo'); await settle(p); }
-    }
-    check('flow: a push that knots the board says 길이 꼬였어요 and the undo button nudges', stuck?.nudge === true, JSON.stringify(stuck));
+    const pushed = await p.evaluate(() => window.__game.tap(3));
+    await settle(p);
+    await clearFree(p);
+    await settle(p);
+    const stuck = await p.evaluate(() => ({ stuck: window.__game.stuck(), msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), undos: window.__game.undos() }));
+    check('flow: a board where nothing can move says 길이 막혔어요 with the undos left, and the undo button nudges', pushed === 'blocked' && stuck.stuck && stuck.nudge && stuck.msg.includes('막혔') && stuck.msg.includes('3번'), `${pushed} ${JSON.stringify(stuck)}`);
     await p.click('#undo');
     await settle(p);
-    const back = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), hearts: window.__game.state().hearts }));
-    check('flow: 되돌리기 clears the knot message; no hearts anywhere', !back.nudge && !back.msg.includes('꼬였') && back.hearts == null, JSON.stringify(back));
+    const back = await p.evaluate(() => ({ stuck: window.__game.stuck(), msg: document.getElementById('msg').textContent, nudge: document.getElementById('undo').classList.contains('nudge'), undos: window.__game.undos(), hearts: window.__game.state().hearts }));
+    check('flow: 되돌리기 takes the last push back (board no longer stuck), costs one undo; no hearts anywhere', !back.stuck && !back.nudge && back.undos === 2 && back.hearts == null, JSON.stringify(back));
     await p.click('#home');
     await sleep(400);
     const c = await ui(p);
-    check('flow: 홈으로 in play -> title, save still 9', c.title && c.popup === null && c.saved === '9', JSON.stringify(c));
+    check('flow: 홈으로 in play -> title, save still 10', c.title && c.popup === null && c.saved === '10', JSON.stringify(c));
   });
 
   // the last level: clearing it starts the journey over (the save goes back to 1, as the game always did)
@@ -299,7 +297,7 @@ export async function runFlowChecks(browser, base, report) {
 
   // the chick's first-time tutorials: done only by the real thing (a touch in the spotlight) or by 건너뛰기, one per
   // level, the level's own new rule first, never while an animal runs, and the result popup always wins
-  const ALL_TIPS = ['basic', 'blocked', 'arrow', 'key', 'sleep', 'bomb'];
+  const ALL_TIPS = ['basic', 'blocked', 'arrow', 'key', 'sleep', 'bomb', 'crate', 'crate2', 'crateBreak'];
   /** Nothing of a tutorial is left: no focus veil, the HUD not dimmed, nothing on screen. */
   const restored = (p) => p.evaluate(() => window.__game.focus() === 0 && !document.body.classList.contains('tut-on') && window.__game.tutorial() === null);
   /** Open a level with this save of learnt tips (the page keeps its storage across the reload). */
@@ -332,43 +330,88 @@ export async function runFlowChecks(browser, base, report) {
   });
 
   await scenario('tutorial: 건너뛰기 counts as learnt and taps nothing', null, async (p) => {
-    await withSeen(p, ALL_TIPS.filter((id) => id !== 'key'), '?level=61');
+    // no level has locks since 2026-11-06: the sleep tutorial on level 91 stands in
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'sleep'), '?level=91');
     const t = await tut(p);
     await p.click('#tutorial .tutSkip');
     await sleep(200);
     const s = await p.evaluate(() => window.__game.state());
-    check('tutorial: level 61 opens with the key on the free key carrier, and 건너뛰기 learns it without a tap', t?.id === 'key' && (await restored(p)) && (await seenNow(p)).includes('key') && s.taps === 0, `${JSON.stringify(t)}, taps ${s.taps}`);
+    check('tutorial: level 91 opens with the sleep tutorial on a free neighbour, and 건너뛰기 learns it without a tap', t?.id === 'sleep' && (await restored(p)) && (await seenNow(p)).includes('sleep') && s.taps === 0, `${JSON.stringify(t)}, taps ${s.taps}`);
   });
 
-  await scenario('tutorial: a blocked tap and crates teach themselves in play (no tutorial on 7 and 11)', null, async (p) => {
-    // level 7 (hand-made): a blocked tap costs nothing and moves the animal when it has room; level 11 brings crates
+  await scenario('tutorial: a blocked tap teaches itself in play (no tutorial on 7)', null, async (p) => {
+    // level 7 (hand-made): a blocked tap costs nothing and moves the animal when it has room; level 11 opens on the
+    // crate lesson since 2026-11-07 (its own scenario below)
     await withSeen(p, ['basic', 'blocked', 'arrow', 'bump'], '?level=7');
     const moved = await p.evaluate(() => { const g = window.__game; const f = new Set(g.free()); const id = g.ids().find((i) => !f.has(i)); const before = JSON.stringify(g.state().cells[id]); const r = g.tap(id); return { r, moved: JSON.stringify(g.state().cells[id]) !== before, hearts: g.state().hearts }; });
     await settle(p);
     const seven = await tut(p);
-    await withSeen(p, ['basic', 'blocked', 'arrow', 'bump'], '?level=11');
-    let eleven = null;
-    for (let k = 0; k < 40; k++) { const id = await p.evaluate(() => window.__game.free()[0] ?? null); if (id === null) break; await p.evaluate((i) => window.__game.tap(i), id); await settle(p); eleven ??= await tut(p); }
-    check('tutorial: no tutorial on levels 7 and 11; the blocked tap on 7 is blocked, takes no heart', seven === null && eleven === null && moved.r === 'blocked' && moved.hearts == null, `7 ${JSON.stringify(seven)}, 11 ${JSON.stringify(eleven)}, blocked tap ${JSON.stringify(moved)}`);
+    check('tutorial: no tutorial on level 7; the blocked tap there is blocked, takes no heart', seven === null && moved.r === 'blocked' && moved.hearts == null, `7 ${JSON.stringify(seven)}, blocked tap ${JSON.stringify(moved)}`);
   });
 
-  await scenario('tutorial: after the key tap the unlocked animal is lit for a moment, then play goes on', null, async (p) => {
-    await withSeen(p, ALL_TIPS.filter((id) => id !== 'key'), '?level=61');
+  await scenario('tutorial: after the sleep tap the woken animal is lit for a moment, then play goes on', null, async (p) => {
+    await withSeen(p, ALL_TIPS.filter((id) => id !== 'sleep'), '?level=91');
     const t = await tut(p);
     await p.touchscreen.tap(t.spot.x, t.spot.y);
     await sleep(250);
     const during = await p.evaluate(() => ({ t: window.__game.tutorial(), focus: window.__game.focus() }));
     await sleep(1100);
-    check('tutorial: the key tap lights up the unlocked animal briefly, then everything is back and the key is learnt', during.t?.phase === 'result' && during.focus > 0 && (await restored(p)) && (await seenNow(p)).includes('key'), JSON.stringify(during));
+    check('tutorial: the sleep tap lights up the woken animal briefly, then everything is back and the rule is learnt', during.t?.phase === 'result' && during.focus > 0 && (await restored(p)) && (await seenNow(p)).includes('sleep'), JSON.stringify(during));
+  });
+
+  await scenario('tutorial: level 11 teaches the one-crack crate by the neighbour\u2019s real exit; the held animal lights up', null, async (p) => {
+    await withSeen(p, ['basic', 'blocked', 'arrow', 'bump'], '?level=11');
+    const shown = await tut(p);
+    check('tutorial: level 11 opens on crate, pointing at the crate\u2019s free neighbour (2)', shown?.id === 'crate' && shown.target === 2, JSON.stringify(shown));
+    if (shown) await p.touchscreen.tap(shown.spot.x, shown.spot.y);
+    await sleep(400);
+    const during = await tut(p);
+    const crates = await p.evaluate(() => window.__game.state().cells && window.__game.ids().length);
+    await settle(p);
+    await sleep(900);
+    const seen = await seenNow(p);
+    check('tutorial: after the exit the crate is gone, the animal it held (1) is the result, and crate is learnt', during?.phase === 'result' && during.target === 2 && seen.includes('crate') && (await restored(p)), `${JSON.stringify(during)} alive ${crates} seen ${seen}`);
+    const free1 = await p.evaluate(() => window.__game.free().includes(1));
+    check('tutorial: animal 1 can leave once the crate broke', free1, String(free1));
+  });
+
+  await scenario('tutorial: level 12 teaches the two-crack crate in two moments: a dot goes (crate2), then the other neighbour breaks it (crateBreak)', null, async (p) => {
+    await withSeen(p, ['basic', 'blocked', 'arrow', 'bump', 'crate'], '?level=12');
+    const first = await tut(p);
+    check('tutorial: level 12 opens on crate2 pointing at the free neighbour (6)', first?.id === 'crate2' && first.target === 6, JSON.stringify(first));
+    if (first) await p.touchscreen.tap(first.spot.x, first.spot.y);
+    await sleep(400);
+    const result = await tut(p);
+    await settle(p);
+    await sleep(900);
+    check('tutorial: the crate itself lights up as its dot goes, and crate2 is learnt', result?.phase === 'result' && (await seenNow(p)).includes('crate2'), JSON.stringify(result));
+    // play on: free exits, then the knot\u2019s push (dev hint), until the break lesson shows on the other neighbour (8)
+    let second = null;
+    for (let k = 0; k < 30 && !second; k++) {
+      const t = await tut(p);
+      if (t?.id === 'crateBreak') { second = t; break; }
+      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (!s || s.cleared) return true; const f = g.free(); if (f.length) { g.tap(f[0]); return false; } const h = g.hint(); if (h == null) return true; g.tap(h); return false; });
+      await settle(p); await sleep(350);
+      if (done) break;
+    }
+    check('tutorial: once the other neighbour (8) can leave, crateBreak points at it', second?.id === 'crateBreak' && second.target === 8, JSON.stringify(second));
+    if (second) await p.touchscreen.tap(second.spot.x, second.spot.y);
+    await sleep(400);
+    const during = await tut(p);
+    await settle(p); await sleep(900);
+    const seen = await seenNow(p);
+    const free5 = await p.evaluate(() => window.__game.free().includes(5) || !window.__game.ids().includes(5));
+    check('tutorial: the second exit breaks the crate, the held animal (5) is the result and can leave, crateBreak is learnt', during?.phase === 'result' && seen.includes('crateBreak') && free5, `${JSON.stringify(during)} seen ${seen} free5 ${free5}`);
   });
 
   await scenario('tutorial: the result popup comes before a tutorial', null, async (p) => {
     // level 40 (the first dynamite) opens on the bomb tutorial; pushes made around it (the test hook, not a finger) set it off
     await withSeen(p, ALL_TIPS.filter((id) => id !== 'bomb'), '?level=40');
     const t = await tut(p);
-    // pushes burn the fuse: push blocked animals (not the one the chick points at) until it goes off
+    // the dynamite counts its own collisions: push an animal that collides with it (the dev hook lists them) until it goes off
     for (let k = 0; k < 24 && await p.evaluate(() => document.getElementById('popup').hidden); k++) {
-      await p.evaluate((target, k) => { const g = window.__game; const free = g.free(); const ids = g.ids().filter((i) => i !== target && !free.includes(i)); if (ids.length) g.tap(ids[k % ids.length]); }, t.target, k);
+      // the lesson on 40 sits on the dynamite itself (no tap leads to it), so the dynamite is a push like any other here
+      await p.evaluate((k) => { const g = window.__game; const free = g.free(); const ids = g.bombTouches(); const rest = g.ids().filter((i) => !free.includes(i)); const pool = ids.length ? ids : rest; if (pool.length) g.tap(pool[k % pool.length]); }, k);
       await settle(p);
     }
     await sleep(600);

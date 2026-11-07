@@ -4,10 +4,24 @@
  * lessons) take the place of the generated ones with the same number. Run after scripts/pick-seeds.ts:
  * npx tsx scripts/build-levels.ts [lastLevel=180]
  */
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { Level } from '../src/core/types';
 import { generateGameLevel } from '../src/curve/curve';
 import handLevels from '../src/curve/handLevels.json';
+import pickedSeeds from '../src/curve/seeds.json';
+
+/**
+ * Boards the pick script already made (docs/sim/picked-levels.json): used for a level whose seed there is the picked
+ * one, so the bake takes seconds, not the knot search again. A level missing there, or picked with another seed since,
+ * is generated here.
+ */
+const PICKED_PATH = 'docs/sim/picked-levels.json';
+const PICKED: Record<string, { seed: number; level: Level; hearts?: number }> = existsSync(PICKED_PATH) ? JSON.parse(readFileSync(PICKED_PATH, 'utf8')) : {};
+const SEEDS: Record<string, number> = pickedSeeds;
+const prebuilt = (n: number): { level: Level; hearts?: number } | null => {
+  const p = PICKED[n];
+  return p && p.seed === SEEDS[n] ? { level: p.level, ...(p.hearts !== undefined ? { hearts: p.hearts } : {}) } : null;
+};
 
 const HAND: Record<string, { level: Level; hearts?: number }> = handLevels as unknown as Record<string, { level: Level; hearts?: number }>;
 
@@ -26,7 +40,7 @@ const withoutOneCellBombs = (built: { level: Level; hearts?: number }): { level:
 const last = Number(process.argv[2] ?? 180);
 const out: Record<number, unknown> = {};
 for (let n = 1; n <= last; n++) {
-  const built = HAND[n] ?? generateGameLevel(n);
+  const built = HAND[n] ?? prebuilt(n) ?? generateGameLevel(n);
   if (!built) throw new Error(`level ${n} could not be generated`);
   out[n] = withoutOneCellBombs(built);
 }

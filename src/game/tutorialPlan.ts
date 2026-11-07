@@ -1,5 +1,5 @@
 import { peel, pickPush } from '../core/bump';
-import { blockersOf, canExit, cratesInWay, isAsleep, lockedBy, traceExit } from '../core/rules';
+import { blockersOf, canExit, crateCracks, cratesInWay, isAsleep, lockedBy, piecesAround, traceExit } from '../core/rules';
 import { nextTapToward } from '../solver/plan';
 import type { Level, Piece } from '../core/types';
 import { pickHint } from './hint';
@@ -15,9 +15,14 @@ import { pickHint } from './hint';
  * tutorial waits for its moment: an animal whose way out bends on an arrow becomes free. A tutorial with no animal it can point at is not forced: it waits for the next level where
  * it can. Hearts and crates teach themselves in play (the heart that pops, the crate that cracks).
  */
-export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb';
-/** Start tutorials, in the order a level is checked for them. */
-export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'blocked', 'key', 'sleep', 'bomb'];
+export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb' | 'crate' | 'crate2' | 'crateBreak';
+/**
+ * Start tutorials, in the order a level is checked for them. The crate lessons (2026-11-07 playtest: "why did it
+ * break?") hang on the first level with a one-crack crate (crate: the neighbour leaves, the crate goes) and the first
+ * with a two-crack crate (crate2: a neighbour leaves, one dot goes; crateBreak, later on that level: the other
+ * neighbour becomes free and its leaving breaks it).
+ */
+export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'blocked', 'crate', 'crate2', 'key', 'sleep', 'bomb'];
 /** The level that teaches the blocked animal: hand-made with no hearts, so the shake costs nothing. */
 export const BLOCKED_LEVEL = 2;
 
@@ -39,6 +44,15 @@ function neighbours(level: Level, piece: Piece): Set<number> {
   return found;
 }
 
+/** The dynamite animals, the one closest to going off first. */
+const bombsByFuse = (level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>>): Piece[] =>
+  level.pieces.filter((p) => alive.has(p.id) && p.fuse !== undefined).sort((a, b) => (fuses[a.id] ?? a.fuse!) - (fuses[b.id] ?? b.fuse!) || a.id - b.id);
+
+/** The dynamite the bomb lesson talks about when no tap leads to it: the one closest to going off. */
+export function bombToWatch(level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>> = {}): number | null {
+  return bombsByFuse(level, alive, fuses)[0]?.id ?? null;
+}
+
 /** Does this rule show up on the level at all? */
 export function usesRule(level: Level, id: TutorialId): boolean {
   switch (id) {
@@ -49,7 +63,24 @@ export function usesRule(level: Level, id: TutorialId): boolean {
     case 'key': return level.pieces.some((p) => p.key !== undefined);
     case 'sleep': return level.pieces.some((p) => p.sleeping);
     case 'bomb': return level.pieces.some((p) => p.fuse !== undefined);
+    case 'crate': return (level.crates ?? []).some((k) => k.hits === 1);
+    case 'crate2': case 'crateBreak': return (level.crates ?? []).some((k) => k.hits >= 2);
   }
+}
+
+/** Free animals standing next to a crate that `fits` (its cracks so far given), the crate's own order. */
+function crateNeighbours(level: Level, alive: ReadonlySet<number>, fits: (hits: number, cracks: number) => boolean): number[] {
+  const out: number[] = [];
+  for (const k of level.crates ?? []) {
+    if (!fits(k.hits, crateCracks(level, k, alive))) continue;
+    for (const id of piecesAround(level, k.x, k.y)) if (alive.has(id) && canExit(level, id, alive) && !out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
+/** The crateBreak moment: a cracked crate with a free neighbour whose leaving will break it. */
+export function crateBreakTargets(level: Level, alive: ReadonlySet<number>): number[] {
+  return crateNeighbours(level, alive, (hits, cracks) => cracks > 0 && cracks === hits - 1);
 }
 
 /**
@@ -78,11 +109,17 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
     case 'sleep':
       // a free neighbour of a sleeper: its leaving wakes it
       return first(level.pieces.filter((p) => alive.has(p.id) && p.sleeping).flatMap((p) => [...neighbours(level, p)].filter((n) => alive.has(n))));
-    case 'bomb': {
-      // the tap that clears the way of the bomb closest to going off (the bomb itself once its way is clear)
-      const bombs = level.pieces.filter((p) => alive.has(p.id) && p.fuse !== undefined).sort((a, b) => (fuses[a.id] ?? a.fuse!) - (fuses[b.id] ?? b.fuse!) || a.id - b.id);
-      return first(bombs.map((b) => nextTapToward(level, alive, b.id)).filter((t): t is number => t !== null));
-    }
+    case 'crate':
+      // a free neighbour of a one-crack crate: its leaving breaks the crate
+      return crateNeighbours(level, alive, (hits, cracks) => hits === 1 && cracks === 0);
+    case 'crate2':
+      // a free neighbour of a whole two-crack crate: its leaving takes one dot
+      return crateNeighbours(level, alive, (hits, cracks) => hits >= 2 && cracks === 0);
+    case 'bomb':
+      // the tap that gets the dynamite closest to going off nearer to leaving (the first free animal in its chain of
+      // blockers); empty where the dynamite sits inside a knot with no such chain (level 40): main.ts then shows the
+      // lesson on the dynamite itself with no tap to make (bombToWatch)
+      return first(bombsByFuse(level, alive, fuses).map((b) => nextTapToward(level, alive, b.id)).filter((t): t is number => t !== null));
     default:
       return [];
   }
@@ -92,9 +129,9 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
  * The bump tutorial's moment: no animal can leave, and pushing this one (the first push of the best winning line)
  * untangles the knot. Empty while a free animal is left or the board is knotted for good.
  */
-export function bumpTargets(level: Level, alive: ReadonlySet<number>): number[] {
+export function bumpTargets(level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>> = {}): number[] {
   if (alive.size === 0 || free(level, alive).length > 0) return [];
-  const id = pickPush(level, alive);
+  const id = pickPush(level, alive, fuses);
   return id === null ? [] : [id];
 }
 
@@ -132,5 +169,11 @@ export function resultSubjects(level: Level, id: TutorialId, target: number): nu
   if (id === 'key') return level.pieces.filter((p) => p.lock !== undefined && p.lock === tapped.key).map((p) => p.id);
   if (id === 'sleep') return level.pieces.filter((p) => p.sleeping && neighbours(level, p).has(target)).map((p) => p.id);
   if (id === 'bomb') return level.pieces.filter((p) => p.fuse !== undefined && p.id !== target).sort((a, b) => a.fuse! - b.fuse! || a.id - b.id).slice(0, 1).map((p) => p.id);
+  // the crate lessons: the animal the broken crate was holding (crate, crateBreak); crate2 lights the crate itself
+  if (id === 'crate' || id === 'crateBreak') {
+    const all = new Set(level.pieces.map((p) => p.id));
+    const crates = (level.crates ?? []).filter((k) => piecesAround(level, k.x, k.y).includes(target));
+    return level.pieces.filter((p) => p.id !== target && cratesInWay(level, p, all).some((k) => crates.includes(k))).map((p) => p.id);
+  }
   return [];
 }

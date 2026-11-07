@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aimAt, boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, knotLevel, levelSpec, stageFor } from './curve';
+import { boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, knotLevel, levelSpec, shapeAt, stageFor } from './curve';
 import { gradeKnot } from '../core/bump';
 import { createGame, isCleared, tap } from '../core/game';
 import pickedSeeds from './seeds.json';
@@ -14,7 +14,8 @@ describe('levelSpec', () => {
     expect(levelSpec(30).role).toBe('finale');
   });
   it('wraps to the next chapter and rejects level numbers below 1', () => {
-    expect(levelSpec(31).role).toBe(levelSpec(1).role);
+    expect(levelSpec(31)).toMatchObject({ chapter: 2, level: 1, role: 'ordinary' });
+    expect(levelSpec(91).role).toBe('intro');
     expect(() => levelSpec(0)).toThrow();
   });
   it('gives every level a board that can hold its pieces and a non-empty target', () => {
@@ -64,18 +65,27 @@ describe('fixtures and hearts on the curve', () => {
   it('gives no level hearts under the bump rule (a wrong tap moves an animal instead)', () => {
     for (let n = 1; n <= 180; n++) expect(levelSpec(n).hearts, `level ${n}`).toBeUndefined();
   });
-  it('knots every level but the intro, rest and hand-made ones, and aims lower as the game goes on with a wave inside each stage', () => {
+  it('knots every level but the lessons (1-4, 91), level 5 and the hand-made ones; forced pushes rise by chapter with a wave inside each stage', () => {
     // hand-made lessons (1, 2, 6, 7, 11) never knot either
-    for (const n of [1, 2, 3, 4, 5, 6, 7, 11, 15, 25, 31, 34, 35, 95, 155]) expect(knotLevel(n), `level ${n}`).toBe(false);
-    for (const n of [8, 9, 10, 20, 30, 36, 59, 60, 180]) expect(knotLevel(n), `level ${n}`).toBe(true);
-    for (const n of [1, 5, 35]) expect(aimAt(n)).toBe(1);
-    expect(aimAt(6)).toBeGreaterThan(aimAt(20));
-    expect(aimAt(20)).toBeGreaterThan(aimAt(60));
-    expect(aimAt(66)).toBeGreaterThan(aimAt(176));
-    // inside a stage: the first level easy, the tenth the peak
-    expect(aimAt(36)).toBeGreaterThan(aimAt(39));
-    expect(aimAt(39)).toBeGreaterThan(aimAt(40));
-    expect(aimAt(41)).toBeGreaterThan(aimAt(40));
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 11, 91]) expect(knotLevel(n), `level ${n}`).toBe(false);
+    for (const n of [8, 9, 10, 15, 20, 25, 30, 31, 34, 35, 36, 59, 60, 95, 121, 122, 155, 180]) expect(knotLevel(n), `level ${n}`).toBe(true);
+    for (const n of [1, 5, 91]) expect(shapeAt(n)).toBeNull();
+    // rest levels: a knot that random pushes clear half the time
+    for (const n of [15, 35, 125]) expect(shapeAt(n)).toMatchObject({ keyMoves: 0, guessWinMin: 0.5 });
+    const km = (n: number): number => shapeAt(n)!.keyMoves;
+    expect(km(8)).toBe(0);
+    expect(km(37)).toBeLessThan(km(97));
+    expect(km(97)).toBeLessThan(km(157));
+    expect(km(67)).toBe(km(37));
+    // inside a stage: the first level easy, the fourth a test, the tenth the peak, the finale above it
+    expect(km(36)).toBeLessThan(km(39));
+    expect(km(40)).toBeGreaterThanOrEqual(km(39));
+    expect(km(41)).toBeLessThan(km(40));
+    expect(km(60)).toBeGreaterThan(km(50));
+    // winning lines narrow by chapter and halve on peaks; no level asks more than four forced pushes
+    expect(shapeAt(66)!.answersMax).toBeGreaterThan(shapeAt(126)!.answersMax);
+    expect(shapeAt(70)!.answersMax).toBe(Math.floor(shapeAt(66)!.answersMax / 2));
+    for (let n = 1; n <= 180; n++) expect(shapeAt(n)?.keyMoves ?? 0, `level ${n}`).toBeLessThanOrEqual(4);
   });
   it('generated levels carry at most the requested number of arrow tiles (tiles that turn no one are dropped)', () => {
     const r = generateLevelFor(8, (pickedSeeds as Record<string, number>)[8]);
@@ -86,11 +96,11 @@ describe('fixtures and hearts on the curve', () => {
 });
 
 describe('chapters after the first introduce one mechanic each', () => {
-  it('uses keys in chapter 3, sleepers in chapter 4 and bombs in chapter 5', () => {
-    expect(levelSpec(61).params.lockCount).toBeGreaterThanOrEqual(1);
+  it('uses no locks anywhere (2026-11-06), dynamite on chapter 2 peaks, sleepers from chapter 4 and bombs from chapter 5', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).params.lockCount ?? 0, `level ${n}`).toBe(0);
+    expect(levelSpec(40).params.bombCount).toBe(1);
     expect(levelSpec(91).params.sleepCount).toBeGreaterThanOrEqual(1);
     expect(levelSpec(121).params.bombCount).toBeGreaterThanOrEqual(1);
-    expect(levelSpec(35).params.lockCount ?? 0).toBe(0);
   });
   it('keeps rest levels free of mechanics and limits active elements to three', () => {
     for (const n of [65, 95, 125, 155]) {

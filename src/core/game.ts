@@ -1,4 +1,4 @@
-import { bumpResult } from './bump';
+import { bumpResult, burnOnCollision } from './bump';
 import { blockersOf, canExit, cratesInWay, isAsleep, lockedBy } from './rules';
 import type { Level } from './types';
 
@@ -34,9 +34,9 @@ export function createGame(level: Level, options: { hearts?: number; bump?: bool
 }
 
 /**
- * One fuse step off every bomb still on the board; one left at zero explodes. Under the bump rule a push burns (the
- * pushed bomb included) and exits burn nothing (docs/rules.md 5); under the old rule (bump: false) exits burn, as the
- * exit-based planner (solver/plan.ts) and the simulated player still read it.
+ * The old rule's fuse (bump: false, read by the exit-based planner solver/plan.ts and the simulated player): every exit
+ * takes one step off every bomb still on the board; one left at zero explodes. Under the bump rule the dynamite counts
+ * its own collisions instead (burnOnCollision, docs/rules.md 5).
  */
 function burnFuses(state: GameState): GameState {
   const fuses: Record<number, number> = {};
@@ -66,9 +66,10 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
       blockedTaps: state.blockedTaps + 1,
       hearts: state.hearts === undefined ? undefined : state.hearts - 1,
     };
+    // the dynamite counts its own collisions: the push of the bomb itself, or a push that stops against it
+    const burnt = state.bump && bump ? burnOnCollision(state.fuses, state.alive, id, bump.stopper) : null;
     return {
-      // a push is the move the bombs count (the blocked tap that goes nowhere spends nothing)
-      state: state.bump && moved > 0 ? burnFuses(counted) : counted,
+      state: burnt ? { ...counted, fuses: burnt.fuses, exploded: counted.exploded || burnt.exploded } : counted,
       event: {
         type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}), ...(crates ? { crates } : {}),
         ...(moved > 0 ? { moved } : {}),

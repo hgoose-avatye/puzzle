@@ -32,8 +32,10 @@ export class PlayFlow {
   private readonly routes = new Map<number, Route>();
   /** Bump rule: cells each animal has moved along its way out (its route stays the one from the start). */
   readonly advance = new Map<number, number>();
-  /** Taps that changed the board, in order: an undo replays all but the last on a fresh flow. */
+  /** Taps that changed the board, in order: an undo replays the log up to a push on a fresh flow. */
   readonly log: number[] = [];
+  /** Positions in `log` of the pushes (blocked taps that moved): exits never hurt, so an undo goes back to before a push. */
+  readonly pushes: number[] = [];
 
   constructor(readonly level: Level, hearts?: number, bump = true) {
     this.current = createGame(level, { ...(hearts === undefined ? {} : { hearts }), bump });
@@ -63,7 +65,10 @@ export class PlayFlow {
     this.current = result.state;
     // only taps that changed the board: an undo of a bump that did not move would show nothing
     if (ev.type === 'exited' || (ev.type === 'blocked' && ev.moved)) this.log.push(id);
-    if (ev.type === 'blocked' && ev.moved) this.advance.set(id, (this.advance.get(id) ?? 0) + ev.moved);
+    if (ev.type === 'blocked' && ev.moved) {
+      this.pushes.push(this.log.length - 1);
+      this.advance.set(id, (this.advance.get(id) ?? 0) + ev.moved);
+    }
     const route = this.routes.get(id);
     if (ev.type === 'exited' && route) this.traffic.add(id, route.track, route.bodyLen, this.headAt(id));
     return ev;

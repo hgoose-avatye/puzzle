@@ -18,13 +18,13 @@ describe('hand-set seeds', () => {
 
 describe('the shared target line', () => {
   it('runs from the first ordinary level to the last without jumping back at chapter boundaries', () => {
-    expect(ordinary).toHaveLength(120);
+    expect(ordinary).toHaveLength(139); // since 2026-11-07 lessons are only 1-4 and 91: chapter level 1-4 slots are ordinary elsewhere
     expect(lineAt(ordinary[0], ordinary)).toBe(LINE_START);
     expect(lineAt(ordinary[ordinary.length - 1], ordinary)).toBe(LINE_END);
     for (let i = 1; i < ordinary.length; i++) expect(lineAt(ordinary[i], ordinary)).toBeGreaterThan(lineAt(ordinary[i - 1], ordinary));
-    // chapter 1's last ordinary level (29) and chapter 2's first (36) are neighbours on the line
-    const step = (LINE_END - LINE_START) / 119;
-    expect(lineAt(36, ordinary) - lineAt(29, ordinary)).toBeCloseTo(step, 6);
+    // chapter 1's last ordinary level (29) and chapter 2's first (31) are neighbours on the line
+    const step = (LINE_END - LINE_START) / (ordinary.length - 1);
+    expect(lineAt(31, ordinary) - lineAt(29, ordinary)).toBeCloseTo(step, 6);
   });
   it('puts a tough level between the ordinary levels around it, PEAK above the line', () => {
     expect(lineAt(10, ordinary)).toBeGreaterThan(lineAt(9, ordinary));

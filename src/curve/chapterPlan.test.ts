@@ -41,6 +41,12 @@ describe('chapter plan (2.5D redesign)', () => {
     }
     for (const n of [36, 37, 38, 39, 66, 67, 68, 69, 155, 165, 175]) expect(levelSpec(n).params.shape, `level ${n}`).toBe('rounded');
   });
+  it('chapter 5 carries dynamite on sixteen levels only: the first lesson, the stage tests and peaks, and every fifth between', () => {
+    const withBombs = Array.from({ length: 30 }, (_, i) => 121 + i).filter((n) => (levelSpec(n).params.bombCount ?? 0) > 0).map((n) => n - 120);
+    expect(withBombs).toEqual([1, 2, 4, 7, 9, 10, 12, 14, 17, 19, 20, 22, 24, 27, 29, 30]);
+    for (const n of [123, 126, 128, 131, 133, 136, 138, 141, 143, 146, 148]) expect(levelSpec(n).params.bombCount).toBeUndefined();
+  });
+
   it('tightens the bomb fuse on chapter 5 and 6 ordinary levels with bombs, the chapter 5 finale and level 140 only', () => {
     for (let n = 1; n <= 180; n++) {
       const s = levelSpec(n);
@@ -79,23 +85,26 @@ describe('finales', () => {
     expect(s.params.teach).toBeUndefined();
     expect(s.target.initialFreeRatio).toEqual([0, 0.27]);
   });
-  it('chapter 3: one lock and two crates on a hexagon, at most 20% free at the start', () => {
+  it('chapter 3: two crates on a hexagon and no lock (locks went 2026-11-06), at most 20% free at the start', () => {
     const s = levelSpec(90);
-    expect(s.params).toMatchObject({ shape: 'hexagon', lockCount: 1, crateCount: 2 });
+    expect(s.params).toMatchObject({ shape: 'hexagon', crateCount: 2 });
+    expect(s.params.lockCount ?? 0).toBe(0);
     expect(s.target.initialFreeRatio).toEqual([0, 0.2]);
   });
-  it('chapter 4: two sleepers and a lock on an 8 x 12 rect with two crates, no arrows', () => {
-    expect(levelSpec(120).params).toMatchObject({ width: 8, height: 12, shape: 'rect', sleepCount: 2, lockCount: 1, crateCount: 2, arrowCount: 0 });
+  it('chapter 4: two sleepers on an 8 x 12 rect with two crates, no lock (one mechanic, so arrows stay)', () => {
+    expect(levelSpec(120).params).toMatchObject({ width: 8, height: 12, shape: 'rect', sleepCount: 2, crateCount: 2 });
+    expect(levelSpec(120).params.lockCount ?? 0).toBe(0);
   });
-  it('chapter 5: two bombs and a lock on a tee, slack 2, no arrows, two crates, no strict mode', () => {
+  it('chapter 5: two bombs on a tee, no lock, two crates, no strict mode', () => {
     const s = levelSpec(150);
-    expect(s.params).toMatchObject({ shape: 'tee', bombCount: 2, lockCount: 1, bombSlack: 2, crateCount: 2, arrowCount: 0 });
+    expect(s.params).toMatchObject({ shape: 'tee', bombCount: 2, crateCount: 2 });
+    expect(s.params.lockCount ?? 0).toBe(0);
     expect(s.params.teach).toBeUndefined();
   });
-  it('chapter 6: a lock and a sleeper on an 8 x 12 rect with two crates, no bombs, no arrows', () => {
+  it('chapter 6: a sleeper and two dynamites on an 8 x 12 rect with two crates, no lock, no arrows', () => {
     const p = levelSpec(180).params;
-    expect(p).toMatchObject({ width: 8, height: 12, shape: 'rect', lockCount: 1, sleepCount: 1, crateCount: 2, arrowCount: 0 });
-    expect(p.bombCount ?? 0).toBe(0);
+    expect(p).toMatchObject({ width: 8, height: 12, shape: 'rect', sleepCount: 1, bombCount: 2, crateCount: 2, arrowCount: 0 });
+    expect(p.lockCount ?? 0).toBe(0);
   });
   it('chapter 6 still uses sleepers on its ordinary and tough levels', () => {
     const sleepy = Array.from({ length: 29 }, (_, i) => levelSpec(151 + i)).filter((s) => (s.params.sleepCount ?? 0) > 0);

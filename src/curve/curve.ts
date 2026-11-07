@@ -2,7 +2,7 @@ import { createRng } from '../core/rng';
 import { gradeKnot, type KnotGrade } from '../core/bump';
 import type { Level } from '../core/types';
 import { generateMatching, type DifficultyTarget, type GenParams } from '../generator/generate';
-import { knotFrom } from '../generator/knot';
+import { searchKnot, type KnotShape } from '../generator/knotSearch';
 import type { Metrics } from '../solver/metrics';
 import type { BoardShape } from '../core/shapes';
 import { animalCount, arrowsAllowed, boardFor, bombSlackFor, cratesFor, finaleExtras, mechanicsFor, occupancyTarget, type Mechanics } from './chapterPlan';
@@ -56,9 +56,11 @@ const ONBOARDING_HEARTS = HEARTS;
  * Known gap: the finale ("big release") cannot be filtered for with `surge` yet, because the generator front-loads
  * removals (large early rounds, small late rounds). A generator change is needed before the finale can be shaped.
  */
-function chapterOneSpec(level: number): Omit<LevelSpec, 'chapter'> {
+function chapterOneSpec(level: number, role: Role = roleFor(1, level)): Omit<LevelSpec, 'chapter'> {
   const small = { width: 7, height: 10, minLength: 1, maxLength: 2 };
   const full = { width: 8, height: 12, minLength: 1, maxLength: 3 };
+  // a lesson slot that is an ordinary level in this chapter (chapters after the first): the easiest ordinary setup
+  if (level < 5 && role === 'ordinary') return { ...chapterOneSpec(6), level };
   if (level === 30) {
     return { level, role: 'finale', params: { ...full, pieceCount: 28, arrowCount: 6 }, target: { rounds: [11, 20], initialFreeRatio: [0, 0.3] }, hearts: heartsFor(28) };
   }
@@ -179,53 +181,77 @@ export function levelSpec(levelNumber: number): LevelSpec {
 }
 
 /**
- * Difficulty curve under the bump rule (2026-11-06 playtest feedback): rising overall like a stock chart, easy and hard
- * mixed level by level. A knot level is one the player cannot clear by taking free animals out alone: somewhere a
- * blocked animal must be pushed to the right spot (generator/knot.ts). Its aim is the guessWin of core/bump.ts, the
- * chance that pushing at random still clears it: lower is harder. TREND falls over the game, WAVE moves each level of
- * a ten-level stage around it (easy first, a test at 4, a rest at 5, a bigger test at 9, the peak at 10). Intro and
- * rest levels have no knot: the first five levels teach the tap, each chapter's first levels teach their mechanic.
+ * Roles (2026-11-07, after the playtest of the first knot curve). A lesson (intro) level teaches by a board that needs
+ * no push: the first four levels of the game (the tap, the blocked animal) and the first level of chapter 4 (the
+ * sleeper). Everything else is a knot level: the player must push somewhere. Chapter intro levels that taught nothing
+ * new (122-124 and the like) read as empty boards after thirty knots, "like a bug" (playtest 2026-11-06), so they are
+ * gone. A rest level (5, 15, 25 of a chapter) is a knot that hardly fails (shapeAt), except the very first (level 5).
  */
-const TREND: ReadonlyArray<[number, number]> = [[6, 0.75], [20, 0.45], [60, 0.2], [180, 0.12]];
-const WAVE = [0.15, 0.05, 0, -0.1, 0, 0.1, 0, -0.05, -0.12, -0.18];
-const AIM_MIN = 0.05;
-const AIM_MAX = 0.9;
-
-export function trendAt(n: number): number {
-  const i = TREND.findIndex(([at]) => at >= n);
-  if (i === 0) return TREND[0][1];
-  if (i < 0) return TREND[TREND.length - 1][1];
-  const [a, va] = TREND[i - 1];
-  const [b, vb] = TREND[i];
-  return va + ((vb - va) * (n - a)) / (b - a);
+export function roleFor(chapter: number, level: number): Role {
+  if (level === 30) return 'finale';
+  if (level === 10 || level === 20) return 'tough';
+  if (level % 5 === 0) return 'rest';
+  if (chapter === 1 && level < 5) return 'intro';
+  if (chapter === 4 && level === 1) return 'intro';
+  return 'ordinary';
 }
 
 /** Levels designed by hand (the first-play lessons, scripts/build-levels.ts): they ship as written, knot or not. */
 export const HAND_LEVELS = new Set(Object.keys(handLevels as Record<string, unknown>).map(Number));
 
-/** Does level `n` need a push (a knot)? Intro, rest and hand-made levels never do. */
+/** Does level `n` need a push (a knot)? Lesson levels, the first rest level and hand-made levels never do. */
 export function knotLevel(n: number): boolean {
-  if (HAND_LEVELS.has(n)) return false;
-  const role = levelSpec(n).role;
-  return role !== 'intro' && role !== 'rest';
+  if (HAND_LEVELS.has(n) || n === 5) return false;
+  return levelSpec(n).role !== 'intro';
 }
 
-/** The guessWin level `n` aims at; 1 for a level without a knot. */
-export function aimAt(n: number): number {
-  if (!knotLevel(n)) return 1;
-  const level = ((n - 1) % CHAPTER_LENGTH) + 1;
-  return Math.min(AIM_MAX, Math.max(AIM_MIN, trendAt(n) + WAVE[(level - 1) % 10]));
+/**
+ * The knot shape level `n` asks for (generator/knotSearch.ts): how many forced pushes its winning line has, how few
+ * winning lines there are, how many animals are in the knot. Forced pushes are what the player has to read: with
+ * undo, a board whose chance of clearing by random pushes is 0.17 is cleared by trying, a board where one push out of
+ * four is right three times in a row is not. The number rises by chapter (KEY_MOVES), and inside every ten-level
+ * stage the first two and the sixth level are one easier, the fourth and ninth one harder, the tenth (tough) one
+ * harder still and the finale two harder: rising overall like a stock chart, easy and hard mixed level by level
+ * (2026-11-06 feedback). Winning lines (ANSWERS) narrow by chapter and halve on peaks. Null for a level without a knot.
+ */
+const KEY_MOVES = [0, 1, 1, 2, 2, 3];
+const ANSWERS = [200, 60, 30, 20, 12, 8];
+const KNOT_MIN = [3, 3, 4, 5, 6, 6];
+/** most forced pushes asked anywhere: the search reaches four rarely and five never (2026-11-07) */
+const KEY_MOVES_MAX = 4;
+/** a rest level: a knot, but one that random pushes clear half the time */
+const REST_SHAPE: KnotShape = { keyMoves: 0, answersMax: 200, knotMin: 3, guessWinMin: 0.5 };
+
+export function shapeAt(n: number): KnotShape | null {
+  if (!knotLevel(n)) return null;
+  const spec = levelSpec(n);
+  if (spec.role === 'rest') return REST_SHAPE;
+  const c = spec.chapter - 1;
+  const inStage = ((spec.level - 1) % 10) + 1;
+  const wave = spec.role === 'finale' ? 2 : spec.role === 'tough' ? 1 : inStage === 4 || inStage === 9 ? 1 : inStage <= 2 || inStage === 6 ? -1 : 0;
+  const peak = spec.role === 'tough' || spec.role === 'finale';
+  return {
+    keyMoves: Math.max(0, Math.min(KEY_MOVES_MAX, KEY_MOVES[c] + wave)),
+    answersMax: peak ? Math.max(2, Math.floor(ANSWERS[c] / 2)) : ANSWERS[c],
+    knotMin: KNOT_MIN[c],
+  };
 }
 
-/** Flip variants tried per generated board on a knot level; the one nearest the aim is kept (hard aims are rare). */
-export const KNOT_TRIES = 30;
+/**
+ * Graded boards the knot search climbs through per generated board (knotSearch.ts; three forced pushes take a few
+ * hundred). A level with dynamite gets twice as many: a bomb at 1 shows the player which pushes not to make, so the
+ * forced pushes must come from the live options (2026-11-07: chapter 5 met its shape on 21 of 30 levels at 500).
+ * Chapter 5 only: chapter 6's bigger knots grade too slowly for it.
+ */
+export const KNOT_EVALS = 500;
+export const KNOT_EVALS_BOMBS = 1000;
 
 function baseLevelSpec(levelNumber: number): { spec: LevelSpec; mechanics: Mechanics } {
   if (!Number.isInteger(levelNumber) || levelNumber < 1) throw new Error(`invalid level number ${levelNumber}`);
   const chapter = Math.min(6, Math.floor((levelNumber - 1) / CHAPTER_LENGTH) + 1);
   const level = ((levelNumber - 1) % CHAPTER_LENGTH) + 1;
-  const raw = chapterOneSpec(level);
-  const { role } = raw;
+  const role = roleFor(chapter, level);
+  const raw = chapterOneSpec(level, role);
   const board = boardFor(chapter, level, role, CHAPTER_SHAPES[CHAPTER_THEMES[chapter - 1]]);
   const mechanics = mechanicsFor(chapter, level, role);
   const crateCount = cratesFor(obstaclesFor(chapter, level, role), board, mechanics);
@@ -256,16 +282,24 @@ export function generateLevelFor(
   levelNumber: number,
   baseSeed: number,
   overrides: Partial<GenParams> = {},
-): { spec: LevelSpec; level: Level; metrics: Metrics; grade: KnotGrade } | null {
+): { spec: LevelSpec; level: Level; metrics: Metrics; grade: KnotGrade; score: number } | null {
   const base = levelSpec(levelNumber);
   const spec = { ...base, params: { ...base.params, ...overrides } };
   const rng = createRng(baseSeed * 1000 + levelNumber);
-  const result = generateMatching(spec.params, spec.target, rng, 300);
+  if (!knotLevel(levelNumber)) {
+    const result = generateMatching(spec.params, spec.target, rng, 300);
+    return result ? { spec, ...result, grade: gradeKnot(result.level), score: 0 } : null;
+  }
+  // a knot level's dynamite goes where the knot makes it count (knot.ts placeBombs), not on the board before the knot
+  const { bombCount, ...plain } = spec.params;
+  const result = generateMatching(plain, spec.target, rng, 300);
   if (!result) return null;
-  if (!knotLevel(levelNumber)) return { spec, ...result, grade: gradeKnot(result.level) };
   // the metrics stay those of the board before the knot: the peeling solver they come from cannot read a knot
-  const knotted = knotFrom(result.level, rng, aimAt(levelNumber), KNOT_TRIES);
-  return knotted ? { spec, level: knotted.level, metrics: result.metrics, grade: knotted.grade } : null;
+  const shape = shapeAt(levelNumber)!;
+  // chapter 6 knots are the biggest (nine to twelve animals) and grade slowest: the doubled budget took an hour a level
+  const evals = bombCount && spec.chapter === 5 ? KNOT_EVALS_BOMBS : KNOT_EVALS;
+  const knotted = searchKnot(result.level, rng, shape, { evals, minLength: plain.minLength, maxLength: plain.maxLength, bombs: bombCount ?? 0 });
+  return knotted ? { spec, level: knotted.level, metrics: result.metrics, grade: knotted.grade, score: knotted.score } : null;
 }
 
 /** Seed picked per level by scripts/pick-seeds.ts so difficulty climbs smoothly inside a chapter. */
