@@ -1,6 +1,7 @@
 import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { LEVELS as EXP_LEVELS } from '../experiments/knot-small/levels';
+import { PlayLog } from '../src/game/playlog';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
 import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
@@ -61,6 +62,8 @@ let failPlayed = false;
 /** Which code and level data this is (tools/build-info.ts via the vite configs); 'unknown' outside those configs. */
 const BUILD = typeof __BUILD_INFO__ === 'object' && __BUILD_INFO__ ? __BUILD_INFO__ : { commit: 'unknown', branch: 'unknown', dirty: false, levels: 'unknown', builtAt: '' };
 $('build').textContent = `${BUILD.branch}@${BUILD.commit}${BUILD.dirty ? '+' : ''} levels ${BUILD.levels}`;
+/** Playtest record (E3, test builds only): its own storage key, never read by the game. Null in a production build. */
+const playlog = import.meta.env.DEV ? new PlayLog((() => { try { return localStorage; } catch { return null; } })(), { commit: BUILD.commit, branch: BUILD.branch, dirty: BUILD.dirty, levels: BUILD.levels }) : null;
 
 const PROGRESS_KEY = 'animal-rescue-progress';
 
@@ -288,6 +291,8 @@ function addViews(level: Level): void {
 
 async function loadLevel(n: number): Promise<void> {
   const token = clearBoard();
+  const before = playlog?.current;
+  playlog?.begin(n, params.get('exp') ?? params.get('demo') ?? undefined, before && before.level !== n ? 'skip' : 'retry');
   levelNumber = n;
   // the title board pins species to its ids; game levels choose their own
   speciesOverride.clear();
@@ -326,6 +331,7 @@ function undoTap(): void {
   if (!flow || !flow.pushes.length || anyRunning() || stuckOut) return;
   if (undosLeft <= 0) { $('msg').textContent = '되돌리기를 다 썼어요'; return; }
   undosLeft--;
+  playlog?.undo();
   const log = flow.log.slice(0, flow.pushes[flow.pushes.length - 1]);
   const n = levelNumber;
   clearBoard();
@@ -473,8 +479,11 @@ function onTap(id: number): TapOutcome {
   if (!ev) {
     // a push while an animal still runs waits for the board to settle (flow.ts); a repeat blocked tap is the same tap
     if (anyRunning()) $('msg').textContent = '친구가 지나간 다음에 눌러요';
+    playlog?.tap('ignored');
     return 'repeat (R1)';
   }
+  // the record tells a free animal's exit from a push (a blocked tap that moved) and a bump that moved nothing
+  playlog?.tap(ev.type === 'exited' ? 'exit' : ev.type === 'blocked' ? (ev.moved ? 'push' : 'bump') : 'ignored');
   if (ev.type === 'ignored') {
     const runner = flow.traffic.get(id)?.state;
     return runner === 'waiting' ? 'ignored: waiting' : runner ? 'ignored: running' : 'ignored: gone';
@@ -830,6 +839,8 @@ function showEnd(won: boolean): void {
   cardTouch = touches;
   $('popup').hidden = false;
   $('msg').textContent = '';
+  playlog?.end(won ? 'clear' : state.exploded ? 'lost-bomb' : 'lost-stuck');
+  paintRating(won);
   $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : stuckOut ? '길이 막혔어요' : '하트가 모두 떨어졌어요';
   // the rescue card celebrates the friends saved and the stage step it filled; hearts left are not a score, so only a
@@ -915,6 +926,7 @@ function showHint(): void {
   }
   const view = id === null ? undefined : views.get(id);
   if (!view) { $('msg').textContent = BUMP ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
+  playlog?.hint();
   sound.play('select');
   view.showPath(true);
   window.clearTimeout(hintTimer);
@@ -991,11 +1003,47 @@ paintMute();
 muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
 $('settings').addEventListener('click', () => {
   sound.unlock();
-  modal.open('settings', '설정', [muteBtn], [{ id: 'settingsClose', label: '닫기', kind: 'secondary', onClick: () => modal.close() }]);
+  modal.open('settings', '설정', [muteBtn], [
+    ...(playlog ? [{ id: 'exportLog', label: `플레이 기록 내보내기 (${playlog.all.length})`, kind: 'secondary' as const, onClick: exportPlaylog }] : []),
+    { id: 'settingsClose', label: '닫기', kind: 'secondary', onClick: () => modal.close() },
+  ]);
 });
+
+/**
+ * Fun rating on the clear card (E3, test builds only): five buttons; the choice goes on the attempt just ended.
+ */
+function paintRating(won: boolean): void {
+  const row = $('popupRate');
+  row.innerHTML = '';
+  row.hidden = !(playlog && won);
+  if (row.hidden) return;
+  const label = document.createElement('span');
+  label.textContent = '재미는?';
+  row.append(label);
+  for (let n = 1; n <= 5; n++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rate';
+    b.textContent = String(n);
+    b.onclick = () => { playlog?.rate(n); for (const o of row.querySelectorAll('button')) o.classList.toggle('on', o === b); };
+    row.append(b);
+  }
+}
+
+/** The play log as a file the tester can send (E3). */
+function exportPlaylog(): void {
+  if (!playlog) return;
+  const blob = new Blob([playlog.exportJson()], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `playlog-${BUILD.commit}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 
 /** Home: the title over a small board where the front animal runs out on a loop. Leaves the saved progress alone. */
 function goHome(): void {
+  playlog?.end('home');
   const token = clearBoard();
   speciesOverride.clear();
   const board = titleBoard();
@@ -1095,6 +1143,7 @@ else goHome();
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   build: () => BUILD,
+  playlog: () => playlog?.all ?? [],
   /** The animal the hint button would light up (bombs first). */
   // the hint button's pick: a free animal, or (nothing free) the push that untangles the knot
   hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) ?? (BUMP ? pickPush(s.level, s.alive, s.fuses) : null) : null; },
