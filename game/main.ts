@@ -901,7 +901,7 @@ $('retry').addEventListener('click', () => {
   sound.unlock();
   const state = current();
   if (!state || state.taps === 0) { void loadLevel(levelNumber); return; }
-  modal.open('retry', '다시 할까요?', [para('지금까지 푼 것이 처음 상태로 돌아가요.')], [
+  modal.open('retry', '다시 할까요?', [para('이 레벨을 처음부터 다시 할까요?')], [
     { id: 'retryYes', label: '다시 하기', kind: 'retry', onClick: () => { modal.close(); void loadLevel(levelNumber); } },
     { id: 'retryNo', label: '취소', kind: 'secondary', onClick: () => modal.close() },
   ]);
