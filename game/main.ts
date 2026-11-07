@@ -15,7 +15,7 @@ import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
-import { arrowTargets, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
+import { arrowTargets, bombToWatch, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
 import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -562,7 +562,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   arrow: '화살표에서\n꺾이는 걸 봐!',
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
-  bomb: '폭탄 친구가 부딪히기 전에\n길을 비워줘!',
+  bomb: '다이너마이트 친구는 부딪힐 때마다\n숫자가 줄어! 0이면 펑',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
   crate: '옆 친구가 나가면\n상자가 부서져!',
   crate2: '옆 친구가 나가면\n점이 하나 줄어!',
@@ -701,6 +701,22 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
 }
 
 /**
+ * A lesson with nothing to tap: the chick's words over an animal, closed (and learnt) by a touch on it or 건너뛰기. The
+ * touch reaches no animal, so the board does not change.
+ */
+function showInfoTutorial(id: TutorialId, target: number): boolean {
+  const spot = spotOf(target);
+  const view = views.get(target);
+  if (!spot || !view) return false;
+  tutorialShown = { id, target };
+  tutorialUsed = true;
+  stage.setFocus([view.group]);
+  view.setBreathe(true);
+  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
+  return true;
+}
+
+/**
  * The tutorial's animal has left on its tap (or, for the blocked tutorial, shook): the rule is learnt. The blocked, key,
  * sleep and bomb tutorials light up the animal that changed (or stood in the way) for a moment; the arrow tutorial watches for the tile; then play goes on.
  */
@@ -747,7 +763,11 @@ function beginTutorials(level: Level): void {
     // the level's own start rule takes the level, even when its animal cannot be shown (then it waits)
     tutorialUsed = true;
     const s = current();
-    if (s) showTapTutorial(start, startTargets(level, s.alive, start, s.fuses));
+    if (!s) return;
+    if (showTapTutorial(start, startTargets(level, s.alive, start, s.fuses))) return;
+    // the dynamite lesson where no tap leads to the dynamite (it sits inside the knot, level 40): the words on the
+    // dynamite itself, closed by a touch, no tap made
+    if (start === 'bomb') { const b = bombToWatch(level, s.alive, s.fuses); if (b !== null) showInfoTutorial('bomb', b); }
     return;
   }
   tutorialCheck = true; // an arrow animal may be free from the start

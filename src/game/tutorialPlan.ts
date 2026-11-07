@@ -44,6 +44,15 @@ function neighbours(level: Level, piece: Piece): Set<number> {
   return found;
 }
 
+/** The dynamite animals, the one closest to going off first. */
+const bombsByFuse = (level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>>): Piece[] =>
+  level.pieces.filter((p) => alive.has(p.id) && p.fuse !== undefined).sort((a, b) => (fuses[a.id] ?? a.fuse!) - (fuses[b.id] ?? b.fuse!) || a.id - b.id);
+
+/** The dynamite the bomb lesson talks about when no tap leads to it: the one closest to going off. */
+export function bombToWatch(level: Level, alive: ReadonlySet<number>, fuses: Readonly<Record<number, number>> = {}): number | null {
+  return bombsByFuse(level, alive, fuses)[0]?.id ?? null;
+}
+
 /** Does this rule show up on the level at all? */
 export function usesRule(level: Level, id: TutorialId): boolean {
   switch (id) {
@@ -106,16 +115,11 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
     case 'crate2':
       // a free neighbour of a whole two-crack crate: its leaving takes one dot
       return crateNeighbours(level, alive, (hits, cracks) => hits >= 2 && cracks === 0);
-    case 'bomb': {
-      // the tap that clears the way of the bomb closest to going off (the bomb itself once its way is clear); on a
-      // knot level the dynamite sits inside the knot, where no free animal leads to it, so the lesson shows on any
-      // free animal (the words carry the rule; the tap is a safe exit)
-      const bombs = level.pieces.filter((p) => alive.has(p.id) && p.fuse !== undefined).sort((a, b) => (fuses[a.id] ?? a.fuse!) - (fuses[b.id] ?? b.fuse!) || a.id - b.id);
-      const toward = first(bombs.map((b) => nextTapToward(level, alive, b.id)).filter((t): t is number => t !== null));
-      if (toward.length || !bombs.length) return toward;
-      const best = pickHint(level, alive, fuses);
-      return first([...(best === null ? [] : [best]), ...open]);
-    }
+    case 'bomb':
+      // the tap that gets the dynamite closest to going off nearer to leaving (the first free animal in its chain of
+      // blockers); empty where the dynamite sits inside a knot with no such chain (level 40): main.ts then shows the
+      // lesson on the dynamite itself with no tap to make (bombToWatch)
+      return first(bombsByFuse(level, alive, fuses).map((b) => nextTapToward(level, alive, b.id)).filter((t): t is number => t !== null));
     default:
       return [];
   }

@@ -4,7 +4,7 @@ import { createGame, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import type { Level } from '../core/types';
 import { buildGameLevel, knotLevel } from '../curve/curve';
-import { arrowTargets, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
+import { arrowTargets, bombToWatch, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
 
 const levelOf = (n: number): Level => buildGameLevel(n)!.level;
 const everyone = (l: Level): Set<number> => new Set(l.pieces.map((p) => p.id));
@@ -123,5 +123,16 @@ describe('crate lessons (2026-11-07)', () => {
   it('a level without a one-crack crate never asks for the crate lesson, nor a level without a two-crack crate for crate2', () => {
     expect(startTutorial(buildGameLevel(12)!.level, ['basic', 'blocked'], 12)).toBe('crate2');
     expect(startTutorial(buildGameLevel(9)!.level, ['basic', 'blocked'], 9)).toBeNull();
+  });
+});
+
+describe('dynamite lesson targets (2026-11-08)', () => {
+  it('points at the first free animal in the dynamite\u2019s chain where there is one (121), and at nothing on 40, where the dynamite sits inside the knot', () => {
+    const l121 = buildGameLevel(121)!.level;
+    const [t] = startTargets(l121, everyone(l121), 'bomb');
+    expect(t).toBe(4);
+    const l40 = buildGameLevel(40)!.level;
+    expect(startTargets(l40, everyone(l40), 'bomb')).toEqual([]);
+    expect(bombToWatch(l40, everyone(l40))).toBe(6);
   });
 });
