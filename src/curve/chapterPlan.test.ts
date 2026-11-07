@@ -41,6 +41,12 @@ describe('chapter plan (2.5D redesign)', () => {
     }
     for (const n of [36, 37, 38, 39, 66, 67, 68, 69, 155, 165, 175]) expect(levelSpec(n).params.shape, `level ${n}`).toBe('rounded');
   });
+  it('chapter 5 carries dynamite on sixteen levels only: the first lesson, the stage tests and peaks, and every fifth between', () => {
+    const withBombs = Array.from({ length: 30 }, (_, i) => 121 + i).filter((n) => (levelSpec(n).params.bombCount ?? 0) > 0).map((n) => n - 120);
+    expect(withBombs).toEqual([1, 2, 4, 7, 9, 10, 12, 14, 17, 19, 20, 22, 24, 27, 29, 30]);
+    for (const n of [123, 126, 128, 131, 133, 136, 138, 141, 143, 146, 148]) expect(levelSpec(n).params.bombCount).toBeUndefined();
+  });
+
   it('tightens the bomb fuse on chapter 5 and 6 ordinary levels with bombs, the chapter 5 finale and level 140 only', () => {
     for (let n = 1; n <= 180; n++) {
       const s = levelSpec(n);

@@ -70,6 +70,9 @@ export function boardFor(chapter: number, level: number, role: Role, own: readon
 const mech = (lockCount: number, sleepCount: number, bombCount: number): Mechanics => ({ lockCount, sleepCount, bombCount });
 const NONE = mech(0, 0, 0);
 
+/** Chapter 5 levels (1-30) that carry dynamite: 15 of its 27 knot levels (2026-11-07). */
+export const CHAPTER_FIVE_BOMB_LEVELS: ReadonlySet<number> = new Set([1, 2, 4, 7, 9, 10, 12, 14, 17, 19, 20, 22, 24, 27, 29, 30]);
+
 /**
  * Locks, sleepers and bombs. At most one lock per level: the badges do not show which key opens which lock
  * (docs/POLISH.md L10). A new mechanic is first taught alone, then joins one learned before. Ordinary levels never
@@ -90,6 +93,10 @@ export function mechanicsFor(chapter: number, level: number, role: Role): Mechan
     return mech(0, 2, 0); // tough 20, stage three and the finale
   }
   if (chapter === 5) {
+    // dynamite on about half the chapter (CHAPTER_FIVE_BOMB_LEVELS): the first lesson, the stage tests and peaks, and
+    // every fifth level between; the rest are knots alone. A dynamite at 1 shows which pushes not to make, so a
+    // chapter full of them read easier than chapter 4 (2026-11-07 trial player, docs/POLISH.md D7)
+    if (!CHAPTER_FIVE_BOMB_LEVELS.has(level)) return NONE;
     if (stageOne) return mech(0, 0, 1);
     if (slot === 't10') return mech(0, 0, 3);
     if (slot === 's2a' || slot === 's2b') return mech(0, 0, 2);
