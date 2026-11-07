@@ -401,6 +401,12 @@ export class PieceView {
   private dynPopT = 0;
   private dynBlowT: number | null = null;
 
+  /** The dynamite drawn on this animal (2.5D bundle or Classic badge count): its number, red at 1; null without one. */
+  get dynamite(): { count: number; danger: boolean } | null {
+    const count = this.dynBundle?.visible ? this.dynCount : this.badgeCount;
+    return count === undefined ? null : { count, danger: count <= 1 };
+  }
+
   private showDynamite(count: number | undefined): void {
     if (count === undefined) { if (this.dynBundle) this.dynBundle.visible = this.dynScreen!.visible = false; return; }
     if (!this.dynBundle) {

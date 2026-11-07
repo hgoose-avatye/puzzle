@@ -108,7 +108,6 @@ export async function runP0Checks(browser, base, report) {
     await sleep(2500);
     const f3 = await st(p);
     check('bomb level: fuses unchanged while the runner finishes', JSON.stringify(f3.fuses) === JSON.stringify(f2.fuses), JSON.stringify(f3.fuses));
-    report.info(`bomb chip: ${await p.evaluate(() => document.getElementById('bombChip').textContent)}`);
   });
 
   await scenario('R5 two fingers', CROSS, async (p) => {
@@ -200,23 +199,38 @@ export async function runP0Checks(browser, base, report) {
 
   // ?demo=bomb: the cross board with a bomb (fuse 2) on 2 (two cells), which has to wait behind 1; 5 then 6 can be pushed one cell each (the fuse counts pushes)
   const BOMB = url('?demo=bomb');
-  /** The bomb chip under the hearts and the warning above the buttons (null when hidden). */
-  // 2.5D draws the clay bomb picture where Classic 3D writes 💣 (status icons 2026-11-05): read the picture as the emoji
-  const bombUi = (p) => p.evaluate(() => {
-    const read = (id) => { const e = document.getElementById(id); return e.hidden ? null : { text: (e.querySelector('img.statusIcon[src$="/bomb.png"]') ? '💣 ' : '') + e.textContent, cls: e.className }; };
-    return { chip: read('bombChip'), warn: read('bombBar') };
-  });
+  /** Every animal's dynamite as drawn (number, red at 1); the old HUD chip and bar are gone (2026-11-08). */
+  const dynamite = (p) => p.evaluate(() => ({ drawn: window.__game.dynamite(), chip: document.getElementById('bombChip'), bar: document.getElementById('bombBar') }));
 
-  await scenario('bomb warning at 1', BOMB, async (p) => {
-    const before = await bombUi(p);
+  await scenario('dynamite at 1 turns red on the animal itself', BOMB, async (p) => {
+    const before = await dynamite(p);
     await tap(p, 5); await sleep(150); // a push: 5 runs one cell up to 3
-    const at1 = await bombUi(p);
-    if (process.env.E2E_SHOTS) await p.screenshot({ path: `${process.env.E2E_SHOTS}/bomb-bar-at-1.png` });
-    check('bomb chip shows 2 at the start, no warning yet', before.chip?.text === '💣 2' && before.chip.cls === 'warn' && before.warn === null, JSON.stringify(before));
-    check('bomb at 1: red chip and the warning above the buttons', at1.chip?.text === '💣 1' && at1.chip.cls === 'danger' && at1.warn?.text === '💣 이 친구가 한 번 더 부딪히면 펑!', JSON.stringify(at1));
+    const at1 = await dynamite(p);
+    if (process.env.E2E_SHOTS) await p.screenshot({ path: `${process.env.E2E_SHOTS}/dynamite-at-1.png` });
+    check('dynamite shows 2 on animal 2 at the start, not red; no HUD chip or bar exists', before.chip === null && before.bar === null && before.drawn.length === 1 && before.drawn[0].id === 2 && before.drawn[0].count === 2 && !before.drawn[0].danger, JSON.stringify(before));
+    check('after the push that bumps it, the dynamite shows 1 in red', at1.drawn[0]?.count === 1 && at1.drawn[0].danger === true, JSON.stringify(at1));
   });
 
-  // two bombs (level 139): the chip follows the closest one as fuses burn, and goes once no bomb is left
+  // two bombs (level 139): every dynamite shows its own number as fuses burn, and none is drawn once it has left
+  await scenario('two dynamites each show their own number', url('?level=139'), async (p) => {
+    const read = () => p.evaluate(() => {
+      const s = window.__game.state();
+      const fuses = Object.fromEntries(Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([id, f]) => [Number(id), f]));
+      const drawn = Object.fromEntries(window.__game.dynamite().map((d) => [d.id, d.count]));
+      return { fuses, drawn, failed: s.failed };
+    });
+    const seen = [];
+    for (let k = 0; k < 60; k++) {
+      seen.push(await read());
+      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (s.cleared || s.failed) return true; const id = g.hint(); if (id === null) return true; return g.tap(id) === 'repeat (R1)' ? 'wait' : false; });
+      if (done === true) break;
+      if (done === 'wait') await sleep(250);
+      await sleep(120);
+    }
+    const wrong = seen.filter((r) => !r.failed && JSON.stringify(r.fuses) !== JSON.stringify(r.drawn));
+    check('two dynamites: what is drawn on each animal equals its fuse after every tap, and leaves with it', wrong.length === 0 && seen.some((r) => Object.keys(r.fuses).length === 2), JSON.stringify({ wrong: wrong.slice(0, 3), steps: seen.length }));
+  });
+
   await scenario('bomb chip with two bombs', url('?level=139'), async (p) => {
     const read = () => p.evaluate(() => {
       const s = window.__game.state();

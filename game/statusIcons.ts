@@ -18,6 +18,9 @@ const BOMB = { cx: 0.4448, cy: 0.651 };
 /** Count digits: Pretendard Bold 17px = 12.35px tall digits, cream white on the dark ball. */
 const COUNT_FONT_PX = 17;
 const COUNT_COLOR = '#fff8e8';
+/** The count at 1: one more collision sets it off, so the number itself turns red (the old HUD chip and bar are gone, 2026-11-08). */
+const COUNT_DANGER_COLOR = '#ff4a3a';
+const countColor = (count: number): string => (count <= 1 ? COUNT_DANGER_COLOR : COUNT_COLOR);
 const GAP = 2;
 /** Canvas pixels per css px (sharp up to a 3x screen). */
 const RES = 3;
@@ -113,7 +116,7 @@ export function statusTexture(items: string[], count?: number): { tex: THREE.Can
       if (img.complete && img.naturalWidth) ctx.drawImage(name === 'key' ? keyWithLine(img) : img, x * RES, (h - ih) * RES, iw * RES, ih * RES);
       if (name === 'bomb' && count !== undefined) {
         ctx.font = fontOf(COUNT_FONT_PX * RES);
-        ctx.fillStyle = COUNT_COLOR;
+        ctx.fillStyle = countColor(count);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(String(count), (x + iw * BOMB.cx) * RES, (h - ih + ih * BOMB.cy) * RES + RES);
@@ -168,7 +171,7 @@ export function dynamiteScreenTexture(count: number): { tex: THREE.CanvasTexture
     ctx.clearRect(0, 0, c.width, c.height);
     if (img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, c.width, c.height);
     ctx.font = fontOf(COUNT_FONT_PX * RES);
-    ctx.fillStyle = COUNT_COLOR;
+    ctx.fillStyle = countColor(count);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(count), c.width / 2, c.height / 2 + RES);

@@ -119,32 +119,6 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   return buildGameLevel(n);
 }
 
-/**
- * While a bomb is on the board, a chip at the top shows the closest bomb's number: that many more pushes before it goes
- * off. At 1 the chip turns red and a warning shows just above the buttons.
- */
-const BOMB_ICON = '<img class="statusIcon" src="/assets/status/bomb.png" alt="">';
-function paintBombBar(): void {
-  const chip = $('bombChip');
-  const warn = $('bombBar');
-  const state = current();
-  const left = state ? [...state.alive].map((id) => state.fuses[id]).filter((f): f is number => f !== undefined) : [];
-  if (!state || !left.length || isFailed(state)) { chip.hidden = true; warn.hidden = true; return; }
-  const n = Math.min(...left);
-  chip.hidden = false;
-  chip.className = n <= 1 ? 'danger' : n <= 2 ? 'warn' : '';
-  chip.setAttribute('aria-label', `다이너마이트: 이 친구가 다른 친구와 ${n}번 더 부딪히면 터져요`);
-  warn.hidden = n > 1;
-  // 2.5D: the same clay bomb as over the animals (status UI 2026-11-05); Classic 3D keeps its emoji
-  if ([...views.values()].some((v) => v.cards)) {
-    chip.innerHTML = `${BOMB_ICON}${n}`;
-    warn.innerHTML = `${BOMB_ICON}이 친구가 한 번 더 부딪히면 펑!`;
-  } else {
-    chip.textContent = `💣 ${n}`;
-    warn.textContent = '💣 이 친구가 한 번 더 부딪히면 펑!';
-  }
-}
-
 /** Heart icons for the HUD and the result card: the hearts left bright, the ones used dark. Fixed markup only. */
 /** Hearts as the HUD last showed them, so a heart just lost can pop. */
 let shownHearts = 0;
@@ -246,7 +220,6 @@ function refreshHud(): void {
     if (piece.fuse !== undefined) items.push('💣');
     v.setBadges(items, piece.fuse !== undefined ? state.fuses[id] : undefined);
   }
-  paintBombBar();
 }
 
 /**
@@ -1189,6 +1162,8 @@ else goHome();
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   build: () => BUILD,
+  /** every animal's dynamite as drawn: its number and whether it shows red (at 1) */
+  dynamite: () => [...views.entries()].filter(([, v]) => v.dynamite).map(([id, v]) => ({ id, ...v.dynamite! })),
   playlog: () => playlog?.all ?? [],
   /** The animal the hint button would light up (bombs first). */
   // the hint button's pick: a free animal, or (nothing free) the push that untangles the knot
