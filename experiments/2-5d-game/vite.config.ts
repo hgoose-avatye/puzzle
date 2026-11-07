@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { buildDefine } from '../../tools/build-info';
 
 /**
  * The real game (game/ unchanged) with 2.5D animals: game/animals.ts imports `./blocks` for buildAnimal; this entry
@@ -18,4 +19,6 @@ const swapBlocks: Plugin = {
   },
 };
 
-export default defineConfig({ root: game, publicDir: `${game}public`, plugins: [swapBlocks], server: { port: 5420, strictPort: true } });
+const repo = new URL('../../', import.meta.url).pathname;
+
+export default defineConfig({ root: game, publicDir: `${game}public`, plugins: [swapBlocks], server: { port: 5420, strictPort: true }, define: buildDefine(repo) });

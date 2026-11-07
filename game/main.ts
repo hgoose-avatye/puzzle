@@ -58,6 +58,10 @@ let loopSpeed: number | null = null;
 const pendingExits = new Set<number>();
 let clearPlayed = false;
 let failPlayed = false;
+/** Which code and level data this is (tools/build-info.ts via the vite configs); 'unknown' outside those configs. */
+const BUILD = typeof __BUILD_INFO__ === 'object' && __BUILD_INFO__ ? __BUILD_INFO__ : { commit: 'unknown', branch: 'unknown', dirty: false, levels: 'unknown', builtAt: '' };
+$('build').textContent = `${BUILD.branch}@${BUILD.commit}${BUILD.dirty ? '+' : ''} levels ${BUILD.levels}`;
+
 const PROGRESS_KEY = 'animal-rescue-progress';
 
 const readProgress = (): number => { try { return Math.max(1, Number(localStorage.getItem(PROGRESS_KEY) ?? 1)); } catch { return 1; } };
@@ -1088,6 +1092,7 @@ else goHome();
 /** Test hook used by automated browser checks (tests/e2e); dev server only. */
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
+  build: () => BUILD,
   /** The animal the hint button would light up (bombs first). */
   // the hint button's pick: a free animal, or (nothing free) the push that untangles the knot
   hint: () => { const s = current(); return s ? pickHint(s.level, s.alive, s.fuses) ?? (BUMP ? pickPush(s.level, s.alive, s.fuses) : null) : null; },
