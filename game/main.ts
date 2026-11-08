@@ -15,7 +15,7 @@ import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
-import { arrowTargets, bombToWatch, bumpTargets, crateLessonAt, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
+import { arrowTargets, bombToWatch, bumpTargets, crateLessonAt, lessonsBefore, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
 import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -576,6 +576,16 @@ const BUMP_LESSON_MSG = '막힌 친구는 부딪히는 자리까지 가서 멈�
 const CRATE_PUSH_RESULT_MS = 2000;
 const CRATE_PUSH_RESULT_TEXT = '여기서 나가면\n상자가 부서져!';
 const CRATE_PUSH_MSG = '상자 옆에서 나가면 상자에 금이 가요';
+/**
+ * The crate lessons say what happened (2026-11-08 playtest: 11 and 12 only gave their first line, 13 explained the
+ * result too). Level 11: when the neighbour's exit breaks the crate, the chick says so beside the animal it held.
+ * Level 12: the first exit from beside the crate gets a line on the crate, the break a line beside the freed animal.
+ */
+const CRATE_RESULT_MS = 2000;
+const CRATE_RESULT_TEXT = '상자가 부서져서\n길이 열렸어!';
+const CRATE2_SAY_MS = 1800;
+const CRATE2_CRACK_TEXT = '점이 하나 줄었어!\n옆 친구 하나 더!';
+const CRATE2_BREAK_TEXT = '두 번 금이 가서\n부서졌어!';
 /** After the lesson's push arrived: the crates it now stands beside, and the animals those crates hold. */
 let cratePushWatch: { crates: string[]; held: number[] } | null = null;
 /** Tutorials whose tap changes another animal, shown for RESULT_MS. */
@@ -717,6 +727,22 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
  * only, so a touch that closes the words does not count, and no order of exits can leave the lesson hanging.
  */
 let crateLesson: { x: number; y: number; held: number[]; toldElsewhere: boolean } | null = null;
+/** A short line from the chick during play (the crate lessons' reactions): these lit, the words by `spot`, then gone. */
+function chickSays(spot: () => TutorialSpot | null, text: string, ms: number, lit: THREE.Object3D[]): void {
+  window.clearTimeout(resultTimer);
+  stage.setFocus(lit);
+  // shown straight into its result moment (chick and words only, touches held, no ›): it goes by itself
+  tutorial.show({ text, spot: () => spot() ?? { x: innerWidth / 2, y: innerHeight / 2, r: SPOT_MIN }, room: boardRoom, onAction: () => {}, onSkip: () => {} });
+  tutorial.result(spot, text);
+  resultTimer = window.setTimeout(() => { tutorial.hide(); stage.setFocus([]); }, ms);
+}
+/** Where the chick points at a crate (CSS px), or null when the crate is not drawn. */
+function crateSpot(x: number, y: number): TutorialSpot | null {
+  const obj = stage.crateObjectAt(x, y);
+  if (!obj) return null;
+  const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6));
+  return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) };
+}
 function showCrateLesson(level: Level): void {
   const s = current();
   const k = s && crateLessonAt(level, s.alive);
@@ -743,6 +769,10 @@ function crateLessonExit(id: number): void {
   const cell = piece.cells.find((c) => Math.abs(c.x - crateLesson!.x) + Math.abs(c.y - crateLesson!.y) === 1);
   if (cell) {
     $('msg').textContent = '옆 친구가 나가서 점이 하나 줄었어요';
+    // the crate still stands: the chick says one dot went and one more neighbour will do (the break has its own line)
+    const k = (s.level.crates ?? []).find((c) => c.x === crateLesson!.x && c.y === crateLesson!.y);
+    const obj = stage.crateObjectAt(crateLesson.x, crateLesson.y);
+    if (k && obj && crateStanding(s.level, k, s.alive)) { const { x, y } = crateLesson; chickSays(() => crateSpot(x, y), CRATE2_CRACK_TEXT, CRATE2_SAY_MS, [obj]); }
   } else if (!crateLesson.toldElsewhere) {
     crateLesson.toldElsewhere = true;
     $('msg').textContent = '옆이 아니라서 상자는 그대로예요';
@@ -759,10 +789,8 @@ function crateLessonBroke(x: number, y: number): void {
   if (tutorialShown?.id === 'crate2') endTutorial(); // the words still up (the dev hook can tap past them): gone with the crate
   $('msg').textContent = '옆 친구 둘이 나가서 상자가 부서졌어요!';
   if (!held.length) return;
-  stage.setFocus(held.map((id) => views.get(id)!.group));
   for (const id of held) views.get(id)!.pulse();
-  window.clearTimeout(resultTimer);
-  resultTimer = window.setTimeout(() => stage.setFocus([]), RESULT_MS);
+  chickSays(() => spotOf(held[0]), CRATE2_BREAK_TEXT, CRATE2_SAY_MS, held.map((id) => views.get(id)!.group));
 }
 
 /** The free band on screen between the HUD and the board's top edge (CSS px), where an info lesson's words go. */
@@ -817,8 +845,10 @@ function tutorialTapped(): void {
   stage.setFocus(changed.map((id) => views.get(id)!.group));
   for (const id of changed) views.get(id)!.pulse();
   const first = changed[0];
-  tutorial.result(() => spotOf(first));
-  resultTimer = window.setTimeout(() => endTutorial(), RESULT_MS);
+  // the one-crack crate lesson says why the held animal is free now; the others show the change alone
+  const words = shown.id === 'crate' ? CRATE_RESULT_TEXT : undefined;
+  tutorial.result(() => spotOf(first), words);
+  resultTimer = window.setTimeout(() => endTutorial(), words ? CRATE_RESULT_MS : RESULT_MS);
 }
 
 /** The bump lesson's push is made: learnt; the words and finger go while the chick follows the running animal. */
@@ -1290,6 +1320,12 @@ $('home').addEventListener('click', goHome);
 
 // dev entry points (?level, ?demo) go straight into play; a build has no parameters and always opens on the title
 const fromUrl = Number(params.get('level'));
+// dev only: ?level=n opened on an empty save (a private window, a new tester) counts the lessons of the levels before n
+// as learnt, so that level opens on its own lesson, as for a player who came from level 1 (2026-11-08 playtest: level
+// 11 opened on "이 친구를 눌러봐!" instead of its crate lesson). A save that has learnt anything is left alone.
+if (import.meta.env.DEV && Number.isInteger(fromUrl) && fromUrl > 1 && !params.has('demo') && !params.has('exp') && readSeen().length === 0) {
+  writeSeen(lessonsBefore(fromUrl, (k) => buildGameLevel(k)?.level ?? null));
+}
 if (params.has('demo') || (Number.isInteger(fromUrl) && fromUrl >= 1)) void loadLevel(Number.isInteger(fromUrl) && fromUrl >= 1 ? fromUrl : readProgress());
 else goHome();
 

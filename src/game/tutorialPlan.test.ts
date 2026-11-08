@@ -4,7 +4,7 @@ import { createGame, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import type { Level } from '../core/types';
 import { buildGameLevel, knotLevel } from '../curve/curve';
-import { arrowTargets, bombToWatch, bumpTargets, crateLessonAt, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
+import { arrowTargets, bombToWatch, bumpTargets, crateLessonAt, lessonsBefore, resultSubjects, startTargets, startTutorial } from './tutorialPlan';
 
 const levelOf = (n: number): Level => buildGameLevel(n)!.level;
 const everyone = (l: Level): Set<number> => new Set(l.pieces.map((p) => p.id));
@@ -133,6 +133,17 @@ describe('crate lessons (2026-11-07, crate2 reworked 2026-11-08)', () => {
     // once learnt, level 13 has no start tutorial left, and no other level asks for it
     expect(startTutorial(l, ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2', 'cratePush'], 13)).toBeNull();
     expect(startTutorial(buildGameLevel(14)!.level, ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2'], 14)).toBeNull();
+  });
+  it('lessonsBefore: what a player from level 1 has learnt on reaching a level (for dev entry points)', () => {
+    const at = (k: number) => buildGameLevel(k)?.level ?? null;
+    expect(lessonsBefore(1, at)).toEqual([]);
+    expect(lessonsBefore(11, at)).toEqual(['basic', 'blocked', 'arrow', 'bump']);
+    expect(lessonsBefore(12, at)).toEqual(['basic', 'blocked', 'arrow', 'bump', 'crate']);
+    expect(lessonsBefore(14, at)).toEqual(['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2', 'cratePush']);
+    // then each of those levels opens on its own lesson
+    expect(startTutorial(at(11)!, lessonsBefore(11, at), 11)).toBe('crate');
+    expect(startTutorial(at(12)!, lessonsBefore(12, at), 12)).toBe('crate2');
+    expect(startTutorial(at(13)!, lessonsBefore(13, at), 13)).toBe('cratePush');
   });
   it('a level without a one-crack crate never asks for the crate lesson, nor a level without a two-crack crate for crate2', () => {
     expect(startTutorial(buildGameLevel(12)!.level, ['basic', 'blocked'], 12)).toBe('crate2');
