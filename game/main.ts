@@ -552,7 +552,12 @@ const SPOT_MIN = 30;
 const SPOT_MAX = 48;
 /** How often the tap's spot checks it still sits on its animal (ms): the 2.5D pictures may still be loading. */
 const SPOT_RECHECK = 300;
-/** How long the animal a tap changed (unlocked, woken, its way cleared) stays lit after the tap (ms). */
+/**
+ * How long a tutorial's result shows (ms), by what it has to say (2026-11-08, docs/ui/UI_SYSTEM.md "튜토리얼"):
+ * RESULT_MS when the change is seen (the animal a tap unlocked, woke or freed stays lit, no words); BUMP_RESULT_MS when
+ * a line of words is needed to read the rule (the bump lesson: where the animal stopped and why). An info lesson has
+ * no timer: it stays until its bubble is touched.
+ */
 const RESULT_MS = 800;
 /**
  * The bump lesson's result (level 8, 2026-11-08): once the pushed animal has run up to the one in its way, both stay
@@ -670,6 +675,7 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
     tutorial.show({
       text: TUTORIAL_TEXT[id],
       spot: follow,
+      room: boardRoom,
       onAction: () => {
         const s = current();
         // the blocked tutorial's tap is the shake itself (its level has no hearts), then the animal in its way lights up
@@ -711,8 +717,9 @@ function showCrateLesson(level: Level): void {
   tutorialUsed = true;
   stage.setFocus([obj, ...tiles]);
   const spot = (): TutorialSpot => { const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6)); return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) }; };
-  // closing the words does not learn the lesson (the break does); the tiles stay lit until then
-  tutorial.show({ text: TUTORIAL_TEXT.crate2, spot, onAction: () => endTutorial(), onSkip: () => endTutorial() });
+  // a discovery lesson (2026-11-08): no finger (no animal is the answer), the words sit above the board and close on a
+  // touch of the bubble; closing them does not learn the lesson (the break does), and the tiles stay lit until then
+  tutorial.show({ text: TUTORIAL_TEXT.crate2, spot, room: boardRoom, info: true, onAction: () => endTutorial(), onSkip: () => endTutorial() });
 }
 
 /** An animal left while the crate lesson is on: say what it did to the crate (the crack itself is drawn by crackCrates). */

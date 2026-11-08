@@ -5,10 +5,14 @@
  * chick sits next to the animal with a small round bubble (a few words), a finger taps the animal on a loop, and
  * 건너뛰기 is small but finger-sized. In the result moment (after the tap) only the chick stays and taps are held, with
  * the bubble back when the result has words of its own (result(spot, text)). An info lesson (show({info: true}), the
- * dynamite on level 40) has nothing to tap: no finger, every touch on the board is held, the chick and bubble sit in
- * the free band above the board (room) so nothing covers the animal, and a touch on the bubble itself (a small › in
- * its corner says so) closes it (2026-11-08: the finger over the dynamite read as "tap it", and the second tap was a
- * real push; a separate button read like a lesson app).
+ * dynamite on level 40, the two-crack crate on level 12) has nothing to tap: no finger, every touch on the board is
+ * held, and a touch on the bubble itself (a small › in its corner says so) closes it (2026-11-08: the finger over the
+ * dynamite read as "tap it", and the second tap was a real push; a separate button read like a lesson app).
+ *
+ * Where the chick and bubble go (2026-11-08): by default in the free band between the HUD and the board's top edge
+ * (room), where they cover no animal; the finger alone marks the animal to tap. They sit next to the animal instead
+ * when the band is too low (under ROOM_MIN) or the animal is too far below it (over FAR_BELOW), and in the result
+ * moment, where the chick points out what the tap changed.
  */
 
 export interface TutorialSpot {
@@ -26,12 +30,16 @@ export interface TutorialShow {
   onSkip: () => void;
   /** nothing to tap: no finger, touches held, closed by a touch on the bubble (onAction) */
   info?: boolean;
-  /** info: the free band on screen (CSS px) between the HUD and the board, where the chick and bubble go */
+  /** the free band on screen (CSS px) between the HUD and the board, where the chick and bubble go by default */
   room?: () => { top: number; bottom: number } | null;
 }
 
 /** Room kept between the animal and the chick (CSS pixels). */
 const GAP = 58;
+/** The band above the board must leave this much over the guide's height, or the chick goes next to the animal. */
+const ROOM_MIN = 16;
+/** An animal more than this far below the band's bottom edge (CSS px) gets the chick next to it instead. */
+const FAR_BELOW = 420;
 
 export class Tutorial {
   private readonly root: HTMLDivElement;
@@ -121,8 +129,9 @@ export class Tutorial {
   }
 
   /**
-   * Follow the animal every frame: the finger on it, the chick above or below it (whichever side has room). An info
-   * lesson with room above the board sits centred in that band instead, clear of every animal.
+   * Follow the animal every frame: the finger on it; the chick and bubble centred in the band above the board, or
+   * (no such band, the animal too far below it, or the result moment) above or below the animal, whichever side has
+   * room.
    */
   private place(): void {
     if (!this.current) return;
@@ -131,8 +140,8 @@ export class Tutorial {
       this.finger.style.left = `${s.x + s.r * 0.3}px`;
       this.finger.style.top = `${s.y + s.r * 0.45}px`;
       const h = this.guide.offsetHeight, w = this.guide.offsetWidth;
-      const room = this.current.info ? this.current.room?.() : null;
-      if (room && room.bottom - room.top >= h + 16) {
+      const room = this.resultOnly ? null : this.current.room?.();
+      if (room && room.bottom - room.top >= h + ROOM_MIN && s.y - room.bottom <= FAR_BELOW) {
         this.guide.style.top = `${room.top + (room.bottom - room.top - h) / 2}px`;
         this.guide.style.left = `${Math.max(12, Math.min(innerWidth - w - 12, (innerWidth - w) / 2))}px`;
       } else {
