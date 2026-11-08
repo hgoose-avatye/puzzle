@@ -492,15 +492,17 @@ function onTap(id: number): TapOutcome {
       if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
     };
     // bump rule: it runs up to what stops it first, and the bump comes on arrival
+    const pushLesson = !!ev.moved && tutorialShown?.id === 'bump' && tutorialShown.target === id && !tutorialInfo;
     if (ev.moved) {
-      if (tutorialShown?.target === id && !tutorialInfo) tutorialTapped();
+      if (pushLesson) tutorialPushed(id);
+      else if (tutorialShown?.target === id && !tutorialInfo) tutorialTapped();
       tutorialCheck = true;
       sound.play('move');
-      view.slideTo(flow.headAt(id), feedback);
+      view.slideTo(flow.headAt(id), () => { feedback(); if (pushLesson) tutorialArrived(id); });
     } else feedback();
     // the words follow the rules exactly (2026-11-07 audit): a crate cracks per neighbour that leaves, as many times as
     // its dots show; a sleeper's neighbours are whoever stands next to it now
-    $('msg').textContent = ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : '앞이 막혔어요';
+    $('msg').textContent = pushLesson ? BUMP_LESSON_MSG : ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
   checkStuck();
@@ -536,7 +538,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   arrow: '화살표에서\n꺾이는 걸 봐!',
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
-  bomb: '다이너마이트 친구는 부딪힐 때마다\n숫자가 줄어! 0이면 펑',
+  bomb: '부딪힐 때마다 숫자가 줄어요!\n0이 되면 펑!',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
   crate: '옆 친구가 나가면\n상자가 부서져!',
   crate2: '상자 옆 친구가 나가면\n점이 하나 줄어!',
@@ -550,8 +552,21 @@ const SPOT_MIN = 30;
 const SPOT_MAX = 48;
 /** How often the tap's spot checks it still sits on its animal (ms): the 2.5D pictures may still be loading. */
 const SPOT_RECHECK = 300;
-/** How long the animal a tap changed (unlocked, woken, its way cleared) stays lit after the tap (ms). */
+/**
+ * How long a tutorial's result shows (ms), by what it has to say (2026-11-08, docs/ui/UI_SYSTEM.md "튜토리얼"):
+ * RESULT_MS when the change is seen (the animal a tap unlocked, woke or freed stays lit, no words); BUMP_RESULT_MS when
+ * a line of words is needed to read the rule (the bump lesson: where the animal stopped and why). An info lesson has
+ * no timer: it stays until its bubble is touched.
+ */
 const RESULT_MS = 800;
+/**
+ * The bump lesson's result (level 8, 2026-11-08): once the pushed animal has run up to the one in its way, both stay
+ * lit, the chick says why it stopped and the line under the board states the rule; longer than RESULT_MS, there are
+ * words to read. The line stays until the next tap.
+ */
+const BUMP_RESULT_MS = 1600;
+const BUMP_RESULT_TEXT = '부딪혀서\n여기서 멈췄어!';
+const BUMP_LESSON_MSG = '막힌 친구는 부딪히는 자리까지 가서 멈춰요';
 /** Tutorials whose tap changes another animal, shown for RESULT_MS. */
 const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb', 'crate'];
 /** This level's one tutorial is taken (shown, or the level's own start rule is waiting for its animal). */
@@ -563,6 +578,9 @@ let tutorialShown: { id: TutorialId; target: number } | null = null;
 /** The lesson on screen has nothing to tap (showInfoTutorial): a board tap on its animal is not its tap. */
 let tutorialInfo = false;
 let resultTimer: number | undefined;
+/** An info lesson's animal pulses every so often while the words are up. */
+let infoPulse: number | undefined;
+const INFO_PULSE_MS = 1400;
 /** After the arrow tutorial's tap: the tile it turns on, bounced when the animal's head reaches it. */
 let arrowWatch: { id: number; x: number; y: number; at: THREE.Vector3 } | null = null;
 
@@ -571,6 +589,7 @@ const learn = (id: TutorialId): void => { const seen = readSeen(); if (!seen.inc
 function endTutorial(learnt?: TutorialId): void {
   if (learnt) learn(learnt);
   window.clearTimeout(resultTimer);
+  window.clearInterval(infoPulse);
   if (tutorialShown) views.get(tutorialShown.target)?.setBreathe(false);
   stage.setFocus([]);
   tutorial.hide();
@@ -656,6 +675,7 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
     tutorial.show({
       text: TUTORIAL_TEXT[id],
       spot: follow,
+      room: boardRoom,
       onAction: () => {
         const s = current();
         // the blocked tutorial's tap is the shake itself (its level has no hearts), then the animal in its way lights up
@@ -697,8 +717,9 @@ function showCrateLesson(level: Level): void {
   tutorialUsed = true;
   stage.setFocus([obj, ...tiles]);
   const spot = (): TutorialSpot => { const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6)); return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) }; };
-  // closing the words does not learn the lesson (the break does); the tiles stay lit until then
-  tutorial.show({ text: TUTORIAL_TEXT.crate2, spot, onAction: () => endTutorial(), onSkip: () => endTutorial() });
+  // a discovery lesson (2026-11-08): no finger (no animal is the answer), the words sit above the board and close on a
+  // touch of the bubble; closing them does not learn the lesson (the break does), and the tiles stay lit until then
+  tutorial.show({ text: TUTORIAL_TEXT.crate2, spot, room: boardRoom, info: true, onAction: () => endTutorial(), onSkip: () => endTutorial() });
 }
 
 /** An animal left while the crate lesson is on: say what it did to the crate (the crack itself is drawn by crackCrates). */
@@ -734,9 +755,21 @@ function crateLessonBroke(x: number, y: number): void {
   resultTimer = window.setTimeout(() => stage.setFocus([]), RESULT_MS);
 }
 
+/** The free band on screen between the HUD and the board's top edge (CSS px), where an info lesson's words go. */
+function boardRoom(): { top: number; bottom: number } | null {
+  const s = current();
+  if (!s) return null;
+  const { width: w } = s.level;
+  const bottom = Math.min(...[-0.5, w - 0.5].map((gx) => screenAt(stage.worldOf(s.level, gx, -0.5)).y));
+  const top = Math.max($('hud').getBoundingClientRect().bottom, $('settings').getBoundingClientRect().bottom);
+  return { top, bottom };
+}
+
 /**
- * A lesson with nothing to tap: the chick's words over an animal, closed (and learnt) by a touch on it or 건너뛰기. The
- * touch reaches no animal, so the board does not change.
+ * A lesson with nothing to tap: the chick's words in the band above the board, no finger, every touch on the board held,
+ * closed (and learnt) by a touch on the bubble. The animal it is about stays lit alone and pulses while the words are
+ * up; the board does not change, and no touch lands on the animal once the words are gone (2026-11-08: a finger over
+ * the dynamite invited a tap, and the next one was a real push that burnt its number).
  */
 function showInfoTutorial(id: TutorialId, target: number): boolean {
   const spot = spotOf(target);
@@ -747,7 +780,9 @@ function showInfoTutorial(id: TutorialId, target: number): boolean {
   tutorialUsed = true;
   stage.setFocus([view.group]);
   view.setBreathe(true);
-  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
+  view.pulse();
+  infoPulse = window.setInterval(() => view.pulse(), INFO_PULSE_MS);
+  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, room: boardRoom, info: true, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
   return true;
 }
 
@@ -774,6 +809,32 @@ function tutorialTapped(): void {
   const first = changed[0];
   tutorial.result(() => spotOf(first));
   resultTimer = window.setTimeout(() => endTutorial(), RESULT_MS);
+}
+
+/** The bump lesson's push is made: learnt; the words and finger go while the chick follows the running animal. */
+function tutorialPushed(id: number): void {
+  learn('bump');
+  views.get(id)?.setBreathe(false);
+  tutorial.result(() => spotOf(id));
+}
+
+/**
+ * The pushed animal has run up to what stops it: it and the animal it bumped into stay lit, that one pulses, the chick
+ * says why it stopped and the line under the board gives the rule; then play goes on by itself.
+ */
+function tutorialArrived(id: number): void {
+  const s = current();
+  if (!s || tutorialShown?.id !== 'bump' || tutorialShown.target !== id) return;
+  const piece = s.level.pieces.find((p) => p.id === id);
+  const next = piece ? traceExit(s.level, piece).cells[0] : undefined;
+  const stopper = next ? s.level.pieces.find((p) => p.id !== id && s.alive.has(p.id) && p.cells.some((c) => c.x === next.x && c.y === next.y)) : undefined;
+  const lit = [id, ...(stopper ? [stopper.id] : [])].filter((i) => views.has(i));
+  stage.setFocus(lit.map((i) => views.get(i)!.group));
+  if (stopper) views.get(stopper.id)?.pulse();
+  tutorial.result(() => spotOf(stopper?.id ?? id), BUMP_RESULT_TEXT);
+  $('msg').textContent = BUMP_LESSON_MSG;
+  window.clearTimeout(resultTimer);
+  resultTimer = window.setTimeout(() => endTutorial(), BUMP_RESULT_MS);
 }
 
 /** A new level: its start tutorial if it has one, otherwise watch for the arrow tutorial. */

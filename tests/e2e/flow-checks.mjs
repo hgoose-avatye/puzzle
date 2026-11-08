@@ -37,9 +37,9 @@ export async function runFlowChecks(browser, base, report) {
       playing: window.__game.state() !== null && document.getElementById('title').hidden,
     };
   });
-  /** Close the chick's first-time tutorial if it is showing (건너뛰기, or 알겠어요 on a look-only one). */
+  /** Close the chick's first-time tutorial if it is showing (건너뛰기, or the bubble of a look-only one). */
   const closeTips = async (p) => {
-    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, .tutOk')].find((b) => !b.hidden)?.click(); });
+    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, #tutorial.info .tutBubble')].find((b) => !b.hidden)?.click(); });
     await sleep(100);
   };
   /** Send out every animal (rules decide at once); returns the number of taps. */
@@ -380,9 +380,15 @@ export async function runFlowChecks(browser, base, report) {
     const shown = await tut(p);
     const lesson = await p.evaluate(() => window.__game.crateLesson());
     check('tutorial: level 12 opens on crate2 with the lesson on the crate (3,4), the held animal 4 known, no animal to tap', shown?.id === 'crate2' && shown.target === 0 && lesson?.x === 3 && lesson.y === 4 && JSON.stringify(lesson.held) === '[4]', `${JSON.stringify(shown)} ${JSON.stringify(lesson)}`);
-    // the touch that closes the words taps no animal
+    // a discovery lesson (2026-11-08): a touch on the crate's spot is held, the bubble is what closes the words, and
+    // neither taps an animal
     const before = await p.evaluate(() => window.__game.ids().length);
     if (shown) await p.touchscreen.tap(shown.spot.x, shown.spot.y);
+    await sleep(300);
+    const held = await p.evaluate(() => window.__game.tutorial()?.id ?? null);
+    check('tutorial: a touch on the crate itself is held by the discovery lesson', held === 'crate2', String(held));
+    const bubble = await p.evaluate(() => { const b = document.querySelector('#tutorial .tutBubble').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; });
+    await p.touchscreen.tap(bubble.x, bubble.y);
     await sleep(400);
     const closed = await p.evaluate(() => ({ tut: window.__game.tutorial(), alive: window.__game.ids().length, lesson: !!window.__game.crateLesson(), seen: JSON.parse(localStorage.getItem('animal-rescue-seen')) }));
     check('tutorial: closing the words removes nothing from the board, keeps the lesson on and does not learn it', closed.tut === null && closed.alive === before && closed.lesson && !closed.seen.includes('crate2'), JSON.stringify(closed));
