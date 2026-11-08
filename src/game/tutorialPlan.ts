@@ -1,5 +1,5 @@
-import { peel, pickPush } from '../core/bump';
-import { blockersOf, canExit, crateCracks, cratesInWay, isAsleep, lockedBy, piecesAround, traceExit } from '../core/rules';
+import { bumpResult, peel, pickPush } from '../core/bump';
+import { blockersOf, canExit, crateCracks, crateStanding, cratesInWay, isAsleep, lockedBy, piecesAround, traceExit } from '../core/rules';
 import { nextTapToward } from '../solver/plan';
 import type { Level, Piece } from '../core/types';
 import { pickHint } from './hint';
@@ -15,7 +15,7 @@ import { pickHint } from './hint';
  * tutorial waits for its moment: an animal whose way out bends on an arrow becomes free. A tutorial with no animal it can point at is not forced: it waits for the next level where
  * it can. Hearts and crates teach themselves in play (the heart that pops, the crate that cracks).
  */
-export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb' | 'crate' | 'crate2';
+export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb' | 'crate' | 'crate2' | 'cratePush';
 /**
  * Start tutorials, in the order a level is checked for them. The crate lessons (2026-11-07 playtest: "why did it
  * break?") hang on the first level with a one-crack crate (crate: the neighbour leaves, the crate goes) and the first
@@ -23,7 +23,14 @@ export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep
  * freely; an exit from a neighbour cell takes a dot, one from elsewhere changes nothing, and the lesson is learnt when
  * the crate breaks — main.ts runs that, crateLessonAt names the crate).
  */
-export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'blocked', 'crate', 'crate2', 'key', 'sleep', 'bomb'];
+export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'blocked', 'cratePush', 'crate', 'crate2', 'key', 'sleep', 'bomb'];
+/**
+ * The level that teaches the push that sets an animal beside a crate, which then breaks the crate by leaving from there
+ * (cratePush, 2026-11-08 playtest: "fun, but never taught, so hard"). Hand-made level 13: its one push is that move. It
+ * comes before the crate lessons in START_TUTORIALS so that a save missing those still gets this one here (level 13 has
+ * no free animal beside its crate for the one-crack lesson to point at).
+ */
+export const CRATE_PUSH_LEVEL = 13;
 /** The level that teaches the blocked animal: hand-made with no hearts, so the shake costs nothing. */
 export const BLOCKED_LEVEL = 2;
 
@@ -66,6 +73,7 @@ export function usesRule(level: Level, id: TutorialId): boolean {
     case 'bomb': return level.pieces.some((p) => p.fuse !== undefined);
     case 'crate': return (level.crates ?? []).some((k) => k.hits === 1);
     case 'crate2': return (level.crates ?? []).some((k) => k.hits >= 2);
+    case 'cratePush': return (level.crates ?? []).length > 0;
   }
 }
 
@@ -114,6 +122,17 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
     case 'crate':
       // a free neighbour of a one-crack crate: its leaving breaks the crate
       return crateNeighbours(level, alive, (hits, cracks) => hits === 1 && cracks === 0);
+    case 'cratePush': {
+      // a push (nothing free in the way of the knot) that stops the animal next to a standing crate it was not next to
+      const nextTo = (l: Level, id: number): string[] => (l.crates ?? []).filter((k) => crateStanding(l, k, alive) && piecesAround(l, k.x, k.y).includes(id)).map((k) => `${k.x},${k.y}`);
+      return level.pieces.filter((p) => {
+        if (!alive.has(p.id) || open.includes(p.id)) return false;
+        const b = bumpResult(level, p, alive);
+        if (!b) return false;
+        const before = nextTo(level, p.id);
+        return nextTo(b.level, p.id).some((k) => !before.includes(k));
+      }).map((p) => p.id);
+    }
     case 'crate2':
       return []; // no animal to point at: the lesson is on the crate (crateLessonAt), the player chooses
     case 'bomb':
@@ -153,6 +172,7 @@ export function startTutorial(level: Level, seen: readonly string[], levelNumber
     if (seen.includes(id) || !usesRule(level, id)) continue;
     if (id === 'basic' && levelNumber !== 1 && seen.length > 0) continue;
     if (id === 'blocked' && levelNumber !== BLOCKED_LEVEL) continue;
+    if (id === 'cratePush' && levelNumber !== CRATE_PUSH_LEVEL) continue;
     return id;
   }
   return null;
