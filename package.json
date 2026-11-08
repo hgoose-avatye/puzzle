@@ -10,7 +10,8 @@
     "test": "vitest run",
     "build": "tsc --noEmit && vite build viewer",
     "dev": "vite viewer",
-    "dev:game": "vite --config vite.game.config.ts",
+    "dev:game": "vite --config experiments/2-5d-game/vite.config.ts",
+    "dev:game3d": "vite --config vite.game.config.ts",
     "build:game": "tsc --noEmit && vite build --config experiments/2-5d-game/vite.config.ts",
     "test:e2e": "node tests/e2e/run.mjs"
   },

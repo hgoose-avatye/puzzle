@@ -1,3 +1,4 @@
+// Classic 3D (block animals), kept for comparison only: `npm run dev:game3d`. The game is the 2.5D entry, experiments/2-5d-game/vite.config.ts (`npm run dev:game`).
 import { defineConfig } from 'vite';
 import { buildDefine } from './tools/build-info';
 

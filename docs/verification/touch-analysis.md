@@ -74,7 +74,7 @@
 
 ## 실기기 진단 화면 (`?touchdebug`, 개발 서버 전용)
 
-폰에서 `http://<PC 주소>:5200/?level=10&touchdebug`처럼 엽니다(서버는 `npx vite --config vite.game.config.ts --host`).
+폰에서 `http://<PC 주소>:5420/?level=10&touchdebug`처럼 엽니다(서버는 `npx vite --config experiments/2-5d-game/vite.config.ts --host`).
 
 - 손가락이 닿은 곳에 원이 잠깐 남습니다. 초록은 반영됨, 빨강은 거절됨(막힘, 무시, UI가 가로챔), 회색은 그 밖입니다.
 - 화면 아래 패널에 최근 9개 입력이 줄마다 나옵니다. 형식은 `↓`(누름) / `↑`(뗌) / `×`(취소), 손가락 번호, 입력 종류(t=터치), 좌표, 골라진 동물, 결과입니다.
