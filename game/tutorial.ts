@@ -3,10 +3,10 @@
  * setFocus, set by main.ts); this layer is see-through and catches every tap: one on the animal's spot is the action
  * (main.ts sends it on as the game's tap on that animal, so no neighbour can be picked), any other is held back. The
  * chick sits next to the animal with a small round bubble (a few words), a finger taps the animal on a loop, and
- * 건너뛰기 is small but finger-sized. In the result moment (after the tap) only the chick stays and taps are held. An
- * info lesson (show({info: true}), the dynamite on level 40) has nothing to tap: no finger, every touch on the board is
- * held, and only its 알겠어요 button closes it (2026-11-08: the finger over the dynamite read as "tap it", and the second
- * tap was a real push).
+ * 건너뛰기 is small but finger-sized. In the result moment (after the tap) only the chick stays and taps are held, with
+ * the bubble back when the result has words of its own (result(spot, text)). An info lesson (show({info: true}), the
+ * dynamite on level 40) has nothing to tap: no finger, every touch on the board is held, and only its 알겠어요 button
+ * closes it (2026-11-08: the finger over the dynamite read as "tap it", and the second tap was a real push).
  */
 
 export interface TutorialSpot {
@@ -80,7 +80,7 @@ export class Tutorial {
     this.current = t;
     this.resultOnly = false;
     this.bubble.textContent = t.text;
-    this.root.classList.remove('result');
+    this.root.classList.remove('result', 'say');
     this.root.classList.toggle('info', !!t.info);
     this.root.hidden = false;
     document.body.classList.add('tut-on');
@@ -88,19 +88,24 @@ export class Tutorial {
     this.place();
   }
 
-  /** The moment after the tap: the chick stays, the bubble, finger and 건너뛰기 go, taps are held. */
-  result(spot: () => TutorialSpot | null): void {
+  /**
+   * The moment after the tap: the chick stays, the bubble, finger and 건너뛰기 go, taps are held. With `text` the bubble
+   * stays up with those words (what the tap did).
+   */
+  result(spot: () => TutorialSpot | null, text?: string): void {
     if (!this.current) return;
     this.current = { ...this.current, spot };
     this.resultOnly = true;
     this.root.classList.add('result');
+    if (text !== undefined) this.bubble.textContent = text;
+    this.root.classList.toggle('say', text !== undefined);
   }
 
   hide(): void {
     this.current = null;
     this.resultOnly = false;
     this.root.hidden = true;
-    this.root.classList.remove('result', 'info');
+    this.root.classList.remove('result', 'say', 'info');
     document.body.classList.remove('tut-on');
     cancelAnimationFrame(this.frame);
   }

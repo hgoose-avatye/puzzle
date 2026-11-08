@@ -197,6 +197,7 @@
       .tutFinger path { fill: #fff; stroke: #4a3424; stroke-width: 2.4; stroke-linejoin: round; filter: drop-shadow(0 3px 3px rgba(0,0,0,.45)); }
       @keyframes tutTap { 0%, 100% { transform: translate(6px, 10px) rotate(-18deg); } 45% { transform: translate(0, 0) rotate(-18deg) scale(.92); } 60% { transform: translate(0, 0) rotate(-18deg) scale(.92); } }
       #tutorial.result .tutBubble, #tutorial.result .tutSkip, #tutorial.result .tutOk, #tutorial.result .tutFinger { display: none; }
+      #tutorial.result.say .tutBubble { display: block; }
       /* a heart lost to a blocked tap shrinks and breaks in two over the empty heart left behind (.35s, HEART_BREAK_MS
          in main.ts; plain game feedback, not a tutorial) */
       #hearts .heart { position: relative; }
