@@ -99,6 +99,15 @@ const CARD_DEPTH_LIFT = 0.45;
  * same depth; neighbours one above the other are ~0.5 cell apart in depth.
  */
 const PART_DEPTH_STEP = 0.01;
+/**
+ * Depth step between neighbouring columns, in cells (± on alternate columns). The camera has no yaw, so blocks in one
+ * row stand at one depth, and two animals' blocks with the same index side by side had nothing to decide them: their
+ * overlapping pictures z-fought, swapping front and back while they swayed (husky and crocodile heads, 2026-11-08; 306
+ * pairs on 143 of the 180 levels). √2·sin(πx + π/4) is +1 and −1 on alternate columns whether the board's columns sit on
+ * whole or half x, so neighbours differ by 2 × this (~5 depth-buffer steps on the farthest board) on any board width,
+ * and that stays under PART_DEPTH_STEP: the head still goes in front of a neighbour's body.
+ */
+const COLUMN_DEPTH_STEP = 0.0025;
 
 /** opaque-texel lookup per picture, for the alpha-aware hit test */
 const alphaMaps = new Map<string, { w: number; h: number; a: Uint8ClampedArray }>();
@@ -219,10 +228,12 @@ function cardBlock(entry: { sprites: SpeciesSprites; dir: string }, part: Return
     tmp.pos.y += PLATE_TOP;
     // depth from the block's place on the track alone (root, not animated): the hop/sway (each block bobs on its own
     // phase), the launch squash and the gate shrink moved the plane, which swapped head and body side by side; a fixed
-    // step per block decides blocks at the same depth
-    root.getWorldPosition(tmp.depth).addScaledVector(tmp.head.normalize(), index * tuck);
+    // step per block decides blocks at the same depth, and a step per column decides two animals' blocks side by side
+    root.getWorldPosition(tmp.depth);
+    const column = Math.SQRT2 * Math.sin(Math.PI * tmp.depth.x + Math.PI / 4);
+    tmp.depth.addScaledVector(tmp.head.normalize(), index * tuck);
     tmp.depth.y += PLATE_TOP + CARD_DEPTH_LIFT;
-    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror, tmp.depth.addScaledVector(camera.getWorldDirection(tmp.fwd), index * PART_DEPTH_STEP), (root.userData.roll as number | undefined) ?? 0);
+    placeCard(card, animated, tmp.pos, root.scale.x, camera, img, cellPx, ax, ay, pick.mirror, tmp.depth.addScaledVector(camera.getWorldDirection(tmp.fwd), index * PART_DEPTH_STEP + column * COLUMN_DEPTH_STEP), (root.userData.roll as number | undefined) ?? 0);
     // where the status badge's pointer ends, in the world (PieceView reads it on the head): a little inside the top of
     // the drawn picture, not on its edge, where ear tips and outlines let the animal behind or the floor show through
     const box = opaqueBox(img);
