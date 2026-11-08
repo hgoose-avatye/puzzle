@@ -201,6 +201,8 @@ export const HAND_LEVELS = new Set(Object.keys(handLevels as Record<string, unkn
 
 /** Does level `n` need a push (a knot)? Lesson levels, the first rest level and hand-made levels never do. */
 export function knotLevel(n: number): boolean {
+  // level 13 is the one hand-made knot: its lesson is the push that sets an animal beside a crate (2026-11-08 draft)
+  if (n === 13) return true;
   if (HAND_LEVELS.has(n) || n === 5) return false;
   return levelSpec(n).role !== 'intro';
 }
