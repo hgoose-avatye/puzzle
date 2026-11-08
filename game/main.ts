@@ -540,7 +540,7 @@ function onTap(id: number): TapOutcome {
     } else feedback();
     // the words follow the rules exactly (2026-11-07 audit): a crate cracks per neighbour that leaves, as many times as
     // its dots show; a sleeper's neighbours are whoever stands next to it now
-    $('msg').textContent = pushLesson ? (tutorialShown?.id === 'cratePush' ? '' : BUMP_LESSON_MSG) : ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : '앞이 막혔어요';
+    $('msg').textContent = pushLesson ? (tutorialShown?.id === 'cratePush' ? '' : BUMP_LESSON_MSG) : ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : ev.moved ? PUSHED_MSG : '앞이 막혔어요';
   }
   refreshHud();
   checkStuck();
@@ -621,6 +621,10 @@ const CRATE_PUSH_MSG = '상자 옆에서 나가면 상자에 금이 가요';
  */
 const CRATE_RESULT_MS = 2000;
 const CRATE_RESULT_TEXT = '상자가 부서져서\n길이 열렸어!';
+/** The blocked lesson (level 2): the animal in front is lit, and the chick says what it means (2026-11-08, shown CRATE_RESULT_MS). */
+const BLOCKED_RESULT_TEXT = '앞 친구가\n먼저 나가야 해!';
+/** Under the board after a push that moved (2026-11-08): it ran up to what stopped it; '앞이 막혔어요' stays for a tap that moved nothing. */
+const PUSHED_MSG = '부딪힐 때까지 갔어요';
 const CRATE2_SAY_MS = 1800;
 const CRATE2_CRACK_TEXT = '점이 하나 줄었어!\n옆 친구 하나 더!';
 const CRATE2_BREAK_TEXT = '두 번 금이 가서\n부서졌어!';
@@ -883,8 +887,8 @@ function tutorialTapped(): void {
   stage.setFocus(changed.map((id) => views.get(id)!.group));
   for (const id of changed) views.get(id)!.pulse();
   const first = changed[0];
-  // the one-crack crate lesson says why the held animal is free now; the others show the change alone
-  const words = shown.id === 'crate' ? CRATE_RESULT_TEXT : undefined;
+  // the one-crack crate lesson says why the held animal is free now, the blocked lesson who goes first; the others show the change alone
+  const words = shown.id === 'crate' ? CRATE_RESULT_TEXT : shown.id === 'blocked' ? BLOCKED_RESULT_TEXT : undefined;
   tutorial.result(() => spotOf(first), words);
   resultTimer = window.setTimeout(() => endTutorial(), words ? CRATE_RESULT_MS : RESULT_MS);
 }
@@ -1153,17 +1157,25 @@ let hintView: PieceView | null = null;
  * Light up the most helpful animal and its way out for a moment. A free animal is shown any time; the push that
  * untangles a knot is the level's answer, so it shows once per level.
  */
+/**
+ * The hint button once the level's push hint is spent (2026-11-08): the undo instead of a plain refusal. Said on any
+ * board, stuck or not, so it never tells whether the knot can still be untangled (docs/rules.md 6).
+ */
+const UNDO_TIP = '막히면 되돌리기로 마지막 밀기를 무를 수 있어요';
+/** The undo would do something now: a push to take back and an undo left. */
+const undoUsable = (): boolean => !!flow && flow.pushes.length > 0 && undosLeft > 0;
+
 function showHint(): void {
   const state = current();
   if (!state || isCleared(state) || isFailed(state) || stuckOut) return;
   let id = pickHint(state.level, state.alive, state.fuses);
   if (id === null && BUMP) {
-    if (hintPushUsed.has(levelNumber)) { $('msg').textContent = '밀기 힌트는 한 판에 한 번이에요'; return; }
+    if (hintPushUsed.has(levelNumber)) { $('msg').textContent = undoUsable() ? UNDO_TIP : '밀기 힌트는 한 판에 한 번이에요'; return; }
     id = pickPush(state.level, state.alive, state.fuses);
     if (id !== null) hintPushUsed.add(levelNumber);
   }
   const view = id === null ? undefined : views.get(id);
-  if (!view) { $('msg').textContent = BUMP ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 움직일 수 있는 친구가 없어요'; return; }
+  if (!view) { $('msg').textContent = BUMP ? (undoUsable() ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 알려 줄 힌트가 없어요') : '지금은 움직일 수 있는 친구가 없어요'; return; }
   playlog?.hint();
   sound.play('select');
   // the halo and the path stay HINT_MS from the button, whatever the finger does; three pulses draw the eye first

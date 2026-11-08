@@ -509,10 +509,12 @@ export async function runFlowChecks(browser, base, report) {
     if (shown) await p.touchscreen.tap(shown.spot.x, shown.spot.y);
     await sleep(150);
     const during = await tut(p);
+    // the result moment says who goes first (2026-11-08), held as long as the crate lesson's words (2 s)
+    const words = await p.evaluate(() => document.getElementById('tutorial')?.innerText.replace(/\s+/g, ' ').trim() ?? '');
     const s = await p.evaluate(() => window.__game.state());
-    await sleep(1200);
+    await sleep(2200);
     const stays = shown ? s.alive.includes(shown.target) : false;
-    check('tutorial: level 2 opens on a blocked animal, its touch shakes it with no heart, the animal in front lights up, and the rule is learnt', shown?.id === 'blocked' && stays && s.blocked === 1 && s.hearts == null && during?.phase === 'result' && (await restored(p)) && (await seenNow(p)).includes('blocked'), `shown ${JSON.stringify(shown)}, during ${JSON.stringify(during)}, state ${JSON.stringify(s)}`);
+    check('tutorial: level 2 opens on a blocked animal, its touch shakes it with no heart, the animal in front lights up with 앞 친구가 먼저 나가야 해!, and the rule is learnt', shown?.id === 'blocked' && stays && s.blocked === 1 && s.hearts == null && during?.phase === 'result' && words.includes('앞 친구가 먼저 나가야 해!') && (await restored(p)) && (await seenNow(p)).includes('blocked'), `shown ${JSON.stringify(shown)}, during ${JSON.stringify(during)}, words ${words}, state ${JSON.stringify(s)}`);
   });
 
   await scenario('tutorial: the arrow tutorial opens level 6 on its animal and is learnt by tapping it', null, async (p) => {
