@@ -698,9 +698,10 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
 }
 
 /**
- * The two-crack crate lesson (crate2, 2026-11-08): the chick's words over the crate, its four neighbour cells lit, and
- * nothing to tap. The player then plays freely; onTap tells an exit from a lit cell (a dot goes, the cell flashes)
- * from one elsewhere (said once: the crate stays), and the lesson is learnt when the crate breaks. Learnt on the break
+ * The two-crack crate lesson (crate2, 2026-11-08): the chick's words over the crate, the crate lit, and nothing to tap.
+ * No cell is marked on the board (the orange neighbour tiles are gone, 2026-11-08 request). The player then plays
+ * freely; onTap tells an exit from beside the crate (a dot goes) from one elsewhere (said once: the crate stays), and
+ * the lesson is learnt when the crate breaks. Learnt on the break
  * only, so a touch that closes the words does not count, and no order of exits can leave the lesson hanging.
  */
 let crateLesson: { x: number; y: number; held: number[]; toldElsewhere: boolean } | null = null;
@@ -711,14 +712,13 @@ function showCrateLesson(level: Level): void {
   if (!s || !k || !obj) return;
   const held = level.pieces.filter((p) => s.alive.has(p.id) && cratesInWay(level, p, s.alive).some((c) => c.x === k.x && c.y === k.y)).map((p) => p.id);
   crateLesson = { x: k.x, y: k.y, held, toldElsewhere: false };
-  const tiles = stage.showCrateNeighbours(level, k.x, k.y, true);
   tutorialShown = { id: 'crate2', target: 0 };
   tutorialInfo = true;
   tutorialUsed = true;
-  stage.setFocus([obj, ...tiles]);
+  stage.setFocus([obj]);
   const spot = (): TutorialSpot => { const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6)); return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) }; };
   // a discovery lesson (2026-11-08): no finger (no animal is the answer), the words sit above the board and close on a
-  // touch of the bubble; closing them does not learn the lesson (the break does), and the tiles stay lit until then
+  // touch of the bubble; closing them does not learn the lesson (the break does)
   tutorial.show({ text: TUTORIAL_TEXT.crate2, spot, room: boardRoom, info: true, onAction: () => endTutorial(), onSkip: () => endTutorial() });
 }
 
@@ -730,7 +730,6 @@ function crateLessonExit(id: number): void {
   if (!piece) return;
   const cell = piece.cells.find((c) => Math.abs(c.x - crateLesson!.x) + Math.abs(c.y - crateLesson!.y) === 1);
   if (cell) {
-    stage.flashCrateNeighbour(cell.x, cell.y);
     $('msg').textContent = '옆 친구가 나가서 점이 하나 줄었어요';
   } else if (!crateLesson.toldElsewhere) {
     crateLesson.toldElsewhere = true;
@@ -746,7 +745,6 @@ function crateLessonBroke(x: number, y: number): void {
   crateLesson = null;
   learn('crate2');
   if (tutorialShown?.id === 'crate2') endTutorial(); // the words still up (the dev hook can tap past them): gone with the crate
-  stage.showCrateNeighbours(s!.level, x, y, false);
   $('msg').textContent = '옆 친구 둘이 나가서 상자가 부서졌어요!';
   if (!held.length) return;
   stage.setFocus(held.map((id) => views.get(id)!.group));
