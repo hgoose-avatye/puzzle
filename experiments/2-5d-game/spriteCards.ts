@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { buildAnimal as build3d } from '../../game/blocks';
 import { nearestSprite, offsetWeight, partsFor, type SpeciesSprites } from '../2-5d-crocodile/src/sprites';
 import { TUCK } from '../2-5d-crocodile/src/spriteRender';
+import spritePictures from 'virtual:sprite-pictures';
 
 const query = new URLSearchParams(location.search);
 /** ?render=3d Classic 3D, ?render=25d (default in this entry) Illustrated 2.5D */
@@ -31,7 +32,8 @@ const ART_CANDIDATE = query.get('art') === 'candidate';
 
 // every manifest in the experiment, keyed by species, with its pictures as URLs next to it
 const manifests = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.sprites.json', { eager: true, import: 'default' }) as Record<string, SpeciesSprites>;
-const pictures = import.meta.glob('../2-5d-crocodile/{assets,public}/**/*.png', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+// only the pictures the manifests name (vite.config.ts spritePictures), not every picture in the sprite folders
+const pictures: Record<string, string> = spritePictures;
 const registry = new Map<string, { sprites: SpeciesSprites; dir: string }>();
 // a manifest under candidate/ (its own frame and pictures, e.g. the chick's standard-frame cut-outs) stands in for the
 // species' manifest only with ?art=candidate and is ignored otherwise; every other manifest registers as before
