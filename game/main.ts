@@ -1008,7 +1008,6 @@ function showEnd(won: boolean): void {
   $('popup').hidden = false;
   $('msg').textContent = '';
   playlog?.end(won ? 'clear' : state.exploded ? 'lost-bomb' : 'lost-stuck');
-  paintRating(won);
   $('popup').dataset.kind = won ? 'win' : state.exploded ? 'bomb' : 'hearts';
   $('popupTitle').textContent = won ? '구출 성공!' : state.exploded ? '펑! 폭탄이 터졌어요' : stuckOut ? '길이 막혔어요' : '하트가 모두 떨어졌어요';
   // the rescue card celebrates the friends saved and the stage step it filled; hearts left are not a score, so only a
@@ -1184,27 +1183,6 @@ $('settings').addEventListener('click', () => {
     { id: 'settingsClose', label: '닫기', kind: 'secondary', onClick: () => modal.close() },
   ]);
 });
-
-/**
- * Fun rating on the clear card (E3, test builds only): five buttons; the choice goes on the attempt just ended.
- */
-function paintRating(won: boolean): void {
-  const row = $('popupRate');
-  row.innerHTML = '';
-  row.hidden = !(playlog && won);
-  if (row.hidden) return;
-  const label = document.createElement('span');
-  label.textContent = '재미는?';
-  row.append(label);
-  for (let n = 1; n <= 5; n++) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'rate';
-    b.textContent = String(n);
-    b.onclick = () => { playlog?.rate(n); for (const o of row.querySelectorAll('button')) o.classList.toggle('on', o === b); };
-    row.append(b);
-  }
-}
 
 /** The play log as a file the tester can send (E3). */
 function exportPlaylog(): void {

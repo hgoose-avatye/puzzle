@@ -120,10 +120,6 @@
       #popupSub { font-size: 18px; font-weight: 600; color: var(--ink-2); margin-bottom: 16px; line-height: 1.4; word-break: keep-all; }
       #popupSub:empty, #popupRescue:empty, #popupStage:empty { display: none; }
       /* fun rating on the clear card (test builds only, E3) */
-      #popupRate { display: flex; gap: 6px; align-items: center; justify-content: center; margin: 0 0 14px; font-size: 14px; color: var(--ink-2); }
-      #popupRate[hidden] { display: none; }
-      #popupRate .rate { width: 34px; height: 34px; border-radius: 10px; border: 2px solid var(--cream-300, #d9c7a6); background: #fff; font-weight: 700; font-size: 15px; color: var(--ink-2); }
-      #popupRate .rate.on { background: #ffd54f; border-color: #e0a800; color: #4a3200; }
       /* the hearts as a lost level ended */
       #popupHearts { display: flex; justify-content: center; gap: 12px; width: max-content; margin: 0 auto 20px; padding: 10px 20px; border-radius: 18px; background: var(--cream-200); box-shadow: inset 0 2px 4px rgba(110,70,30,.2); }
       #popupHearts:empty { display: none; }
@@ -253,7 +249,7 @@
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
     <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><div id="ilStat"></div><button id="ilBtn" class="primary"></button></div></div>
     <div id="build" aria-hidden="true"></div>
-    <div id="popup" hidden><div class="card gp gp-dialog"><div class="peek" aria-hidden="true"></div><div id="popupTitle"></div><div id="popupRescue"></div><div id="popupSub"></div><div id="popupStage"></div><div id="popupRate" hidden></div><div id="popupHearts"></div><div class="popBtns"><button id="popupBtn" class="gb gb-l gb-primary"></button><button id="popupHome" class="gb gb-m gb-secondary" hidden>홈으로</button></div></div></div>
+    <div id="popup" hidden><div class="card gp gp-dialog"><div class="peek" aria-hidden="true"></div><div id="popupTitle"></div><div id="popupRescue"></div><div id="popupSub"></div><div id="popupStage"></div><div id="popupHearts"></div><div class="popBtns"><button id="popupBtn" class="gb gb-l gb-primary"></button><button id="popupHome" class="gb gb-m gb-secondary" hidden>홈으로</button></div></div></div>
     <div id="title" hidden>
       <div class="tHead">
         <div class="logo">

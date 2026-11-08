@@ -27,8 +27,6 @@ export interface Attempt {
   taps: Record<TapKind, number>;
   undos: number;
   hints: number;
-  /** 1 (no fun) to 5 (great), given on the clear card */
-  fun?: number;
 }
 
 export const PLAYLOG_KEY = 'animal-rescue-playlog';
@@ -78,14 +76,6 @@ export class PlayLog {
     if (!this.open || this.open.end) return;
     this.open.end = kind;
     this.open.endedAt = this.now();
-    this.save();
-  }
-
-  /** The fun rating goes on the attempt just ended (the clear card shows after the end). */
-  rate(fun: number): void {
-    const last = this.open ?? this.records[this.records.length - 1];
-    if (!last) return;
-    last.fun = Math.max(1, Math.min(5, Math.round(fun)));
     this.save();
   }
 
