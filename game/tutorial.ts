@@ -3,7 +3,10 @@
  * setFocus, set by main.ts); this layer is see-through and catches every tap: one on the animal's spot is the action
  * (main.ts sends it on as the game's tap on that animal, so no neighbour can be picked), any other is held back. The
  * chick sits next to the animal with a small round bubble (a few words), a finger taps the animal on a loop, and
- * 건너뛰기 is small but finger-sized. In the result moment (after the tap) only the chick stays and taps are held.
+ * 건너뛰기 is small but finger-sized. In the result moment (after the tap) only the chick stays and taps are held. An
+ * info lesson (show({info: true}), the dynamite on level 40) has nothing to tap: no finger, every touch on the board is
+ * held, and only its 알겠어요 button closes it (2026-11-08: the finger over the dynamite read as "tap it", and the second
+ * tap was a real push).
  */
 
 export interface TutorialSpot {
@@ -19,6 +22,8 @@ export interface TutorialShow {
   /** a tap on the spot */
   onAction: () => void;
   onSkip: () => void;
+  /** nothing to tap: no finger, touches held, closed by 알겠어요 (onAction) */
+  info?: boolean;
 }
 
 /** Room kept between the animal and the chick (CSS pixels). */
@@ -39,7 +44,7 @@ export class Tutorial {
     this.root = document.createElement('div');
     this.root.id = 'tutorial';
     this.root.hidden = true;
-    this.root.innerHTML = `<div class="tutGuide"><img class="tutChick" alt="" src="${chickSrc}"><div class="tutBubble"></div><button class="tutSkip">건너뛰기</button></div>
+    this.root.innerHTML = `<div class="tutGuide"><img class="tutChick" alt="" src="${chickSrc}"><div class="tutBubble"></div><button class="tutSkip">건너뛰기</button><button class="tutOk">알겠어요</button></div>
       <div class="tutFinger" aria-hidden="true"><svg viewBox="-14 -4 44 60"><path d="M0 0 c3 0 5 2 5 5 v14 c2-2 6-2 8 0 c2-2 6-2 8 0 c2-1 6 0 6 4 v12 c0 9-6 15-15 15 h-4 c-6 0-9-3-12-8 l-8-13 c-2-3 0-6 3-6 c2 0 3 1 4 2 l0-20 c0-3 2-5 5-5 z"/></svg></div>`;
     document.body.appendChild(this.root);
     this.guide = this.root.querySelector('.tutGuide')!;
@@ -47,12 +52,13 @@ export class Tutorial {
     this.finger = this.root.querySelector('.tutFinger')!;
     this.skip = this.root.querySelector('.tutSkip')!;
     this.skip.addEventListener('click', (e) => { e.stopPropagation(); this.current?.onSkip(); });
+    this.root.querySelector('.tutOk')!.addEventListener('click', (e) => { e.stopPropagation(); if (this.current?.info) this.current.onAction(); });
     // every tap is held back; one that starts and ends on the animal's spot is the action
     this.root.addEventListener('pointerdown', (e) => { this.downInside = this.inside(e.clientX, e.clientY); });
     this.root.addEventListener('pointerup', (e) => {
       const hit = this.downInside && this.inside(e.clientX, e.clientY);
       this.downInside = false;
-      if (hit && !this.resultOnly) this.current?.onAction();
+      if (hit && !this.resultOnly && !this.current?.info) this.current?.onAction();
     });
   }
 
@@ -75,6 +81,7 @@ export class Tutorial {
     this.resultOnly = false;
     this.bubble.textContent = t.text;
     this.root.classList.remove('result');
+    this.root.classList.toggle('info', !!t.info);
     this.root.hidden = false;
     document.body.classList.add('tut-on');
     cancelAnimationFrame(this.frame);
@@ -93,7 +100,7 @@ export class Tutorial {
     this.current = null;
     this.resultOnly = false;
     this.root.hidden = true;
-    this.root.classList.remove('result');
+    this.root.classList.remove('result', 'info');
     document.body.classList.remove('tut-on');
     cancelAnimationFrame(this.frame);
   }

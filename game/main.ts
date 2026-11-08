@@ -536,7 +536,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   arrow: '화살표에서\n꺾이는 걸 봐!',
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
-  bomb: '다이너마이트 친구는 부딪힐 때마다\n숫자가 줄어! 0이면 펑',
+  bomb: '다이너마이트 친구는\n부딪힐 때마다\n숫자가 줄어, 0이면 펑!',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
   crate: '옆 친구가 나가면\n상자가 부서져!',
   crate2: '상자 옆 친구가 나가면\n점이 하나 줄어!',
@@ -735,8 +735,9 @@ function crateLessonBroke(x: number, y: number): void {
 }
 
 /**
- * A lesson with nothing to tap: the chick's words over an animal, closed (and learnt) by a touch on it or 건너뛰기. The
- * touch reaches no animal, so the board does not change.
+ * A lesson with nothing to tap: the chick's words over an animal, no finger, every touch on the board held, closed (and
+ * learnt) only by its 알겠어요 button. The board does not change, and no touch lands on the animal once the words are
+ * gone (2026-11-08: a finger over the dynamite invited a tap, and the next one was a real push that burnt its number).
  */
 function showInfoTutorial(id: TutorialId, target: number): boolean {
   const spot = spotOf(target);
@@ -747,7 +748,7 @@ function showInfoTutorial(id: TutorialId, target: number): boolean {
   tutorialUsed = true;
   stage.setFocus([view.group]);
   view.setBreathe(true);
-  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
+  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, info: true, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
   return true;
 }
 
