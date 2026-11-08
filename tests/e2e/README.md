@@ -4,14 +4,14 @@
 npm run test:e2e
 ```
 
-게임의 Vite 서버를 직접 띄우고, 헤드리스 Chrome으로 [p0-checks.mjs](p0-checks.mjs)(규칙·입력·이동·폭탄 표시 38개)와 [flow-checks.mjs](flow-checks.mjs)(메인 화면 → 플레이 → 성공·실패 → 다음·다시·처음으로, 마지막 레벨 18개)를 돌린 뒤 서버와 브라우저를 모두 닫습니다.
+게임의 2.5D Vite 서버(`experiments/2-5d-game/vite.config.ts`)를 직접 띄우고, 헤드리스 Chrome으로 [p0-checks.mjs](p0-checks.mjs)(규칙·입력·이동·폭탄 표시 38개)와 [flow-checks.mjs](flow-checks.mjs)(메인 화면 → 플레이 → 성공·실패 → 다음·다시·처음으로, 마지막 레벨 18개)를 돌린 뒤 서버와 브라우저를 모두 닫습니다.
 `npm test`(vitest)에는 들어 있지 않습니다. 약 45초 걸립니다.
 
 ## 필요한 것
 
 - Node.js와 `npm install`(개발 의존성 `puppeteer-core`를 씁니다. 브라우저는 내려받지 않습니다)
 - 설치된 Chrome 또는 Chromium. 다음 순서로 찾습니다: 환경 변수 `CHROME_PATH`, macOS 기본 위치, `/usr/bin/google-chrome(-stable)`, `/usr/bin/chromium(-browser)`, Windows 기본 위치
-- 따로 켜 둔 개발 서버는 필요 없습니다. 이미 `npm run dev:game`(5200)이 켜져 있어도 겹치지 않습니다
+- 따로 켜 둔 개발 서버는 필요 없습니다. 이미 `npm run dev:game`(5420)이 켜져 있어도 겹치지 않습니다
 
 ## 환경 변수
 

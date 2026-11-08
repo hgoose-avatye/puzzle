@@ -54,7 +54,7 @@ const timer = setTimeout(() => void finish(2, `timed out after ${TIMEOUT} ms`), 
 try {
   const chrome = CHROME_CANDIDATES.find((p) => existsSync(p));
   if (!chrome) await finish(2, `Chrome not found. Set CHROME_PATH. Looked at:\n  ${CHROME_CANDIDATES.join('\n  ')}`);
-  server = await createServer({ configFile: 'vite.game.config.ts', logLevel: 'error', server: { port: PORT, strictPort: false, host: '127.0.0.1' } });
+  server = await createServer({ configFile: 'experiments/2-5d-game/vite.config.ts', logLevel: 'error', server: { port: PORT, strictPort: false, host: '127.0.0.1' } });
   await server.listen();
   const base = server.resolvedUrls.local[0];
   browser = await puppeteer.launch({

@@ -4,11 +4,11 @@
 
 ## 화면
 
-개발 서버를 같은 Wi-Fi에 열고(`npx vite --config vite.game.config.ts --host`) 폰에서 엽니다.
+개발 서버를 같은 Wi-Fi에 열고(`npx vite --config experiments/2-5d-game/vite.config.ts --host`) 폰에서 엽니다.
 
 | 조건 | 주소 |
 |---|---|
-| 기본 | `http://<PC 주소>:5200/?demo=quiz` |
+| 기본 | `http://<PC 주소>:5420/?demo=quiz` |
 | (선택) 카메라 50° | `?demo=quiz&cam=50` |
 
 - 화면에는 번호나 정답이 나오지 않습니다.

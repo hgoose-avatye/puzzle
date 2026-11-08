@@ -8,7 +8,7 @@ import type { SpeciesSprites } from '../2-5d-crocodile/src/sprites';
  * The real game (game/ unchanged) with 2.5D animals: game/animals.ts imports `./blocks` for buildAnimal; this entry
  * points that one import at spriteCards.ts, which draws species that have a sprite manifest as 2D image cards in the
  * same Three.js scene and hands every other species to the original 3D buildAnimal. `?render=3d` turns the cards off.
- * The original game still runs as before with `npm run dev:game` (vite.game.config.ts).
+ * This is the game: `npm run dev:game` / `build:game` / `test:e2e` use it. Classic 3D (vite.game.config.ts) only runs with `npm run dev:game3d`.
  */
 const here = new URL('.', import.meta.url).pathname;
 const game = new URL('../../game/', import.meta.url).pathname;

@@ -10,9 +10,9 @@ FAIL이면 가능하면 화면 녹화나 스크린샷을 남기고 파일 이름
 
 1. PC에서 게임 서버를 같은 Wi-Fi에 열어 둡니다.
    ```bash
-   npx vite --config vite.game.config.ts --host
+   npx vite --config experiments/2-5d-game/vite.config.ts --host
    ```
-   출력에 나온 `Network: http://<PC 주소>:5200/` 주소를 폰에서 엽니다.
+   출력에 나온 `Network: http://<PC 주소>:5420/` 주소를 폰에서 엽니다.
 2. 장면은 주소 뒤에 붙여 엽니다.
    - `?demo=cross`: 9×9 판, 동물 4마리, 하트 3
      - 1: 몸 3칸, 오른쪽으로 감
