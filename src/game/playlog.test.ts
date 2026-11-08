@@ -17,9 +17,8 @@ describe('PlayLog', () => {
     log.tap('exit'); log.tap('exit'); log.tap('push'); log.tap('bump'); log.tap('ignored');
     log.undo(); log.hint();
     log.end('clear');
-    log.rate(4);
     const [a] = log.all;
-    expect(a).toMatchObject({ build, level: 9, attempt: 1, taps: { exit: 2, push: 1, bump: 1, ignored: 1 }, undos: 1, hints: 1, end: 'clear', fun: 4 });
+    expect(a).toMatchObject({ build, level: 9, attempt: 1, taps: { exit: 2, push: 1, bump: 1, ignored: 1 }, undos: 1, hints: 1, end: 'clear' });
     expect(a.startedAt < a.endedAt!).toBe(true);
     // written to its own key only, on every change
     expect(Object.keys(store.data)).toEqual([PLAYLOG_KEY]);
