@@ -180,6 +180,43 @@ export async function runFlowChecks(browser, base, report) {
     check('flow: 홈으로 in play -> title, save still 10', c.title && c.popup === null && c.saved === '10', JSON.stringify(c));
   });
 
+  // the undo replays the level up to the last push: it must give back exactly the board before that push, keep the
+  // earlier pushes, step back one push per touch, and stop at three per level (fixed 2026-11-08: the replay used to drop
+  // every push made after an animal had left)
+  await scenario('undo steps back one push at a time, three per level', '180', async (p) => {
+    const settle = async (p) => { for (let t = 0; t < 80 && await p.evaluate(() => [...window.__game.views().values()].some((v) => v.running)); t++) await sleep(100); await sleep(150); };
+    const board = (p) => p.evaluate(() => { const s = window.__game.state(); return JSON.stringify({ cells: s.cells, alive: [...s.alive].sort((a, b) => a - b), fuses: s.fuses }); });
+    await p.click('#tContinue');
+    await sleep(500);
+    await closeTips(p);
+    const before = [];
+    let exitedBeforeLastPush = false;
+    let exited = false;
+    for (let k = 0; k < 200 && before.length < 4; k++) {
+      const free = await p.evaluate(() => window.__game.free());
+      if (free.length) { await p.evaluate((id) => window.__game.tap(id), free[0]); exited = true; await settle(p); continue; }
+      const id = await p.evaluate(() => window.__game.hint());
+      if (id === null) break;
+      const snap = await board(p);
+      const r = await p.evaluate((i) => window.__game.tap(i), id);
+      await settle(p);
+      if (r === 'blocked' && (await board(p)) !== snap) { before.push(snap); if (exited) exitedBeforeLastPush = true; }
+    }
+    check('flow: level 180 reaches four pushes, some after an animal has left', before.length === 4 && exitedBeforeLastPush, `${before.length} pushes`);
+    for (let k = 3; k >= 1; k--) {
+      await p.click('#undo');
+      await settle(p);
+      const now = await board(p);
+      const undos = await p.evaluate(() => window.__game.undos());
+      check(`flow: undo ${4 - k} gives back the board just before push ${k + 1} (earlier pushes kept), ${k - 1} undos left`, now === before[k] && undos === k - 1, `undos ${undos}`);
+    }
+    const last = await board(p);
+    await p.click('#undo');
+    await settle(p);
+    const spent = await p.evaluate(() => ({ undos: window.__game.undos(), msg: document.getElementById('msg').textContent, spent: document.getElementById('undo').classList.contains('spent') }));
+    check('flow: a fourth undo changes nothing and says 되돌리기를 다 썼어요', (await board(p)) === last && spent.undos === 0 && spent.spent && spent.msg.includes('다 썼어요'), JSON.stringify(spent));
+  });
+
   // the last level: clearing it starts the journey over (the save goes back to 1, as the game always did)
   await scenario('last level', '180', async (p) => {
     await p.click('#tContinue');

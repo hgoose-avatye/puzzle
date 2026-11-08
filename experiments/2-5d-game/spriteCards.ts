@@ -20,7 +20,8 @@ import { nearestSprite, offsetWeight, partsFor, type SpeciesSprites } from '../2
 import { TUCK } from '../2-5d-crocodile/src/spriteRender';
 import spritePictures from 'virtual:sprite-pictures';
 
-const query = new URLSearchParams(location.search);
+// comparison switches below work on the dev server only; a production build always draws the shipped cards
+const query = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
 /** ?render=3d Classic 3D, ?render=25d (default in this entry) Illustrated 2.5D */
 const USE_CARDS = query.get('render') !== '3d';
 /** size candidate for comparisons (?cardScale=1.2), times the manifest's optional per-species `scale`; feet stay put */
@@ -335,8 +336,10 @@ function jointCard(entry: { sprites: SpeciesSprites; dir: string }, ahead: THREE
 const built: Array<{ species: string; cells: number; as: 'cards' | '3d' }> = [];
 /** species the game asked for that have no 2.5D art yet (drawn with the 3D fallback): the conversion to-do list */
 const missingSpecies = (): string[] => (USE_CARDS ? [...new Set(built.filter((b) => b.as === '3d').map((b) => b.species))].sort() : []);
-(window as unknown as { __cards: unknown }).__cards = { built, stats: cardStats, species: spriteSpecies, missingSpecies, scale: CARD_SCALE };
-if (USE_CARDS) console.info('[2.5D] sprite species:', spriteSpecies().join(', '));
+if (import.meta.env.DEV) {
+  (window as unknown as { __cards: unknown }).__cards = { built, stats: cardStats, species: spriteSpecies, missingSpecies, scale: CARD_SCALE };
+  if (USE_CARDS) console.info('[2.5D] sprite species:', spriteSpecies().join(', '));
+}
 
 export function buildAnimal(species: string, cells: number): THREE.Group[] {
   const n = Math.max(1, Math.min(3, Math.floor(cells || 1)));

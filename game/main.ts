@@ -11,7 +11,8 @@ import type { Direction, Level } from '../src/core/types';
 import { PieceView, runSpeed, speciesOverride } from './animals';
 import { setStatusPixelScale } from './statusIcons';
 import { PlayFlow } from '../src/game/flow';
-import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
+import { hasSavedProgress, parseProgress, parseSeen, progressAfterClear } from '../src/game/progress';
+import { picturesSettled } from './loading';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
@@ -61,13 +62,14 @@ let clearPlayed = false;
 let failPlayed = false;
 /** Which code and level data this is (tools/build-info.ts via the vite configs); 'unknown' outside those configs. */
 const BUILD = typeof __BUILD_INFO__ === 'object' && __BUILD_INFO__ ? __BUILD_INFO__ : { commit: 'unknown', branch: 'unknown', dirty: false, levels: 'unknown', builtAt: '' };
-$('build').textContent = `${BUILD.branch}@${BUILD.commit}${BUILD.dirty ? '+' : ''} levels ${BUILD.levels}`;
+// which build this is, in the corner, for playtests on the dev server only
+if (import.meta.env.DEV) $('build').textContent = `${BUILD.branch}@${BUILD.commit}${BUILD.dirty ? '+' : ''} levels ${BUILD.levels}`;
 /** Playtest record (E3, test builds only): its own storage key, never read by the game. Null in a production build. */
 const playlog = import.meta.env.DEV ? new PlayLog((() => { try { return localStorage; } catch { return null; } })(), { commit: BUILD.commit, branch: BUILD.branch, dirty: BUILD.dirty, levels: BUILD.levels }) : null;
 
 const PROGRESS_KEY = 'animal-rescue-progress';
 
-const readProgress = (): number => { try { return Math.max(1, Number(localStorage.getItem(PROGRESS_KEY) ?? 1)); } catch { return 1; } };
+const readProgress = (): number => { try { return parseProgress(localStorage.getItem(PROGRESS_KEY), LAST_LEVEL); } catch { return 1; } };
 const writeProgress = (n: number): void => { try { localStorage.setItem(PROGRESS_KEY, String(n)); } catch { /* ignore */ } };
 
 /**
@@ -285,7 +287,45 @@ async function loadLevel(n: number): Promise<void> {
   addViews(built.level);
   refreshHud();
   shownHearts = hearts ?? 0;
+  // the animal cards ask for their pictures as they are first drawn: draw once, and start the level (its tutorial
+  // first of all) only when they are here
+  stage.render();
+  await waitForPictures(token);
+  if (token !== loadToken) return;
   beginTutorials(built.level);
+}
+
+/** Longest wait for a level's pictures; after it the level starts anyway and late pictures appear when they come. */
+const PICTURES_LIMIT_MS = 12000;
+/** A wait shorter than this shows nothing (the usual case once the pictures are in the browser's cache). */
+const PICTURES_QUIET_MS = 250;
+
+/**
+ * Hold the screen (touches included) until the pictures asked for so far are here, for at most PICTURES_LIMIT_MS. If
+ * some could not be loaded, say so and offer to load again or to play as it is; it never waits for ever.
+ */
+async function waitForPictures(token: number): Promise<void> {
+  const box = $('loading');
+  const shown = window.setTimeout(() => {
+    if (token !== loadToken) return;
+    $('ldText').textContent = '친구들을 부르고 있어요';
+    $('ldBtns').hidden = true;
+    box.classList.remove('failed');
+    box.hidden = false;
+  }, PICTURES_QUIET_MS);
+  const outcome = await picturesSettled(PICTURES_LIMIT_MS);
+  window.clearTimeout(shown);
+  if (outcome === 'failed' && token === loadToken) {
+    $('ldText').textContent = '그림을 다 불러오지 못했어요.\n인터넷 연결을 확인해 주세요.';
+    $('ldBtns').hidden = false;
+    box.classList.add('failed');
+    box.hidden = false;
+    await new Promise<void>((resolve) => {
+      $('ldGo').onclick = () => resolve();
+      $('ldRetry').onclick = () => location.reload();
+    });
+  }
+  box.hidden = true;
 }
 
 /** The undo button shows how many are left this level. */
@@ -312,9 +352,7 @@ function undoTap(): void {
   if (!built) return;
   const st = stageFor(n);
   stage.setBoard(built.level, st.theme, n, st.stage);
-  const replay = new PlayFlow(built.level, undefined, true);
-  log.forEach((id, i) => replay.tap(id, i * 1000));
-  replay.traffic.clear();
+  const replay = PlayFlow.replay(built.level, log);
   flow = replay;
   addViews(built.level);
   for (const [id, v] of views) {
@@ -517,7 +555,7 @@ function onTap(id: number): TapOutcome {
 }
 
 const SEEN_KEY = 'animal-rescue-seen';
-const readSeen = (): string[] => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); } catch { return []; } };
+const readSeen = (): string[] => { try { return parseSeen(localStorage.getItem(SEEN_KEY)); } catch { return []; } };
 const writeSeen = (a: string[]): void => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch { /* ignore */ } };
 
 /**
@@ -1237,6 +1275,8 @@ function goHome(): void {
   title.show(hasSavedProgress(saved) ? { level: saved, place: stageFor(saved).name } : null);
   layoutTitle(board.level);
   titleRun(board.level, board.runner, token);
+  stage.render();
+  void waitForPictures(token);
 }
 
 /** Screen band of a board: from above its back row's animals down to just past its front edge (CSS pixels). */
