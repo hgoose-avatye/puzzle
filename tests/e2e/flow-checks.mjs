@@ -359,6 +359,15 @@ export async function runFlowChecks(browser, base, report) {
     check('tutorial: the sleep tap lights up the woken animal briefly, then everything is back and the rule is learnt', during.t?.phase === 'result' && during.focus > 0 && (await restored(p)) && (await seenNow(p)).includes('sleep'), JSON.stringify(during));
   });
 
+  await scenario('tutorial: dev ?level=11 on an empty save opens on level 11\u2019s own lesson, not the first rule', null, async (p) => {
+    await p.evaluate(() => localStorage.removeItem('animal-rescue-seen'));
+    await p.goto(new URL('?level=11', base).href, { waitUntil: 'networkidle0' });
+    await sleep(900);
+    const t = await tut(p);
+    const seen = await seenNow(p);
+    check('tutorial: an empty save opened on 11 counts the lessons before it and shows the crate lesson', t?.id === 'crate' && JSON.stringify(seen) === JSON.stringify(['basic', 'blocked', 'arrow', 'bump']), `${JSON.stringify(t)} seen ${JSON.stringify(seen)}`);
+  });
+
   await scenario('tutorial: level 11 teaches the one-crack crate by the neighbour\u2019s real exit; the held animal lights up', null, async (p) => {
     await withSeen(p, ['basic', 'blocked', 'arrow', 'bump'], '?level=11');
     const shown = await tut(p);
@@ -366,11 +375,12 @@ export async function runFlowChecks(browser, base, report) {
     if (shown) await p.touchscreen.tap(shown.spot.x, shown.spot.y);
     await sleep(400);
     const during = await tut(p);
+    const said = await p.evaluate(() => document.querySelector('#tutorial .tutBubble')?.textContent ?? '');
     const crates = await p.evaluate(() => window.__game.state().cells && window.__game.ids().length);
     await settle(p);
-    await sleep(900);
+    await sleep(2000); // the result says why, for two seconds
     const seen = await seenNow(p);
-    check('tutorial: after the exit the crate is gone, the animal it held (1) is the result, and crate is learnt', during?.phase === 'result' && during.target === 2 && seen.includes('crate') && (await restored(p)), `${JSON.stringify(during)} alive ${crates} seen ${seen}`);
+    check('tutorial: after the exit the crate is gone, the animal it held (1) is the result with the words why, and crate is learnt', during?.phase === 'result' && during.target === 2 && said.includes('길이 열렸어') && seen.includes('crate') && (await restored(p)), `${JSON.stringify(during)} alive ${crates} seen ${seen}`);
     const free1 = await p.evaluate(() => window.__game.free().includes(1));
     check('tutorial: animal 1 can leave once the crate broke', free1, String(free1));
   });
@@ -403,11 +413,12 @@ export async function runFlowChecks(browser, base, report) {
     // a neighbour (1): one crack; the other (2): the break, the lesson learnt, 4 free
     await p.evaluate(() => window.__game.tap(1)); await sleep(300);
     const one = await p.evaluate(() => document.getElementById('msg').textContent);
-    await settle(p);
+    const crackSaid = await p.evaluate(() => (document.getElementById('tutorial').hidden ? '' : document.querySelector('#tutorial .tutBubble')?.textContent ?? ''));
+    await settle(p); await sleep(1800);
     await p.evaluate(() => window.__game.tap(2)); await sleep(400);
-    const broke = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, lesson: window.__game.crateLesson(), seen: JSON.parse(localStorage.getItem('animal-rescue-seen')), free4: window.__game.free().includes(4) }));
+    const broke = await p.evaluate(() => ({ said: document.getElementById('tutorial').hidden ? '' : document.querySelector('#tutorial .tutBubble')?.textContent ?? '', msg: document.getElementById('msg').textContent, lesson: window.__game.crateLesson(), seen: JSON.parse(localStorage.getItem('animal-rescue-seen')), free4: window.__game.free().includes(4) }));
     await settle(p);
-    check('tutorial: a neighbour\u2019s exit says a dot went; the second breaks the crate, learns crate2 and frees 4', one.includes('점이 하나') && broke.msg.includes('부서졌') && broke.lesson === null && broke.seen.includes('crate2') && broke.free4, `${one} | ${JSON.stringify(broke)}`);
+    check('tutorial: a neighbour\u2019s exit says a dot went (the chick too); the second breaks the crate (the chick says so), learns crate2 and frees 4', one.includes('점이 하나') && crackSaid.includes('하나 더') && broke.said.includes('부서졌어') && broke.msg.includes('부서졌') && broke.lesson === null && broke.seen.includes('crate2') && broke.free4, `${one} | ${JSON.stringify(broke)}`);
   });
 
   await scenario('tutorial: on level 12 the neighbours first, the far animal last also completes the lesson', null, async (p) => {

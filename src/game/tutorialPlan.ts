@@ -198,3 +198,28 @@ export function resultSubjects(level: Level, id: TutorialId, target: number): nu
   }
   return [];
 }
+
+/**
+ * The lessons a player who started at level 1 has learnt on reaching level `n` (every lesson taken, none skipped): the
+ * start lesson of each level before it that can show, the arrow lesson on the first level whose arrow animal is free at
+ * the start, and the bump lesson on the first knot level without a start lesson. Dev entry points (?level=n on an empty
+ * save) use it so a playtest that opens a level directly sees that level's own lesson, not the first rule of level 1.
+ */
+export function lessonsBefore(n: number, levelAt: (k: number) => Level | null): TutorialId[] {
+  const seen: TutorialId[] = [];
+  for (let k = 1; k < n; k++) {
+    const level = levelAt(k);
+    if (!level) continue;
+    const all = new Set(level.pieces.map((p) => p.id));
+    const start = startTutorial(level, seen, k);
+    if (start) {
+      const shows = start === 'crate2' ? crateLessonAt(level, all) !== null : startTargets(level, all, start).length > 0 || (start === 'bomb' && bombToWatch(level, all) !== null);
+      if (shows) seen.push(start);
+      continue;
+    }
+    if (!seen.includes('arrow') && arrowTargets(level, all).length) { seen.push('arrow'); continue; }
+    const knot = peel(level, all);
+    if (!seen.includes('bump') && knot.size && bumpTargets(level, knot).length) seen.push('bump');
+  }
+  return seen;
+}
