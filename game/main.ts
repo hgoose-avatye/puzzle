@@ -3,7 +3,7 @@ import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, 
 import { LEVELS as EXP_LEVELS } from '../experiments/knot-small/levels';
 import { PlayLog } from '../src/game/playlog';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
-import { canExit, cratesInWay, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
+import { canExit, crateStanding, cratesInWay, headDirection, isAsleep, lockedBy, piecesAround, traceExit } from '../src/core/rules';
 import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
 import { stuckAtOnce } from '../src/generator/knotSearch';
 import { distanceToPolyline } from '../src/game/path';
@@ -434,7 +434,7 @@ function crackCrates(): void {
   const state = current();
   if (!state) return;
   for (const c of stage.updateCrates(state.level, state.alive)) {
-    if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); crateLessonBroke(c.x, c.y); }
+    if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); crateLessonBroke(c.x, c.y); cratePushBroke(c.x, c.y); }
     else {
       fx.dust(c.pos); sound.play('arrive');
     }
@@ -492,7 +492,7 @@ function onTap(id: number): TapOutcome {
       if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
     };
     // bump rule: it runs up to what stops it first, and the bump comes on arrival
-    const pushLesson = !!ev.moved && tutorialShown?.id === 'bump' && tutorialShown.target === id && !tutorialInfo;
+    const pushLesson = !!ev.moved && (tutorialShown?.id === 'bump' || tutorialShown?.id === 'cratePush') && tutorialShown.target === id && !tutorialInfo;
     if (ev.moved) {
       if (pushLesson) tutorialPushed(id);
       else if (tutorialShown?.target === id && !tutorialInfo) tutorialTapped();
@@ -502,7 +502,7 @@ function onTap(id: number): TapOutcome {
     } else feedback();
     // the words follow the rules exactly (2026-11-07 audit): a crate cracks per neighbour that leaves, as many times as
     // its dots show; a sleeper's neighbours are whoever stands next to it now
-    $('msg').textContent = pushLesson ? BUMP_LESSON_MSG : ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : '앞이 막혔어요';
+    $('msg').textContent = pushLesson ? (tutorialShown?.id === 'cratePush' ? '' : BUMP_LESSON_MSG) : ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : '앞이 막혔어요';
   }
   refreshHud();
   checkStuck();
@@ -542,6 +542,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
   crate: '옆 친구가 나가면\n상자가 부서져!',
   crate2: '상자 옆 친구가 나가면\n점이 하나 줄어!',
+  cratePush: '막힌 친구를 밀어서\n상자 옆에 세워봐!',
 };
 /**
  * The tap's round target around the animal, in board cells on screen; never under SPOT_MIN (the finger's target stays
@@ -567,6 +568,16 @@ const RESULT_MS = 800;
 const BUMP_RESULT_MS = 1600;
 const BUMP_RESULT_TEXT = '부딪혀서\n여기서 멈췄어!';
 const BUMP_LESSON_MSG = '막힌 친구는 부딪히는 자리까지 가서 멈춰요';
+/**
+ * The push-beside-a-crate lesson (level 13, 2026-11-08 playtest: "fun, but never taught"): once the pushed animal stops
+ * beside the crate, it and the crate stay lit and the chick says what leaving from there will do; when it does and the
+ * crate breaks, the animal the crate held lights up and the lesson is learnt (or on 건너뛰기, like every lesson).
+ */
+const CRATE_PUSH_RESULT_MS = 2000;
+const CRATE_PUSH_RESULT_TEXT = '여기서 나가면\n상자가 부서져!';
+const CRATE_PUSH_MSG = '상자 옆에서 나가면 상자에 금이 가요';
+/** After the lesson's push arrived: the crates it now stands beside, and the animals those crates hold. */
+let cratePushWatch: { crates: string[]; held: number[] } | null = null;
 /** Tutorials whose tap changes another animal, shown for RESULT_MS. */
 const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb', 'crate'];
 /** This level's one tutorial is taken (shown, or the level's own start rule is waiting for its animal). */
@@ -598,6 +609,7 @@ function endTutorial(learnt?: TutorialId): void {
 }
 /** Close any tutorial; nothing more this level (a new level starts afresh). */
 function stopTutorials(): void {
+  cratePushWatch = null;
   endTutorial();
   crateLesson = null;
   arrowWatch = null;
@@ -686,7 +698,7 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
         }
         // only the tap the tutorial shows: the animal leaving, or (bump) running up to what stops it; never another animal
         const piece = s?.level.pieces.find((p) => p.id === target);
-        const does = s && piece && s.alive.has(target) && (id === 'bump' ? bumpAdvance(s.level, piece, s.alive) > 0 : canExit(s.level, target, s.alive));
+        const does = s && piece && s.alive.has(target) && (id === 'bump' || id === 'cratePush' ? bumpAdvance(s.level, piece, s.alive) > 0 : canExit(s.level, target, s.alive));
         if (does) onTap(target);
         else endTutorial();
       },
@@ -813,7 +825,8 @@ function tutorialTapped(): void {
 
 /** The bump lesson's push is made: learnt; the words and finger go while the chick follows the running animal. */
 function tutorialPushed(id: number): void {
-  learn('bump');
+  // the bump lesson is learnt on its push; the crate push lesson only when its crate breaks
+  if (tutorialShown?.id === 'bump') learn('bump');
   views.get(id)?.setBreathe(false);
   tutorial.result(() => spotOf(id));
 }
@@ -824,6 +837,7 @@ function tutorialPushed(id: number): void {
  */
 function tutorialArrived(id: number): void {
   const s = current();
+  if (s && tutorialShown?.id === 'cratePush' && tutorialShown.target === id) { cratePushArrived(id); return; }
   if (!s || tutorialShown?.id !== 'bump' || tutorialShown.target !== id) return;
   const piece = s.level.pieces.find((p) => p.id === id);
   const next = piece ? traceExit(s.level, piece).cells[0] : undefined;
@@ -835,6 +849,41 @@ function tutorialArrived(id: number): void {
   $('msg').textContent = BUMP_LESSON_MSG;
   window.clearTimeout(resultTimer);
   resultTimer = window.setTimeout(() => endTutorial(), BUMP_RESULT_MS);
+}
+
+/** The crate push lesson's animal stands beside the crate: it and the crate stay lit, the chick says what comes next. */
+function cratePushArrived(id: number): void {
+  const s = current();
+  const piece = s?.level.pieces.find((p) => p.id === id);
+  if (!s || !piece) return;
+  const crates = (s.level.crates ?? []).filter((k) => crateStanding(s.level, k, s.alive) && piecesAround(s.level, k.x, k.y).includes(id));
+  const held = s.level.pieces.filter((p) => p.id !== id && s.alive.has(p.id) && cratesInWay(s.level, p, s.alive).some((k) => crates.includes(k))).map((p) => p.id);
+  cratePushWatch = { crates: crates.map((k) => `${k.x},${k.y}`), held };
+  const objects = crates.map((k) => stage.crateObjectAt(k.x, k.y)).filter((o): o is NonNullable<typeof o> => !!o);
+  const view = views.get(id);
+  stage.setFocus([...(view ? [view.group] : []), ...objects]);
+  view?.pulse();
+  tutorial.result(() => spotOf(id), CRATE_PUSH_RESULT_TEXT);
+  $('msg').textContent = CRATE_PUSH_MSG;
+  window.clearTimeout(resultTimer);
+  resultTimer = window.setTimeout(() => endTutorial(), CRATE_PUSH_RESULT_MS);
+}
+
+/** A crate broke: if it is the one the crate push lesson set an animal beside, the lesson is learnt and its animal lights up. */
+function cratePushBroke(x: number, y: number): void {
+  const watch = cratePushWatch;
+  if (!watch || !watch.crates.includes(`${x},${y}`)) return;
+  cratePushWatch = null;
+  learn('cratePush');
+  if (tutorialShown?.id === 'cratePush') endTutorial();
+  const s = current();
+  const held = watch.held.filter((id) => s?.alive.has(id) && views.has(id));
+  $('msg').textContent = '옆에서 나가서 상자가 부서졌어요!';
+  if (!held.length) return;
+  stage.setFocus(held.map((id) => views.get(id)!.group));
+  for (const id of held) views.get(id)!.pulse();
+  window.clearTimeout(resultTimer);
+  resultTimer = window.setTimeout(() => stage.setFocus([]), RESULT_MS);
 }
 
 /** A new level: its start tutorial if it has one, otherwise watch for the arrow tutorial. */

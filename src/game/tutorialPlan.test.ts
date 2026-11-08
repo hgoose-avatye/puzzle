@@ -124,6 +124,16 @@ describe('crate lessons (2026-11-07, crate2 reworked 2026-11-08)', () => {
     const after1 = new Set([2, 3, 4]);
     expect(crateLessonAt(l, after1)).toBeNull();
   });
+  it('level 13 (hand-made) opens on cratePush: the one push, which stops animal 1 beside the crate', () => {
+    const l = buildGameLevel(13)!.level;
+    expect(startTutorial(l, ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2'], 13)).toBe('cratePush');
+    // a save that missed the crate lessons still gets this one here, before them
+    expect(startTutorial(l, ['basic', 'blocked'], 13)).toBe('cratePush');
+    expect(startTargets(l, everyone(l), 'cratePush')).toEqual([1]);
+    // once learnt, level 13 has no start tutorial left, and no other level asks for it
+    expect(startTutorial(l, ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2', 'cratePush'], 13)).toBeNull();
+    expect(startTutorial(buildGameLevel(14)!.level, ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2'], 14)).toBeNull();
+  });
   it('a level without a one-crack crate never asks for the crate lesson, nor a level without a two-crack crate for crate2', () => {
     expect(startTutorial(buildGameLevel(12)!.level, ['basic', 'blocked'], 12)).toBe('crate2');
     expect(startTutorial(buildGameLevel(9)!.level, ['basic', 'blocked'], 9)).toBeNull();

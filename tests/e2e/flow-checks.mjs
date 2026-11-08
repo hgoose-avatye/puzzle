@@ -297,7 +297,7 @@ export async function runFlowChecks(browser, base, report) {
 
   // the chick's first-time tutorials: done only by the real thing (a touch in the spotlight) or by 건너뛰기, one per
   // level, the level's own new rule first, never while an animal runs, and the result popup always wins
-  const ALL_TIPS = ['basic', 'blocked', 'arrow', 'key', 'sleep', 'bomb', 'crate', 'crate2'];
+  const ALL_TIPS = ['basic', 'blocked', 'arrow', 'key', 'sleep', 'bomb', 'crate', 'crate2', 'cratePush'];
   /** Nothing of a tutorial is left: no focus veil, the HUD not dimmed, nothing on screen. */
   const restored = (p) => p.evaluate(() => window.__game.focus() === 0 && !document.body.classList.contains('tut-on') && window.__game.tutorial() === null);
   /** Open a level with this save of learnt tips (the page keeps its storage across the reload). */
@@ -416,6 +416,25 @@ export async function runFlowChecks(browser, base, report) {
     await p.evaluate(() => window.__game.tap(3)); await settle(p);
     const after = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, lesson: window.__game.crateLesson(), free4: window.__game.free().includes(4) || !window.__game.ids().includes(4) }));
     check('tutorial: any order works: learnt on the break, no hanging lesson, 4 free', learnt && after.lesson === null && after.free4, JSON.stringify(after));
+  });
+
+  await scenario('tutorial: level 13 teaches the push beside a crate: the push, the crate lit with it, learnt when the crate breaks', null, async (p) => {
+    await withSeen(p, ['basic', 'blocked', 'arrow', 'bump', 'crate', 'crate2'], '?level=13');
+    const shown = await tut(p);
+    check('tutorial: level 13 opens on cratePush, pointing at the one push (animal 1)', shown?.id === 'cratePush' && shown.target === 1 && shown.spot !== null, JSON.stringify(shown));
+    if (shown) await p.touchscreen.tap(shown.spot.x, shown.spot.y);
+    await sleep(1300); // the push runs up beside the crate
+    const arrived = await p.evaluate(() => ({ t: window.__game.tutorial(), focus: window.__game.focus(), bubble: document.querySelector('#tutorial .tutBubble')?.textContent, msg: document.getElementById('msg').textContent, seen: JSON.parse(localStorage.getItem('animal-rescue-seen')) }));
+    check('tutorial: once it stands beside the crate, it and the crate stay lit and the chick says leaving there breaks it; not learnt yet', arrived.t?.phase === 'result' && arrived.focus >= 2 && arrived.bubble?.includes('부서져') && arrived.msg.includes('상자 옆에서 나가면') && !arrived.seen.includes('cratePush'), JSON.stringify(arrived));
+    await sleep(2300);
+    const between = await restored(p);
+    // the chain clears (4, 3, 2), then 1 leaves from beside the crate
+    for (const id of [4, 3, 2]) { await p.evaluate((i) => window.__game.tap(i), id); await settle(p); }
+    await p.evaluate(() => window.__game.tap(1)); await sleep(400);
+    const broke = await p.evaluate(() => ({ msg: document.getElementById('msg').textContent, focus: window.__game.focus(), seen: JSON.parse(localStorage.getItem('animal-rescue-seen')) }));
+    await settle(p);
+    const free5 = await p.evaluate(() => window.__game.free().includes(5));
+    check('tutorial: the words go by themselves; when 1 leaves from beside the crate it breaks, cratePush is learnt and the held animal (5) lights up and is free', between && broke.msg.includes('부서졌') && broke.focus > 0 && broke.seen.includes('cratePush') && free5, `${between} ${JSON.stringify(broke)} free5 ${free5}`);
   });
 
   await scenario('tutorial: the result popup comes before a tutorial', null, async (p) => {
