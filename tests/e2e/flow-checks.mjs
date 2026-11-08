@@ -37,9 +37,9 @@ export async function runFlowChecks(browser, base, report) {
       playing: window.__game.state() !== null && document.getElementById('title').hidden,
     };
   });
-  /** Close the chick's first-time tutorial if it is showing (건너뛰기, or 알겠어요 on a look-only one). */
+  /** Close the chick's first-time tutorial if it is showing (건너뛰기, or the bubble of a look-only one). */
   const closeTips = async (p) => {
-    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, .tutOk')].find((b) => !b.hidden)?.click(); });
+    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, #tutorial.info .tutBubble')].find((b) => !b.hidden)?.click(); });
     await sleep(100);
   };
   /** Send out every animal (rules decide at once); returns the number of taps. */

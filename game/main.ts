@@ -538,7 +538,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   arrow: '화살표에서\n꺾이는 걸 봐!',
   key: '열쇠 친구를\n먼저 보내봐!',
   sleep: '옆 친구를 보내서\n깨워봐!',
-  bomb: '다이너마이트 친구는\n부딪힐 때마다\n숫자가 줄어, 0이면 펑!',
+  bomb: '부딪힐 때마다 숫자가 줄어요!\n0이 되면 펑!',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
   crate: '옆 친구가 나가면\n상자가 부서져!',
   crate2: '상자 옆 친구가 나가면\n점이 하나 줄어!',
@@ -573,6 +573,9 @@ let tutorialShown: { id: TutorialId; target: number } | null = null;
 /** The lesson on screen has nothing to tap (showInfoTutorial): a board tap on its animal is not its tap. */
 let tutorialInfo = false;
 let resultTimer: number | undefined;
+/** An info lesson's animal pulses every so often while the words are up. */
+let infoPulse: number | undefined;
+const INFO_PULSE_MS = 1400;
 /** After the arrow tutorial's tap: the tile it turns on, bounced when the animal's head reaches it. */
 let arrowWatch: { id: number; x: number; y: number; at: THREE.Vector3 } | null = null;
 
@@ -581,6 +584,7 @@ const learn = (id: TutorialId): void => { const seen = readSeen(); if (!seen.inc
 function endTutorial(learnt?: TutorialId): void {
   if (learnt) learn(learnt);
   window.clearTimeout(resultTimer);
+  window.clearInterval(infoPulse);
   if (tutorialShown) views.get(tutorialShown.target)?.setBreathe(false);
   stage.setFocus([]);
   tutorial.hide();
@@ -744,10 +748,21 @@ function crateLessonBroke(x: number, y: number): void {
   resultTimer = window.setTimeout(() => stage.setFocus([]), RESULT_MS);
 }
 
+/** The free band on screen between the HUD and the board's top edge (CSS px), where an info lesson's words go. */
+function boardRoom(): { top: number; bottom: number } | null {
+  const s = current();
+  if (!s) return null;
+  const { width: w } = s.level;
+  const bottom = Math.min(...[-0.5, w - 0.5].map((gx) => screenAt(stage.worldOf(s.level, gx, -0.5)).y));
+  const top = Math.max($('hud').getBoundingClientRect().bottom, $('settings').getBoundingClientRect().bottom);
+  return { top, bottom };
+}
+
 /**
- * A lesson with nothing to tap: the chick's words over an animal, no finger, every touch on the board held, closed (and
- * learnt) only by its 알겠어요 button. The board does not change, and no touch lands on the animal once the words are
- * gone (2026-11-08: a finger over the dynamite invited a tap, and the next one was a real push that burnt its number).
+ * A lesson with nothing to tap: the chick's words in the band above the board, no finger, every touch on the board held,
+ * closed (and learnt) by a touch on the bubble. The animal it is about stays lit alone and pulses while the words are
+ * up; the board does not change, and no touch lands on the animal once the words are gone (2026-11-08: a finger over
+ * the dynamite invited a tap, and the next one was a real push that burnt its number).
  */
 function showInfoTutorial(id: TutorialId, target: number): boolean {
   const spot = spotOf(target);
@@ -758,7 +773,9 @@ function showInfoTutorial(id: TutorialId, target: number): boolean {
   tutorialUsed = true;
   stage.setFocus([view.group]);
   view.setBreathe(true);
-  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, info: true, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
+  view.pulse();
+  infoPulse = window.setInterval(() => view.pulse(), INFO_PULSE_MS);
+  tutorial.show({ text: TUTORIAL_TEXT[id], spot: () => spotOf(target) ?? spot, room: boardRoom, info: true, onAction: () => endTutorial(id), onSkip: () => endTutorial(id) });
   return true;
 }
 

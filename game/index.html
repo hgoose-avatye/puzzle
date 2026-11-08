@@ -186,17 +186,18 @@
       .tutSkip { min-height: 44px; min-width: 44px; padding: 0 8px; margin-left: 2px; border: 0; background: none; box-shadow: none; pointer-events: auto;
         font-size: 15px; font-weight: 700; color: rgba(255,255,255,.85); text-decoration: underline; white-space: nowrap; }
       .tutSkip:active { transform: none; box-shadow: none; }
-      /* an info lesson (nothing to tap): no finger, no 건너뛰기; a small 알겠어요 button under the bubble closes it */
-      .tutOk { display: none; min-height: 44px; min-width: 96px; padding: 0 16px; margin-left: auto; font-size: 17px; pointer-events: auto; }
-      #tutorial.info .tutGuide { flex-wrap: wrap; row-gap: 8px; max-width: calc(100vw - 24px); }
-      #tutorial.info .tutBubble { box-sizing: border-box; max-width: calc(100vw - 24px - 76px); }
+      /* an info lesson (nothing to tap): no finger, no 건너뛰기; the bubble itself is the touch that closes it, a small
+         › in its corner says so */
+      #tutorial.info .tutGuide { max-width: calc(100vw - 24px); }
+      #tutorial.info .tutBubble { box-sizing: border-box; max-width: calc(100vw - 24px - 76px); padding-right: 36px; pointer-events: auto; cursor: pointer; }
+      #tutorial.info .tutBubble:active { transform: translateY(2px); box-shadow: inset 0 0 0 1.5px var(--rim), 0 2px 0 var(--rim-base), 0 4px 8px rgba(0,0,0,.3); }
+      #tutorial.info .tutBubble::after { content: '›'; position: absolute; right: 14px; bottom: 6px; font: 700 28px/1 var(--font-title); color: var(--ink-soft); }
       #tutorial.info .tutFinger, #tutorial.info .tutSkip { display: none; }
-      #tutorial.info .tutOk { display: inline-flex; }
       .tutFinger { position: absolute; width: 44px; height: 60px; margin: 0; pointer-events: none; transform-origin: 30% 0; animation: tutTap 1.1s ease-in-out infinite; }
       .tutFinger svg { width: 100%; height: 100%; overflow: visible; }
       .tutFinger path { fill: #fff; stroke: #4a3424; stroke-width: 2.4; stroke-linejoin: round; filter: drop-shadow(0 3px 3px rgba(0,0,0,.45)); }
       @keyframes tutTap { 0%, 100% { transform: translate(6px, 10px) rotate(-18deg); } 45% { transform: translate(0, 0) rotate(-18deg) scale(.92); } 60% { transform: translate(0, 0) rotate(-18deg) scale(.92); } }
-      #tutorial.result .tutBubble, #tutorial.result .tutSkip, #tutorial.result .tutOk, #tutorial.result .tutFinger { display: none; }
+      #tutorial.result .tutBubble, #tutorial.result .tutSkip, #tutorial.result .tutFinger { display: none; }
       #tutorial.result.say .tutBubble { display: block; }
       /* a heart lost to a blocked tap shrinks and breaks in two over the empty heart left behind (.35s, HEART_BREAK_MS
          in main.ts; plain game feedback, not a tutorial) */
