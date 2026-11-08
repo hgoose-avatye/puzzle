@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isCleared } from '../core/game';
+import { isCleared, tap } from '../core/game';
 import { canExit } from '../core/rules';
 import { createRng, type Rng } from '../core/rng';
 import type { Level, Piece } from '../core/types';
@@ -248,5 +248,66 @@ describe('play flow: scenarios', () => {
     expect(fresh.state.alive.size).toBe(4);
     expect(fresh.traffic.runners).toHaveLength(0);
     expect(fresh.tap(4, 0)?.type).toBe('blocked');
+  });
+});
+
+describe('undo replay (bump rule, docs/rules.md 6)', () => {
+  /** The whole board as the rules see it: where every animal stands, who is still in, dynamite, crates. */
+  const snapshot = (flow: PlayFlow): string => {
+    const s = flow.state;
+    return JSON.stringify({ level: s.level, alive: [...s.alive].sort((a, b) => a - b), fuses: s.fuses, exploded: s.exploded });
+  };
+
+  /**
+   * A play line on a still board, as a player makes it: send out every free animal, and at a knot push the first
+   * animal that moves without setting off a dynamite. Returns the flow and the board just before each push.
+   */
+  function playLine(n: number): { flow: PlayFlow; beforePush: string[]; pushAfterExit: number } {
+    const level = buildGameLevel(n)!.level;
+    const flow = new PlayFlow(level, undefined, true);
+    const beforePush: string[] = [];
+    let pushAfterExit = 0;
+    let exited = false;
+    for (let k = 0, t = 0; k < 300 && flow.state.alive.size; k++, t += 1000) {
+      const s = flow.state;
+      const free = s.level.pieces.find((p) => s.alive.has(p.id) && canExit(s.level, p.id, s.alive));
+      const push = free ? undefined : s.level.pieces.find((p) => {
+        if (!s.alive.has(p.id)) return false;
+        const r = tap(s, p.id);
+        return r.event.type === 'blocked' && !!r.event.moved && !r.state.exploded;
+      });
+      const id = free?.id ?? push?.id;
+      if (id === undefined) break;
+      if (push) { beforePush.push(snapshot(flow)); if (exited) pushAfterExit++; }
+      flow.tap(id, t);
+      if (free) exited = true;
+      flow.traffic.clear(); // the next tap waits for a still board, as in play
+    }
+    return { flow, beforePush, pushAfterExit };
+  }
+
+  for (const n of [70, 92, 120, 130, 160, 180]) {
+    it(`level ${n}: undoing any push gives back the board just before that push, with the earlier pushes kept`, () => {
+      const { flow, beforePush, pushAfterExit } = playLine(n);
+      // the case the old replay lost: a push made after an animal had left
+      expect(pushAfterExit).toBeGreaterThanOrEqual(1);
+      expect(flow.pushes.length).toBe(beforePush.length);
+      flow.pushes.forEach((at, k) => {
+        const undone = PlayFlow.replay(flow.level, flow.log.slice(0, at));
+        expect(snapshot(undone)).toBe(beforePush[k]);
+        expect(undone.pushes).toEqual(flow.pushes.slice(0, k));
+      });
+    });
+  }
+
+  it('undo after undo steps back one push at a time', () => {
+    const { flow, beforePush } = playLine(180);
+    expect(beforePush.length).toBeGreaterThanOrEqual(4);
+    let current = flow;
+    for (let k = beforePush.length - 1; k >= beforePush.length - 4; k--) {
+      current = PlayFlow.replay(flow.level, current.log.slice(0, current.pushes[current.pushes.length - 1]));
+      expect(snapshot(current)).toBe(beforePush[k]);
+      expect(current.pushes.length).toBe(k);
+    }
   });
 });

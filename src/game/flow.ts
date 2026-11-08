@@ -42,6 +42,20 @@ export class PlayFlow {
     for (const piece of level.pieces) this.routes.set(piece.id, routeOf(level, piece));
   }
 
+  /**
+   * The level as it stood after these taps, on a fresh flow (the undo: the log up to the last push). Every tap in the
+   * log was made on a still board, so each replayed tap is followed by clearing the runners it sent out; otherwise a
+   * push after an exit would wait for that runner and be dropped, and the undo would lose earlier pushes.
+   */
+  static replay(level: Level, log: readonly number[]): PlayFlow {
+    const flow = new PlayFlow(level, undefined, true);
+    log.forEach((id, i) => {
+      flow.tap(id, i * 1000);
+      flow.traffic.clear();
+    });
+    return flow;
+  }
+
   /** Head arc length on its route of an animal that moved `advance` cells. */
   headAt(id: number): number {
     const route = this.routes.get(id)!;

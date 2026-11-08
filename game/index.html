@@ -104,6 +104,21 @@
       #undo.nudge { animation: undoNudge 1s ease-in-out infinite; }
       #undo.spent { opacity: .55; }
       /* which build this is (A1): tiny, in the corner, never in the way */
+      /* a phone turned sideways: the board and the bottom bar do not fit, so ask for portrait over everything (tablets keep playing) */
+      #rotate { display: none; position: fixed; inset: 0; z-index: 1000; background: #cfe8f3; color: var(--ink); align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; padding: 24px; touch-action: none; }
+      #rotate svg { width: 56px; height: 56px; color: var(--orange); }
+      #rotate p { margin: 0; font-family: var(--font-title); font-size: 26px; line-height: 1.25; word-break: keep-all; }
+      @media (orientation: landscape) and (max-height: 520px) { #rotate { display: flex; } }
+      /* waiting for the animal pictures (game/loading.ts): over everything, touches held, shown only if it takes a moment */
+      #loading { position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center; background: rgba(207,232,243,.82); touch-action: none; }
+      #loading[hidden] { display: none; }
+      #loading .ldCard { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 22px; margin: 0 24px; border-radius: 24px; background: var(--cream); border: 2px solid var(--edge); box-shadow: 0 6px 0 rgba(120,90,50,.18); text-align: center; }
+      #loading .ldSpin { width: 44px; height: 44px; border-radius: 50%; border: 5px solid #f3dfb8; border-top-color: var(--orange); animation: ldSpin 0.9s linear infinite; }
+      #loading p { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.4; color: var(--ink); white-space: pre-line; word-break: keep-all; }
+      #loading.failed .ldSpin { display: none; }
+      #ldBtns { display: flex; flex-direction: column; gap: 10px; }
+      #ldBtns[hidden] { display: none; }
+      @keyframes ldSpin { to { transform: rotate(360deg); } }
       #build { position: fixed; right: 6px; bottom: 4px; font-size: 10px; line-height: 1; color: rgba(60,40,20,.55); pointer-events: none; z-index: 5; font-family: ui-monospace, Menlo, monospace; }
       @keyframes undoNudge { 50% { transform: scale(1.1); } }
       @media (max-width: 340px) { #bar { gap: 4px; } #bar .gb-bar:not(.gb-secondary) { --w: 84px; } #undo { width: 76px; } }
@@ -249,6 +264,8 @@
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
     <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><div id="ilStat"></div><button id="ilBtn" class="primary"></button></div></div>
     <div id="build" aria-hidden="true"></div>
+    <div id="loading" hidden><div class="ldCard"><div class="ldSpin" aria-hidden="true"></div><p id="ldText" role="status"></p><div id="ldBtns" hidden><button id="ldRetry" class="gb gb-m gb-primary">다시 불러오기</button><button id="ldGo" class="gb gb-m gb-secondary">그대로 하기</button></div></div></div>
+    <div id="rotate" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg><p>휴대폰을 세로로<br />세워 주세요</p></div>
     <div id="popup" hidden><div class="card gp gp-dialog"><div class="peek" aria-hidden="true"></div><div id="popupTitle"></div><div id="popupRescue"></div><div id="popupSub"></div><div id="popupStage"></div><div id="popupHearts"></div><div class="popBtns"><button id="popupBtn" class="gb gb-l gb-primary"></button><button id="popupHome" class="gb gb-m gb-secondary" hidden>홈으로</button></div></div></div>
     <div id="title" hidden>
       <div class="tHead">
