@@ -360,8 +360,8 @@ export class Stage {
    * Bring the crates in line with who has left: a new crack shows the crack lines and shakes the crate, a broken one
    * disappears. Returns what changed so the caller can play sounds and effects.
    */
-  updateCrates(level: Level, alive: ReadonlySet<number>): Array<{ pos: THREE.Vector3; broke: boolean }> {
-    const out: Array<{ pos: THREE.Vector3; broke: boolean }> = [];
+  updateCrates(level: Level, alive: ReadonlySet<number>): Array<{ pos: THREE.Vector3; broke: boolean; x: number; y: number }> {
+    const out: Array<{ pos: THREE.Vector3; broke: boolean; x: number; y: number }> = [];
     for (const c of this.crates) {
       const cracks = crateCracks(level, c.crate, alive);
       if (cracks <= c.cracks) continue;
@@ -388,7 +388,7 @@ export class Stage {
         m.needsUpdate = true;
         c.pips.scale.x = PIP_W(c.crate.hits - cracks);
       }
-      out.push({ pos: c.obj.position.clone(), broke });
+      out.push({ pos: c.obj.position.clone(), broke, x: c.crate.x, y: c.crate.y });
     }
     return out;
   }
@@ -412,6 +412,13 @@ export class Stage {
       c.obj.rotation.z = Math.sin(c.shakeT * 50) * 0.08 * (c.shakeT / 0.35);
       c.obj.scale.setScalar(1 - 0.06 * Math.sin((c.shakeT / 0.35) * Math.PI));
     }
+    for (const f of this.neighbourFlash) {
+      f.t = Math.max(0, f.t - dt);
+      const k = f.t / 0.6;
+      (f.tile.material as THREE.MeshBasicMaterial).opacity = 0.45 + 0.55 * k;
+      f.tile.scale.set(1 + 0.08 * k, 1 + k, 1 + 0.08 * k);
+    }
+    this.neighbourFlash = this.neighbourFlash.filter((f) => f.t > 0);
     for (const sh of this.shards) {
       sh.t -= dt;
       sh.v.y -= 9 * dt;
@@ -429,6 +436,39 @@ export class Stage {
       a.obj.scale.set(1 + 0.12 * k, 1 + 0.6 * k, 1 + 0.12 * k);
     }
   }
+
+  /** The crate lesson's four neighbour tiles (the cells whose animals crack the crate when they leave), by cell key. */
+  private neighbourTiles = new Map<string, THREE.Mesh>();
+
+  /**
+   * Light the cells next to a crate (the crate lesson): a flat orange tile on each neighbour cell that is on the board.
+   * Off removes them. Returns the tiles, so the focus pass can keep them bright.
+   */
+  showCrateNeighbours(level: Level, x: number, y: number, on: boolean): THREE.Object3D[] {
+    for (const t of this.neighbourTiles.values()) this.board.remove(t);
+    this.neighbourTiles.clear();
+    if (!on) return [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const cx = x + dx, cy = y + dy;
+      if (!onBoard(level, cx, cy)) continue;
+      const tile = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.04, 0.96), new THREE.MeshBasicMaterial({ color: 0xff8a1c, transparent: true, opacity: 0.45 }));
+      tile.position.copy(this.worldOf(level, cx, cy)).setY(0.03);
+      this.board.add(tile);
+      this.neighbourTiles.set(`${cx},${cy}`, tile);
+    }
+    return [...this.neighbourTiles.values()];
+  }
+
+  /** The neighbour tile at a cell flashes bright for a moment (an animal left from there and cracked the crate). */
+  flashCrateNeighbour(x: number, y: number): void {
+    const tile = this.neighbourTiles.get(`${x},${y}`);
+    if (!tile) return;
+    const m = tile.material as THREE.MeshBasicMaterial;
+    m.opacity = 1;
+    tile.scale.set(1.08, 2, 1.08);
+    this.neighbourFlash.push({ tile, t: 0.6 });
+  }
+  private neighbourFlash: Array<{ tile: THREE.Mesh; t: number }> = [];
 
   /** The crate drawn at a cell (the chick tutorial lights it up), if one stands there. */
   crateObjectAt(x: number, y: number): THREE.Object3D | null {

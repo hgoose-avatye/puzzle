@@ -3,7 +3,7 @@ import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, 
 import { LEVELS as EXP_LEVELS } from '../experiments/knot-small/levels';
 import { PlayLog } from '../src/game/playlog';
 import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
-import { canExit, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
+import { canExit, cratesInWay, headDirection, isAsleep, lockedBy, traceExit } from '../src/core/rules';
 import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
 import { stuckAtOnce } from '../src/generator/knotSearch';
 import { distanceToPolyline } from '../src/game/path';
@@ -15,7 +15,7 @@ import { hasSavedProgress, progressAfterClear } from '../src/game/progress';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
-import { arrowTargets, bombToWatch, bumpTargets, crateBreakTargets, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
+import { arrowTargets, bombToWatch, bumpTargets, crateLessonAt, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
 import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
 import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
@@ -434,7 +434,7 @@ function crackCrates(): void {
   const state = current();
   if (!state) return;
   for (const c of stage.updateCrates(state.level, state.alive)) {
-    if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); }
+    if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); crateLessonBroke(c.x, c.y); }
     else {
       fx.dust(c.pos); sound.play('arrive');
     }
@@ -479,6 +479,7 @@ function onTap(id: number): TapOutcome {
       fx.sparkle(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
+    crateLessonExit(id); // the lesson's line (crackCrates may replace it with the break's)
     crackCrates();
   } else if (ev.type === 'blocked' && view) {
     const feedback = (): void => {
@@ -538,8 +539,7 @@ const TUTORIAL_TEXT: Record<TutorialId, string> = {
   bomb: '다이너마이트 친구는 부딪힐 때마다\n숫자가 줄어! 0이면 펑',
   bump: '막힌 친구도 눌러봐!\n앞까지 가서 멈춰',
   crate: '옆 친구가 나가면\n상자가 부서져!',
-  crate2: '옆 친구가 나가면\n점이 하나 줄어!',
-  crateBreak: '한 명 더 나가면\n상자가 부서져!',
+  crate2: '상자 옆 친구가 나가면\n점이 하나 줄어!',
 };
 /**
  * The tap's round target around the animal, in board cells on screen; never under SPOT_MIN (the finger's target stays
@@ -553,7 +553,7 @@ const SPOT_RECHECK = 300;
 /** How long the animal a tap changed (unlocked, woken, its way cleared) stays lit after the tap (ms). */
 const RESULT_MS = 800;
 /** Tutorials whose tap changes another animal, shown for RESULT_MS. */
-const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb', 'crate', 'crate2', 'crateBreak'];
+const WITH_RESULT: readonly TutorialId[] = ['blocked', 'key', 'sleep', 'bomb', 'crate'];
 /** This level's one tutorial is taken (shown, or the level's own start rule is waiting for its animal). */
 let tutorialUsed = true;
 /** Look for the arrow tutorial on the next frame where nothing runs. */
@@ -580,6 +580,7 @@ function endTutorial(learnt?: TutorialId): void {
 /** Close any tutorial; nothing more this level (a new level starts afresh). */
 function stopTutorials(): void {
   endTutorial();
+  crateLesson = null;
   arrowWatch = null;
   tutorialCheck = false;
   tutorialUsed = true;
@@ -677,6 +678,63 @@ function showTapTutorial(id: TutorialId, candidates: number[]): boolean {
 }
 
 /**
+ * The two-crack crate lesson (crate2, 2026-11-08): the chick's words over the crate, its four neighbour cells lit, and
+ * nothing to tap. The player then plays freely; onTap tells an exit from a lit cell (a dot goes, the cell flashes)
+ * from one elsewhere (said once: the crate stays), and the lesson is learnt when the crate breaks. Learnt on the break
+ * only, so a touch that closes the words does not count, and no order of exits can leave the lesson hanging.
+ */
+let crateLesson: { x: number; y: number; held: number[]; toldElsewhere: boolean } | null = null;
+function showCrateLesson(level: Level): void {
+  const s = current();
+  const k = s && crateLessonAt(level, s.alive);
+  const obj = k && stage.crateObjectAt(k.x, k.y);
+  if (!s || !k || !obj) return;
+  const held = level.pieces.filter((p) => s.alive.has(p.id) && cratesInWay(level, p, s.alive).some((c) => c.x === k.x && c.y === k.y)).map((p) => p.id);
+  crateLesson = { x: k.x, y: k.y, held, toldElsewhere: false };
+  const tiles = stage.showCrateNeighbours(level, k.x, k.y, true);
+  tutorialShown = { id: 'crate2', target: 0 };
+  tutorialInfo = true;
+  tutorialUsed = true;
+  stage.setFocus([obj, ...tiles]);
+  const spot = (): TutorialSpot => { const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6)); return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) }; };
+  // closing the words does not learn the lesson (the break does); the tiles stay lit until then
+  tutorial.show({ text: TUTORIAL_TEXT.crate2, spot, onAction: () => endTutorial(), onSkip: () => endTutorial() });
+}
+
+/** An animal left while the crate lesson is on: say what it did to the crate (the crack itself is drawn by crackCrates). */
+function crateLessonExit(id: number): void {
+  const s = current();
+  if (!crateLesson || !s) return;
+  const piece = s.level.pieces.find((p) => p.id === id);
+  if (!piece) return;
+  const cell = piece.cells.find((c) => Math.abs(c.x - crateLesson!.x) + Math.abs(c.y - crateLesson!.y) === 1);
+  if (cell) {
+    stage.flashCrateNeighbour(cell.x, cell.y);
+    $('msg').textContent = '옆 친구가 나가서 점이 하나 줄었어요';
+  } else if (!crateLesson.toldElsewhere) {
+    crateLesson.toldElsewhere = true;
+    $('msg').textContent = '옆이 아니라서 상자는 그대로예요';
+  }
+}
+
+/** The lesson's crate broke: learnt; the animal it held lights up for a moment. */
+function crateLessonBroke(x: number, y: number): void {
+  if (!crateLesson || crateLesson.x !== x || crateLesson.y !== y) return;
+  const s = current();
+  const held = crateLesson.held.filter((id) => s?.alive.has(id) && views.has(id));
+  crateLesson = null;
+  learn('crate2');
+  if (tutorialShown?.id === 'crate2') endTutorial(); // the words still up (the dev hook can tap past them): gone with the crate
+  stage.showCrateNeighbours(s!.level, x, y, false);
+  $('msg').textContent = '옆 친구 둘이 나가서 상자가 부서졌어요!';
+  if (!held.length) return;
+  stage.setFocus(held.map((id) => views.get(id)!.group));
+  for (const id of held) views.get(id)!.pulse();
+  window.clearTimeout(resultTimer);
+  resultTimer = window.setTimeout(() => stage.setFocus([]), RESULT_MS);
+}
+
+/**
  * A lesson with nothing to tap: the chick's words over an animal, closed (and learnt) by a touch on it or 건너뛰기. The
  * touch reaches no animal, so the board does not change.
  */
@@ -709,18 +767,6 @@ function tutorialTapped(): void {
     const tile = traceExit(s.level, piece).cells.find((c) => arrows.has(`${c.x},${c.y}`));
     if (tile) arrowWatch = { id: shown.target, x: tile.x, y: tile.y, at: stage.worldOf(s.level, tile.x, tile.y) };
   }
-  // crate2: the crate the tapped animal stood by lights up as its dot goes; then the level waits for crateBreak
-  if (shown.id === 'crate2') {
-    const piece = s.level.pieces.find((p) => p.id === shown.target);
-    const crate = piece && (s.level.crates ?? []).find((k) => piece.cells.some((c) => Math.abs(c.x - k.x) + Math.abs(c.y - k.y) === 1));
-    const obj = crate ? stage.crateObjectAt(crate.x, crate.y) : null;
-    if (obj) {
-      stage.setFocus([obj]);
-      tutorial.result(() => { const at = screenAt(obj.position.clone().setY(obj.position.y + 0.6)); return { x: at.x, y: at.y, r: Math.max(SPOT_MIN, Math.min(SPOT_MAX, SPOT_CELLS * cellPx())) }; });
-      resultTimer = window.setTimeout(() => { endTutorial(); tutorialUsed = false; tutorialCheck = true; }, RESULT_MS);
-    } else { endTutorial(); tutorialUsed = false; tutorialCheck = true; }
-    return;
-  }
   const changed = WITH_RESULT.includes(shown.id) ? resultSubjects(s.level, shown.id, shown.target).filter((id) => s.alive.has(id) && views.has(id)) : [];
   if (!changed.length) { endTutorial(); return; }
   stage.setFocus(changed.map((id) => views.get(id)!.group));
@@ -741,6 +787,7 @@ function beginTutorials(level: Level): void {
     tutorialUsed = true;
     const s = current();
     if (!s) return;
+    if (start === 'crate2') { showCrateLesson(level); return; }
     if (showTapTutorial(start, startTargets(level, s.alive, start, s.fuses))) return;
     // the dynamite lesson where no tap leads to the dynamite (it sits inside the knot, level 40): the words on the
     // dynamite itself, closed by a touch, no tap made
@@ -757,8 +804,6 @@ function situationalTutorial(): void {
   if (anyRunning() || tutorial.visible || !$('popup').hidden || !$('modal').hidden) return;
   tutorialCheck = false;
   const s = flow.state;
-  // the second crate lesson: a cracked crate's free neighbour, whose leaving breaks it
-  if (!readSeen().includes('crateBreak') && showTapTutorial('crateBreak', crateBreakTargets(s.level, s.alive))) return;
   if (!readSeen().includes('arrow') && showTapTutorial('arrow', arrowTargets(s.level, s.alive))) return;
   // the first knot: nothing can leave, so the chick shows the push that untangles it
   if (BUMP && !readSeen().includes('bump')) showTapTutorial('bump', bumpTargets(s.level, s.alive, s.fuses));
@@ -1166,6 +1211,8 @@ else goHome();
 if (import.meta.env.DEV) (window as unknown as { __game: unknown }).__game = {
   tap: (id: number) => onTap(id),
   build: () => BUILD,
+  /** the crate lesson in progress: its crate, the animal it holds, whether the "elsewhere" line was said */
+  crateLesson: () => crateLesson && { ...crateLesson },
   /** every animal's dynamite as drawn: its number and whether it shows red (at 1) */
   dynamite: () => { const s = current(); return [...views.entries()].filter(([id, v]) => v.dynamite && s?.alive.has(id)).map(([id, v]) => ({ id, ...v.dynamite! })); },
   playlog: () => playlog?.all ?? [],

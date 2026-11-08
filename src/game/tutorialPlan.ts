@@ -15,12 +15,13 @@ import { pickHint } from './hint';
  * tutorial waits for its moment: an animal whose way out bends on an arrow becomes free. A tutorial with no animal it can point at is not forced: it waits for the next level where
  * it can. Hearts and crates teach themselves in play (the heart that pops, the crate that cracks).
  */
-export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb' | 'crate' | 'crate2' | 'crateBreak';
+export type TutorialId = 'basic' | 'blocked' | 'arrow' | 'bump' | 'key' | 'sleep' | 'bomb' | 'crate' | 'crate2';
 /**
  * Start tutorials, in the order a level is checked for them. The crate lessons (2026-11-07 playtest: "why did it
  * break?") hang on the first level with a one-crack crate (crate: the neighbour leaves, the crate goes) and the first
- * with a two-crack crate (crate2: a neighbour leaves, one dot goes; crateBreak, later on that level: the other
- * neighbour becomes free and its leaving breaks it).
+ * with a two-crack crate (crate2, 2026-11-08: the chick shows the crate and its neighbour cells, then the player plays
+ * freely; an exit from a neighbour cell takes a dot, one from elsewhere changes nothing, and the lesson is learnt when
+ * the crate breaks — main.ts runs that, crateLessonAt names the crate).
  */
 export const START_TUTORIALS: readonly TutorialId[] = ['basic', 'blocked', 'crate', 'crate2', 'key', 'sleep', 'bomb'];
 /** The level that teaches the blocked animal: hand-made with no hearts, so the shake costs nothing. */
@@ -64,7 +65,7 @@ export function usesRule(level: Level, id: TutorialId): boolean {
     case 'sleep': return level.pieces.some((p) => p.sleeping);
     case 'bomb': return level.pieces.some((p) => p.fuse !== undefined);
     case 'crate': return (level.crates ?? []).some((k) => k.hits === 1);
-    case 'crate2': case 'crateBreak': return (level.crates ?? []).some((k) => k.hits >= 2);
+    case 'crate2': return (level.crates ?? []).some((k) => k.hits >= 2);
   }
 }
 
@@ -78,9 +79,10 @@ function crateNeighbours(level: Level, alive: ReadonlySet<number>, fits: (hits: 
   return out;
 }
 
-/** The crateBreak moment: a cracked crate with a free neighbour whose leaving will break it. */
-export function crateBreakTargets(level: Level, alive: ReadonlySet<number>): number[] {
-  return crateNeighbours(level, alive, (hits, cracks) => cracks > 0 && cracks === hits - 1);
+/** The crate the crate2 lesson is about: the first whole two-crack crate on the level, or null. */
+export function crateLessonAt(level: Level, alive: ReadonlySet<number>): { x: number; y: number; hits: number } | null {
+  const k = (level.crates ?? []).find((c) => c.hits >= 2 && crateCracks(level, c, alive) === 0);
+  return k ? { x: k.x, y: k.y, hits: k.hits } : null;
 }
 
 /**
@@ -113,8 +115,7 @@ export function startTargets(level: Level, alive: ReadonlySet<number>, id: Tutor
       // a free neighbour of a one-crack crate: its leaving breaks the crate
       return crateNeighbours(level, alive, (hits, cracks) => hits === 1 && cracks === 0);
     case 'crate2':
-      // a free neighbour of a whole two-crack crate: its leaving takes one dot
-      return crateNeighbours(level, alive, (hits, cracks) => hits >= 2 && cracks === 0);
+      return []; // no animal to point at: the lesson is on the crate (crateLessonAt), the player chooses
     case 'bomb':
       // the tap that gets the dynamite closest to going off nearer to leaving (the first free animal in its chain of
       // blockers); empty where the dynamite sits inside a knot with no such chain (level 40): main.ts then shows the
@@ -169,8 +170,8 @@ export function resultSubjects(level: Level, id: TutorialId, target: number): nu
   if (id === 'key') return level.pieces.filter((p) => p.lock !== undefined && p.lock === tapped.key).map((p) => p.id);
   if (id === 'sleep') return level.pieces.filter((p) => p.sleeping && neighbours(level, p).has(target)).map((p) => p.id);
   if (id === 'bomb') return level.pieces.filter((p) => p.fuse !== undefined && p.id !== target).sort((a, b) => a.fuse! - b.fuse! || a.id - b.id).slice(0, 1).map((p) => p.id);
-  // the crate lessons: the animal the broken crate was holding (crate, crateBreak); crate2 lights the crate itself
-  if (id === 'crate' || id === 'crateBreak') {
+  // the crate lesson: the animal the broken crate was holding
+  if (id === 'crate') {
     const all = new Set(level.pieces.map((p) => p.id));
     const crates = (level.crates ?? []).filter((k) => piecesAround(level, k.x, k.y).includes(target));
     return level.pieces.filter((p) => p.id !== target && cratesInWay(level, p, all).some((k) => crates.includes(k))).map((p) => p.id);
