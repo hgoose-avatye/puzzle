@@ -375,11 +375,14 @@ export async function runFlowChecks(browser, base, report) {
     check('tutorial: animal 1 can leave once the crate broke', free1, String(free1));
   });
 
-  await scenario('tutorial: level 12 (hand-made) teaches the two-crack crate by free play: words on the crate, neighbour cells lit, learnt on the break', null, async (p) => {
+  await scenario('tutorial: level 12 (hand-made) teaches the two-crack crate by free play: words on the crate, no cell marked, learnt on the break', null, async (p) => {
     await withSeen(p, ['basic', 'blocked', 'arrow', 'bump', 'crate'], '?level=12');
     const shown = await tut(p);
     const lesson = await p.evaluate(() => window.__game.crateLesson());
     check('tutorial: level 12 opens on crate2 with the lesson on the crate (3,4), the held animal 4 known, no animal to tap', shown?.id === 'crate2' && shown.target === 0 && lesson?.x === 3 && lesson.y === 4 && JSON.stringify(lesson.held) === '[4]', `${JSON.stringify(shown)} ${JSON.stringify(lesson)}`);
+    // no orange tile on any cell (the neighbour tiles were removed, 2026-11-08 request)
+    const orange = await p.evaluate(() => { let n = 0; window.__game.scene().traverse((o) => { const m = o.material; if (o.visible && m && !Array.isArray(m) && m.color && m.color.getHex() === 0xff8a1c && Math.abs(m.opacity - 0.45) < 0.01) n++; }); return n; });
+    check('tutorial: level 12 marks no cell on the board', orange === 0, `orange meshes ${orange}`);
     // a discovery lesson (2026-11-08): a touch on the crate's spot is held, the bubble is what closes the words, and
     // neither taps an animal
     const before = await p.evaluate(() => window.__game.ids().length);
