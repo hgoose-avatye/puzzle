@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Cheap particle effects made of small cubes: puffs, rescue bursts, stars over blocked animals and clear confetti.
+ * Cheap particle effects made of small cubes: puffs, rescue bursts and clear confetti.
  * One shared geometry; materials are cached per color. Particles remove themselves and are never disposed per particle.
  */
 interface P { m: THREE.Mesh; v: THREE.Vector3; spin: THREE.Vector3; life: number; max: number; g: number; shrink: boolean }
@@ -83,14 +83,6 @@ export class Fx {
       const a = Math.random() * Math.PI * 2;
       const s = 1.5 + Math.random() * 2.2;
       this.spawn(new THREE.Vector3(pos.x, 0.5, pos.z), i % 3 === 0 ? 0xffffff : color, 0.12 + Math.random() * 0.1, new THREE.Vector3(Math.cos(a) * s, 2 + Math.random() * 2.5, Math.sin(a) * s), 0.7, 9);
-    }
-  }
-
-  /** Yellow stars popping over a blocked animal. */
-  stars(pos: THREE.Vector3): void {
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      this.spawn(new THREE.Vector3(pos.x, 1.5, pos.z), 0xffd23f, 0.13, new THREE.Vector3(Math.cos(a) * 1.1, 1.3, Math.sin(a) * 1.1), 0.55, 4);
     }
   }
 
