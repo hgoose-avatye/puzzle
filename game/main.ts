@@ -97,7 +97,7 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   if (params.get('demo') === 'sheet') {
     const names = params.get('species')?.split(',') ?? SHEET_SPECIES.slice(0, 6);
     const dirs = params.get('dirs')?.split(',') as Direction[] | undefined;
-    const sheet = sheetLevel(names, Number(params.get('len') ?? 1), dirs);
+    const sheet = sheetLevel(names, params.has('len') ? Number(params.get('len')) : undefined, dirs);
     speciesOverride.clear();
     for (const [id, name] of sheet.species) speciesOverride.set(id, name);
     return { level: sheet.level };
@@ -142,7 +142,7 @@ let winTimer: number | undefined;
 /**
  * The last animal has left the board: confetti and the clear sound, and the clear is saved, all at once. 2.5D shows the
  * rescue card CLEAR_CELEBRATE_MS later with the buttons still usable (home, a level change or a retry go through
- * clearBoard, which drops the card still waiting); Classic 3D and reduced motion show it at once, as before.
+ * clearBoard, which drops the card still waiting); reduced motion (or no animal views) shows it at once.
  */
 function winLevel(): void {
   const state = current();
@@ -152,7 +152,7 @@ function winLevel(): void {
   fx.confetti(new THREE.Vector3(0, 0, 0), 8);
   writeProgress(progressAfterClear(readProgress(), levelNumber, LAST_LEVEL));
   addRescued(state.level.pieces.length);
-  if (reducedMotion() || ![...views.values()].some((v) => v.cards)) { showEnd(true); return; }
+  if (reducedMotion() || views.size === 0) { showEnd(true); return; }
   winTimer = window.setTimeout(() => { winTimer = undefined; showEnd(true); }, CLEAR_CELEBRATE_MS);
 }
 
@@ -163,9 +163,9 @@ function showLostAfter(ms: number, then?: () => void): void {
 }
 
 /**
- * A count bomb reached zero. 2.5D: every bomb at zero swells its icon away and bursts (orange and grey bits, a dust
- * ring), one punch sound, and the bomb card with its sound after BOMB_BLAST_MS. Classic 3D and reduced motion: the
- * card and sound at once, as before. No hearts are taken.
+ * A count bomb reached zero. Every bomb at zero swells its icon away and bursts (orange and grey bits, a dust ring),
+ * one punch sound, and the bomb card with its sound after BOMB_BLAST_MS. Reduced motion (or no bomb icon shown): the
+ * card and sound at once. No hearts are taken.
  */
 function blowUp(state: GameState): void {
   const bombs = state.level.pieces.filter((p) => p.fuse !== undefined && state.alive.has(p.id) && state.fuses[p.id] <= 0);
@@ -399,13 +399,12 @@ function animalAt(clientX: number, clientY: number): number | null {
 }
 
 /**
- * 2.5D only (animals drawn as picture cards): the animal a finger sees under it, the nearest opaque card pixel, which
- * is the one the depth test keeps on screen. The status icons are left out: drawn over everything, they covered the
- * animal behind and took its taps (2026-11-05). Null when no card animal is shown there, or in Classic 3D, where
- * pick() goes on with the tap targets exactly as before.
+ * The animal a finger sees under it (animals are drawn as picture cards): the nearest opaque card pixel, which is the
+ * one the depth test keeps on screen. The status icons are left out: drawn over everything, they covered the animal
+ * behind and took its taps (2026-11-05). Null when no animal is shown there; pick() then goes on with the tap targets.
  */
 function cardAnimalAt(clientX: number, clientY: number): number | null {
-  const shown = [...views.entries()].filter(([, v]) => v.cards && v.group.visible);
+  const shown = [...views.entries()].filter(([, v]) => v.group.visible);
   if (!shown.length) return null;
   const ray = stage.rayAt(clientX, clientY);
   const nearest = (distance: (v: PieceView) => number | null): number | null => {
@@ -521,10 +520,9 @@ function onTap(id: number): TapOutcome {
     crackCrates();
   } else if (ev.type === 'blocked' && view) {
     const feedback = (): void => {
-      // 2.5D: the head shake alone (no stars, no "!"); Classic 3D as before
+      // the head shake alone (no stars, no "!")
       view.bump();
-      if (!view.cards) fx.stars(view.headWorld());
-      if (ev.blockers.length > 0) collide(id, view, !view.cards);
+      if (ev.blockers.length > 0) collide(id, view, false);
       else if (cooled(id)) sound.play('wall');
       for (const b of ev.blockers) views.get(b)?.pulse();
       if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
@@ -1209,7 +1207,7 @@ const clock = new THREE.Clock();
     const v = views.get(e.id);
     if (e.type === 'wait' && !e.quiet && v) collide(e.id, v);
     // 2.5D: a runner held up behind another sets off again with its own step sound
-    if (e.type === 'resume' && v?.cards) sound.play('move');
+    if (e.type === 'resume' && v) sound.play('move');
   }
   for (const r of flow?.traffic.runners ?? []) views.get(r.id)?.setRun(r.s, r.state === 'waiting');
   for (const v of views.values()) {

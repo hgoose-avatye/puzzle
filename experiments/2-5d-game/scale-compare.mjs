@@ -1,5 +1,5 @@
 // node experiments/2-5d-game/scale-compare.mjs  (from the repo root)
-// Card size candidates in the real game: levels 3 / 30 / 90 in Classic 3D and in Illustrated 2.5D at each ?cardScale,
+// Card size candidates in the real game: levels 3 / 30 / 90 in 2.5D at each ?cardScale,
 // 390x844 and 360x640; touch check per scale (every free sprite animal tapped at its screen point must leave);
 // species still missing 2.5D art. Writes experiments/2-5d-game/out-scale/ only.
 import { mkdirSync } from 'node:fs';
@@ -21,7 +21,7 @@ async function open(level, mode, w, h) {
   await p.setViewport({ width: w, height: h, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   p.on('pageerror', (e) => errs.push(`L${level}/${mode}: ${e}`));
   await p.evaluateOnNewDocument(() => { try { localStorage.setItem('animal-rescue-seen', JSON.stringify(['basic', 'arrow', 'obstacle', 'crate', 'long', 'hearts', 'key', 'sleep', 'bomb'])); } catch { /* ignore */ } });
-  const q = mode === '3d' ? 'render=3d' : `render=25d&cardScale=${mode}`;
+  const q = `cardScale=${mode}`;
   await p.goto(`http://localhost:5421/?level=${level}&${q}`, { waitUntil: 'networkidle0' });
   await sleep(1500);
   return p;
@@ -29,9 +29,9 @@ async function open(level, mode, w, h) {
 
 for (const [w, h] of [[390, 844], [360, 640]]) {
   for (const level of [3, 30, 90]) {
-    for (const mode of ['3d', ...SCALES]) {
+    for (const mode of SCALES) {
       const p = await open(level, mode, w, h);
-      await p.screenshot({ path: `${OUT}/${w}x${h}-L${level}-${mode === '3d' ? '3d' : `x${mode.toFixed(1)}`}.png` });
+      await p.screenshot({ path: `${OUT}/${w}x${h}-L${level}-x${mode.toFixed(1)}.png` });
       await p.close();
     }
   }

@@ -1,5 +1,7 @@
 # Classic 3D / Illustrated 2.5D 이중 렌더링 (설계안, 2026-11-01)
 
+> **2026-11-09: Classic 3D는 제거됐다.** 2.5D가 유일한 렌더링이다. `?render=3d`, `dev:game3d`, `game/blocks.ts`, 3D 대체 표시는 없다. 그림이 빠진 종은 dev 서버·빌드 시작 때 오류로 멈춘다(`spriteCheck.ts`, `vite.config.ts` `checkSprites`). 아래는 당시 설계 기록이다.
+
 코드베이스는 하나입니다. **동물을 그리는 방식만** 모드에 따라 바뀝니다.
 
 ## 1. 공유하는 것 (두 모드 같음)
