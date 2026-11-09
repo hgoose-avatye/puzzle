@@ -1,39 +1,40 @@
 {
-  "species": "parrot",
-  "frame": {
-    "size": 1024,
-    "cellPx": 512,
-    "anchor": [
+ "species": "parrot",
+ "frame": {
+  "size": 1024,
+  "cellPx": 512,
+  "anchor": [
+   512,
+   640
+  ]
+ },
+ "scale": 1.2,
+ "parts": {
+  "single": {
+   "drawn": {
+    "0": {
+     "file": "v3/parrot_single_000.png",
+     "anchor": [
       512,
-      640
-    ]
-  },
-  "scale": 1.2,
-  "parts": {
-    "single": {
-      "drawn": {
-        "0": {
-          "file": "approved/parrot_single_000.png",
-          "anchor": [
-            512,
-            509
-          ]
-        },
-        "90": {
-          "file": "approved/parrot_single_090.png",
-          "anchor": [
-            512,
-            509
-          ]
-        },
-        "180": {
-          "file": "approved/parrot_single_180.png",
-          "anchor": [
-            512,
-            509
-          ]
-        }
-      }
+      509
+     ]
+    },
+    "90": {
+     "file": "v3/parrot_single_090.png",
+     "anchor": [
+      512,
+      509
+     ]
+    },
+    "180": {
+     "file": "v3/parrot_single_180.png",
+     "anchor": [
+      512,
+      509
+     ]
     }
+   }
   }
+ },
+ "note": "2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced."
 }

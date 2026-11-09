@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import { buildDefine } from '../../tools/build-info';
+import { SDK, SDK_SHA } from '../../tools/gf-sdk';
 import type { SpeciesSprites } from '../2-5d-crocodile/src/sprites';
 import { SPECIES } from '../../game/species';
 import { spriteProblems } from './spriteCheck';
@@ -87,4 +89,23 @@ const checkSprites: Plugin = {
 
 const repo = new URL('../../', import.meta.url).pathname;
 
-export default defineConfig({ root: game, publicDir: `${game}public`, plugins: [swapCards, spritePictures, checkSprites], server: { port: 5420, strictPort: true }, define: buildDefine(repo) });
+/**
+ * `vite build --mode toss` (npm run build:toss): the Apps in Toss web bundle in dist/toss/web (apps-in-toss.config.ts
+ * webBundleDir), as 사천팝 scripts/build.mjs toss. The page loads the hash-locked GFactory SDK (vendor/, tools/gf-sdk.ts)
+ * as a classic script before the game; game/platform picks the Toss platform from the mode. Other modes have no SDK.
+ */
+const tossBundle: Plugin = {
+  name: 'apps-in-toss-bundle',
+  apply: (_config, env) => env.mode === 'toss',
+  buildStart() {
+    const sdk = readFileSync(`${repo}vendor/${SDK}`);
+    if (createHash('sha256').update(sdk).digest('hex') !== SDK_SHA) this.error(`SDK hash mismatch — vendor/${SDK}`);
+    this.emitFile({ type: 'asset', fileName: SDK, source: sdk });
+  },
+  transformIndexHtml: (html) => html.replace('<script type="module"', `<script src="./${SDK}"></script>\n    <script type="module"`),
+};
+
+export default defineConfig(({ mode }) => ({
+  root: game, publicDir: `${game}public`, plugins: [swapCards, spritePictures, checkSprites, tossBundle], server: { port: 5420, strictPort: true }, define: buildDefine(repo),
+  ...(mode === 'toss' ? { base: './', build: { outDir: `${repo}dist/toss/web`, emptyOutDir: true } } : {}),
+}));

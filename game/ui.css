@@ -1,67 +1,223 @@
-/* UI system v0.2: shared tokens and the GameButton / GamePanel / StatusChip / toggle components.
-   One cream material (surface, 1.5px tan rim, solid tan base, soft warm drop) for every panel, chip and quiet button;
-   colour says what a button does (green go on, blue try again, yellow hint, cream back), size and lift say how much it
-   matters on that screen. */
+/* UI system v0.3: the shared pop-games Figma "Theme Kit", Normal theme (file MlQjHcmcNbJQ5QCYEaHozA, 08 Theme Kit /
+   Theme Dialog; the same orange as 사천팝 · 애니멀팝). Every popup is one orange panel: a 56px header (title left, red
+   square close right) over a sunken dark content slot. Buttons are flat (gradient, 2.5px edge, a small drop, no
+   lift): colour still says what a button does (green go on, blue try again, yellow hint, orange the quiet base),
+   size says how much it matters. Fonts stay the game's own (Jua titles, Pretendard labels). */
 :root {
-  --cream-50: #fffcf5; --cream-100: #fbefd8; --cream-200: #f5e7cb; --rim: #e6cfa4; --rim-base: #d8b985; --divider: #ecd9b5;
-  --surface: linear-gradient(180deg, var(--cream-50), var(--cream-100));
+  /* Theme Popup, cream (2026-11-09: the Figma Normal shapes in a cream palette, the orange was too strong over the
+     painted stages): cream board, warm tan edge, a light sunken slot with dark brown words */
+  --tp: #fbefd8; --tp-edge: #b98b52; --tp-head: rgba(255,255,255,.45); --tp-hi: rgba(255,255,255,.75); --tp-title-ol: #7a4a1e;
+  --tp-slot: rgba(150,100,40,.13); --tp-card: rgba(255,255,255,.6); --tp-ink: #5b3d27; --tp-ink-2: #8a6a48; --tp-gold: #d07a1a;
+  --tp-pill: #6b4a2b;
+  /* the quiet button and the HUD sign: cream with a tan edge */
+  --cb1: #fffaf0; --cb2: #f1dfbd; --cb-edge: #b98b52; --cb-ink: #5b3d27;
+  /* kept for the tutorial bubble and the screens that are not themed popups */
+  --cream-50: #fffcf5; --cream-100: #fbefd8; --cream-200: #f5e7cb; --rim: #e6cfa4; --rim-base: #d8b985; --divider: rgba(255,213,147,.35);
   --ink-1: #4a3424; --ink-2: #7a5a3c; --ink-3: #9a7650;
-  --go-a: #66d457; --go-b: #3cb03d; --go-base: #2a8a2e; --go-edge: #34993a; --go-ts: #24802b;
-  --again-a: #46b4ff; --again-b: #1f8fef; --again-base: #136cc0; --again-edge: #1a7fd8; --again-ts: #145ea8;
-  --hint-a: #ffd84d; --hint-b: #ffbb1c; --hint-base: #c98a0a; --hint-edge: #e6a414; --hint-ink: #5a3608;
+  --go-ts: rgba(31,101,18,.45);
   --accent: #e2662a;
 }
 
-/* GamePanel: one material; --lift and the drop grow with how much the panel matters */
-.gp { --lift: 3px; --drop-y: 8px; --drop-b: 16px; --drop-a: .18; background: var(--surface); color: var(--ink-1); box-sizing: border-box; border: 0;
-  box-shadow: inset 0 0 0 1.5px var(--rim), 0 var(--lift) 0 var(--rim-base), 0 var(--drop-y) var(--drop-b) rgba(60,38,16,var(--drop-a)); }
-.gp-hud { border-radius: 20px; }
-.gp-dialog { --lift: 5px; --drop-y: 18px; --drop-b: 30px; --drop-a: .32; border-radius: 26px; }
-.gp-result { --lift: 6px; --drop-y: 24px; --drop-b: 40px; --drop-a: .40; border-radius: 28px; }
+/* GamePanel = Theme Popup (Normal): orange board, 4px darker edge, a lit top and a shaded bottom inside */
+.gp { box-sizing: border-box; color: var(--tp-ink); }
+.gp-dialog { position: relative; display: flex; flex-direction: column; overflow: visible; padding: 0; border: 4px solid var(--tp-edge); border-radius: 22px;
+  background: var(--tp); box-shadow: inset 0 -5px 0 rgba(185,139,82,.3), inset 0 3px 0 rgba(255,255,255,.75), 0 22px 60px rgba(0,0,0,.32); }
+/* header: fixed 56px, the title on the left, the red square close on the right */
+.tpHead { position: relative; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 56px; box-sizing: border-box;
+  padding: 0 10px 0 18px; border-bottom: 3px solid var(--tp-edge); border-radius: 18px 18px 0 0; background: var(--tp-head); box-shadow: 0 1.5px 0 var(--tp-hi); }
+/* the 7px outline reaches past the letters: room inside the clipping box (overflow is hidden for the ellipsis) */
+.tpTitle { min-width: 0; margin: -4px 0; padding: 6px 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left;
+  font: 400 24px/1.2 var(--font-title); letter-spacing: -.3px; color: #fff;
+  -webkit-text-stroke: 7px var(--tp-title-ol); paint-order: stroke fill; text-shadow: 0 2px 0 var(--tp-title-ol); }
+/* Theme Square Button · Red (40px): the header's close */
+.tpClose { flex: none; width: 40px; height: 40px; min-width: 40px; min-height: 40px; padding: 0; border: 2.5px solid #8a1810; border-radius: 10px;
+  background: url('/assets/ui/theme/x.svg') center / 22px no-repeat, linear-gradient(#ff6a5a, #d9322a);
+  box-shadow: inset 0 -3px 0 rgba(138,24,16,.35), 0 2px 0 rgba(107,58,18,.24); font-size: 0; }
+/* a 44px touch area around the 40px square */
+.tpClose::before { content: ''; position: absolute; inset: -4px; }
+.tpClose:active { transform: translateY(2px); box-shadow: inset 0 -3px 0 rgba(138,24,16,.35); }
+.tpClose[hidden] { display: none; }
+/* the body: the sunken dark content slot */
+.tpSlot { margin: 16px 16px 20px; padding: 16px 14px; border-radius: 14px; background: var(--tp-slot);
+  box-shadow: inset 0 -1.5px 0 rgba(255,255,255,.6), inset 0 3px 5px rgba(120,80,30,.22), 0 1.5px 0 rgba(255,255,255,.7); }
+/* a translucent card inside the slot (the setting rows, the stage progress, the hearts) */
+.tpCard { border-radius: 16px; background: var(--tp-card); }
 
-/* GameButton: role = colour, size = box and lift */
-.gb { --lift: 6px; position: relative; box-sizing: border-box; border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: var(--h); min-height: var(--h); min-width: var(--w, 0); padding: 0 20px; border-radius: calc(var(--h) / 2);
-  font-family: var(--font-ui); font-size: var(--fs); font-weight: 700; line-height: 1.1; color: var(--fg); text-shadow: 0 2px 0 var(--ts);
-  background: linear-gradient(180deg, var(--a), var(--b));
-  box-shadow: inset 0 0 0 1.5px var(--edge), inset 0 2px 0 rgba(255,255,255,.45), inset 0 -4px 0 rgba(0,0,0,.09),
-    0 var(--lift) 0 var(--base), 0 calc(var(--lift) + 5px) 14px rgba(40,25,10,.22); }
-.gb svg { width: var(--ic); height: var(--ic); flex: none; filter: drop-shadow(0 1.5px 0 var(--ts)); }
-.gb:active { transform: translateY(calc(var(--lift) - 2px));
-  box-shadow: inset 0 0 0 1.5px var(--edge), inset 0 3px 4px rgba(0,0,0,.12), 0 2px 0 var(--base), 0 4px 8px rgba(40,25,10,.18); filter: brightness(.96); }
-.gb:disabled { --a: #f0e8d8; --b: #e6dbc5; --base: #d3c4a6; --edge: #dccdb0; --fg: #b3a48b; --ts: transparent; transform: none;
-  box-shadow: inset 0 0 0 1.5px var(--edge), 0 3px 0 var(--base); }
-.gb-primary { --a: var(--go-a); --b: var(--go-b); --base: var(--go-base); --edge: var(--go-edge); --fg: #fff; --ts: var(--go-ts); }
-.gb-primary.retry { --a: var(--again-a); --b: var(--again-b); --base: var(--again-base); --edge: var(--again-edge); --ts: var(--again-ts); }
-.gb-special { --a: var(--hint-a); --b: var(--hint-b); --base: var(--hint-base); --edge: var(--hint-edge); --fg: var(--hint-ink); --ts: rgba(255,255,255,.45); }
-.gb-secondary { --lift: 4px; --a: var(--cream-50); --b: #f6e8cd; --base: var(--rim-base); --edge: var(--rim); --fg: var(--ink-2); --ts: rgba(255,255,255,.8); }
-.gb-utility { --lift: 3px; --a: var(--cream-50); --b: var(--cream-100); --base: var(--rim-base); --edge: var(--rim); --fg: var(--ink-2); --ts: rgba(255,255,255,.8);
-  --h: 52px; --ic: 24px; width: 52px; min-width: 52px; padding: 0; }
-.gb-l { --h: 64px; --fs: 22px; --ic: 26px; --w: 240px; }
-.gb-m { --h: 54px; --fs: 18px; --ic: 22px; --w: 170px; }
-/* the bar under the board: play-screen buttons stay calmer (4px lift) than a popup's main button, and no taller than
-   the bar always was (64px), so it covers no more of the board */
-.gb-bar { --lift: 4px; --h: 64px; --fs: 18px; --ic: 26px; --w: 128px; flex-direction: column; gap: 2px; border-radius: 22px; padding: 0 10px; }
-.gb-bar.gb-secondary { --h: 58px; --fs: 16px; --w: 72px; width: 72px; }
+/* HUD = the Figma Theme Title Plank (Normal): the orange sign with dark brown words, like the buttons */
+.gp-hud { border: 2px solid var(--cb-edge); border-radius: 14px; background: linear-gradient(180deg, var(--cb1), var(--cb2)); color: var(--cb-ink);
+  box-shadow: inset 0 -4px 0 rgba(185,139,82,.28), inset 0 3px 0 rgba(255,255,255,.8), 0 2px 0 rgba(107,58,18,.24), 0 4px 10px rgba(40,20,5,.18); }
 
-/* StatusChip: the level number and the hearts */
-.lvK { font: 700 15px var(--font-ui); color: var(--ink-2); }
-.lvN { font: 400 30px var(--font-title); color: var(--accent); }
+/* GameButton = Theme Button (Normal): flat. role = colour (Base orange · Green · Blue · Red · Disabled, and a hint
+   yellow from the Figma progress bar), size = box */
+.gb { position: relative; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: var(--h); min-height: var(--h); min-width: var(--w, 0); padding: 0 18px; border: 2.5px solid var(--bd); border-radius: var(--r, 12px);
+  font-family: var(--font-ui); font-size: var(--fs); font-weight: 700; line-height: 1.1; color: var(--fg); text-shadow: 0 1.2px 0 var(--ts);
+  background: linear-gradient(180deg, var(--b1), var(--b2)); box-shadow: 0 2px 0 rgba(107,58,18,.24); }
+.gb svg { width: var(--ic); height: var(--ic); flex: none; }
+.gb img.ic { width: var(--ic); height: var(--ic); flex: none; }
+.gb:active { transform: translateY(2px); box-shadow: none; filter: brightness(.97); }
+.gb:disabled { --b1: #cdbba2; --b2: #a8957a; --bd: #6e5e48; --fg: #fff3d7; --ts: rgba(110,94,72,.3); transform: none; box-shadow: 0 2px 0 rgba(107,58,18,.24); }
+.gb-secondary { --b1: var(--cb1); --b2: var(--cb2); --bd: var(--cb-edge); --fg: var(--cb-ink); --ts: rgba(255,255,255,.8); }
+.gb-primary { --b1: #8cde5e; --b2: #3ea52a; --bd: #1f6512; --fg: #fff; --ts: rgba(31,101,18,.45); }
+.gb-primary.retry { --b1: #78caff; --b2: #2e8fe0; --bd: #144f8a; --ts: rgba(20,79,138,.5); }
+.gb-special { --b1: #ffe27a; --b2: #ffc21f; --bd: #b9790a; --fg: #5a3608; --ts: rgba(255,246,205,.6); }
+.gb-danger { --b1: #ff8a7a; --b2: #e5484d; --bd: #8f1d22; --fg: #fff; --ts: rgba(143,29,34,.45); }
+/* Theme Round Button (Normal, M): the round orange settings button, the Figma icon pack picture */
+.gb-utility { --h: 46px; width: 46px; min-width: 46px; height: 46px; min-height: 46px; padding: 0; border: 2px solid var(--cb-edge); border-radius: 14px;
+  background: linear-gradient(180deg, var(--cb1), var(--cb2)); color: var(--cb-ink);
+  box-shadow: inset 0 -3px 0 rgba(185,139,82,.28), inset 0 2px 0 rgba(255,255,255,.8), 0 2px 0 rgba(107,58,18,.24); }
+.gb-utility svg { width: 24px; height: 24px; }
+.gb-utility:active { transform: translateY(2px); box-shadow: none; }
+.gb-l { --h: 52px; --fs: 20px; --ic: 24px; --w: 0; --r: 12px; }
+.gb-m { --h: 44px; --fs: 18px; --ic: 22px; --w: 0; --r: 10px; }
+/* the bar under the board: icon over a short word, no taller than the bar always was */
+.gb-bar { --h: 60px; --fs: 16px; --ic: 24px; --w: 96px; --r: 14px; flex-direction: column; gap: 1px; padding: 0 8px; }
+.gb-bar.gb-secondary { --w: 72px; }
+
+/* StatusChip: the level number and the hearts on the dark HUD pill */
+.lvK { font: 400 14px/1 var(--font-title); color: var(--cb-ink); text-shadow: 0 1.5px 0 #fff; }
+.lvN { font: 400 18px/1 var(--font-title); color: var(--cb-ink); text-shadow: 0 1.5px 0 #fff; }
 /* the full heart is a variable so a breaking heart can draw its two halves with it (index.html heartBreak) */
 .heart { display: block; background: no-repeat center / contain; --heart-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f4645a'/%3E%3Cstop offset='1' stop-color='%23d83a34'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M12 20.5 3.6 12.3A5.6 5.6 0 0 1 12 4.9a5.6 5.6 0 0 1 8.4 7.4z' fill='url(%23g)' stroke='%239a2c24' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M6.6 7.6c.8-1 2-1.3 2.9-.9' stroke='%23fff' stroke-width='1.4' stroke-linecap='round' fill='none' opacity='.75'/%3E%3C/svg%3E"); }
 .heart.full { background-image: var(--heart-full); }
-.heart.empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 20.5 3.6 12.3A5.6 5.6 0 0 1 12 4.9a5.6 5.6 0 0 1 8.4 7.4z' fill='%23f1e4cd' stroke='%23d3bd99' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.heart.empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 20.5 3.6 12.3A5.6 5.6 0 0 1 12 4.9a5.6 5.6 0 0 1 8.4 7.4z' fill='%23000' fill-opacity='.28' stroke='%23c99a6a' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 
-/* a switch row for the settings card: the label and icon on the left, the switch and its word on the right */
-.toggle { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 0 14px 0 16px; box-sizing: border-box; border: 0; border-radius: 18px;
-  background: var(--cream-200); box-shadow: inset 0 2px 4px rgba(110,70,30,.18); font: 700 19px var(--font-ui); color: var(--ink-1); }
+/* a switch row for the settings card (Figma P03): the label on the left, the Theme Toggle picture on the right
+   (on = green knob right, off = red knob left). The word stays for screen readers only. */
+/* the settings cards (Figma P03): translucent cards of rows inside the slot, the version under them */
+.setCard { display: flex; flex-direction: column; padding: 6px 14px; border-radius: 16px; background: var(--tp-card); }
+.setCard + .setCard { margin-top: 12px; }
+.setVersion { margin: 12px 0 0; font-size: 13px; font-weight: 600; color: var(--tp-ink-2); text-align: center; }
+.linkRow { display: flex; align-items: center; width: 100%; min-height: 48px; min-width: 0; padding: 0 2px; border: 0; border-radius: 0; background: none; box-shadow: none;
+  font: 700 17px var(--font-ui); color: var(--tp-ink); text-shadow: none; text-align: left; }
+.linkRow span { flex: 1; }
+.linkRow::after { content: '›'; font-size: 22px; color: var(--tp-ink-2); }
+.linkRow:active { transform: none; box-shadow: none; opacity: .75; }
+/* a legal page: only its text box scrolls */
+.legal { height: min(320px, calc(100dvh - 300px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 14px; border-radius: 16px; background: var(--tp-card);
+  color: var(--tp-ink); font-size: 14px; line-height: 1.5; text-align: left; word-break: keep-all; overflow-wrap: anywhere; touch-action: pan-y; user-select: text; }
+.legal::-webkit-scrollbar { display: none; }
+.legal h1, .legal h2, .legal h3 { margin: 14px 0 4px; font-size: 16px; line-height: 1.5; }
+.legal h3 { font-size: 14px; }
+.legal > :first-child { margin-top: 0; }
+.legal p { margin: 0 0 6px; }
+.legal ol, .legal ul { margin: 0 0 6px; padding-left: 1.3em; }
+.legal table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 12px; }
+.legal th, .legal td { border: 1px solid rgba(120,80,30,.25); padding: 4px; vertical-align: top; }
+.legal th { background: rgba(150,100,40,.12); }
+.legal a { color: var(--tp-gold); }
+.legal hr { border: 0; border-top: 1px solid rgba(120,80,30,.2); }
+.toggle { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; min-width: 0; padding: 0 2px; box-sizing: border-box; border: 0; border-radius: 0;
+  background: none; box-shadow: none; font: 700 17px var(--font-ui); color: var(--tp-ink); text-shadow: none; }
+.toggle:active { transform: none; box-shadow: none; }
 .toggle .tName { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-.toggle .tName svg { width: 26px; height: 26px; color: var(--ink-2); }
-.toggle .tWord { font: 700 16px var(--font-ui); color: var(--go-ts); min-width: 2.6em; text-align: right; }
-.toggle .tTrack { position: relative; flex: none; width: 62px; height: 36px; border-radius: 18px; background: linear-gradient(180deg, var(--go-a), var(--go-b));
-  box-shadow: inset 0 0 0 1.5px var(--go-edge), inset 0 2px 3px rgba(0,0,0,.12); transition: background .15s; }
-.toggle .tKnob { position: absolute; top: 4px; left: 30px; width: 28px; height: 28px; border-radius: 50%; background: #fff; box-shadow: 0 2px 3px rgba(40,25,10,.3); transition: left .15s; }
-.toggle.muted .tTrack { background: #e3d5bb; box-shadow: inset 0 0 0 1.5px #d3bf9b, inset 0 2px 3px rgba(0,0,0,.1); }
-.toggle.muted .tKnob { left: 4px; }
-.toggle.muted .tWord { color: var(--ink-3); }
+.toggle .tName svg { width: 24px; height: 24px; color: var(--tp-ink); }
+.toggle .tWord { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.toggle .tTrack { flex: none; width: 60px; height: 32px; background: url('/assets/ui/theme/toggle-on.webp') 0 0 / 60px 32px no-repeat; }
+.toggle .tKnob { display: none; }
+.toggle.muted .tTrack { background-image: url('/assets/ui/theme/toggle-off.webp'); }
 .toggle.muted .tName .on, .toggle:not(.muted) .tName .off { display: none; }
+
+/* 하트·코인 (game/livesUi.ts, the 사천팝 rules): two small signs beside the level, each opens its popup */
+#res { display: flex; gap: 6px; margin-top: 3px; pointer-events: auto; }
+.res { display: flex; align-items: center; gap: 5px; height: 46px; min-height: 46px; min-width: 0; padding: 0 6px 0 8px; font: 400 20px/1 var(--font-title); }
+/* fixed widths so a changing count or timer never moves what is to its right; the numbers centre in the space left */
+#lives { width: 108px; padding-right: 6px; }
+#coins { width: 100px; padding-right: 6px; }
+/* a green "+" at the right end of each pill: the pill already opens the heart refill or the shop */
+#lives::after, #coins::after { content: '+'; flex: none; display: grid; place-items: center; width: 22px; height: 22px; margin-left: 2px; border-radius: 50%; box-sizing: border-box;
+  background: linear-gradient(180deg, #7bd64d, #3ea52a); border: 2px solid #1f6512; box-shadow: inset 0 2px 0 rgba(255,255,255,.45), 0 1.5px 0 rgba(31,101,18,.35);
+  font: 400 20px/1 var(--font-title); color: #fff; text-shadow: 0 1.5px 0 #1f6512; padding-bottom: 2px; }
+.res .resN, .res .resT { font-variant-numeric: tabular-nums; }
+#coins .resN { flex: 1; text-align: left; }
+.res .resIcon { width: 24px; height: 24px; object-fit: contain; }
+.res .resN { font-weight: 400; color: var(--cb-ink); text-shadow: 0 1.5px 0 #fff; }
+.res .resT { font: 400 13px/1 var(--font-title); color: var(--tp-ink-2); }
+.res .resT:empty { display: none; }
+.res:active { transform: translateY(2px); }
+
+/* the hearts popup */
+.livesCard { display: flex; flex-direction: column; align-items: center; padding: 14px 12px 12px; margin-bottom: 12px; }
+.livesHero { width: 72px; height: 72px; object-fit: contain; }
+.livesBig { margin: 4px 0 0; font: 400 32px/1.1 var(--font-title); color: var(--tp-ink); }
+.livesLine { margin: 4px 0 6px; font: 400 18px/1.3 var(--font-title); color: var(--tp-gold); }
+.livesNote { font-size: 15px; color: var(--tp-ink-2); }
+.livesWarn { margin-top: 6px; font-size: 15px; color: #c4402a; }
+.popBtns.col { flex-direction: column; }
+.popBtns.col .gb { flex: none; width: 100%; }
+.gb img.ic { width: 26px; height: 26px; object-fit: contain; }
+
+/* the shop (Figma P08): the coin balance, then cards whose list scrolls inside the slot */
+#modalHead { margin-left: auto; }
+.shopPill { display: flex; align-items: center; gap: 6px; width: max-content; margin: 0; padding: 3px 12px 3px 4px; border-radius: 999px; background: var(--tp-pill);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.45); font: 400 18px/1 var(--font-title); color: #fff; }
+.shopPill img { width: 26px; height: 26px; object-fit: contain; }
+.shop { display: flex; flex-direction: column; gap: 8px; max-height: min(52dvh, 420px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; touch-action: pan-y; }
+.shop::-webkit-scrollbar { display: none; }
+.shopItem { display: flex; flex-direction: column; gap: 8px; padding: 8px; text-align: left; }
+.shopTop { display: flex; align-items: center; gap: 8px; }
+.shopIcon { width: 44px; height: 44px; object-fit: contain; flex: none; }
+.shopInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.shopInfo b { font: 400 17px/1.2 var(--font-title); color: var(--tp-ink); }
+.shopInfo span { font-size: 13px; line-height: 1.3; color: var(--tp-ink-2); word-break: keep-all; }
+.shopPrice { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.shopBadge { padding: 1px 8px; border-radius: 999px; background: #ff5b5b; color: #fff; font-size: 12px; line-height: 1.3; }
+.shopCoin { display: flex; align-items: center; gap: 3px; font: 400 18px/1 var(--font-title); color: var(--tp-ink); }
+.shopCoin img { width: 22px; height: 22px; }
+.shopWon { font: 400 17px/1 var(--font-title); color: var(--tp-ink); white-space: nowrap; }
+.shopBuy { width: 100%; --h: 40px; }
+
+/* a short note over everything (toast) and the web preview's mock ad */
+#toast { position: fixed; left: 50%; top: 42%; z-index: 30; transform: translate(-50%, -50%) scale(.9); padding: 10px 20px; border-radius: 18px; background: rgba(40,28,16,.88);
+  color: #fff; font: 400 18px/1.3 var(--font-title); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s, transform .2s; }
+#toast.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.mockAd { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.82); }
+.mockAd__box { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #fff; font: 400 22px var(--font-title); }
+.mockAd__bar { display: block; width: 180px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.25); overflow: hidden; position: relative; }
+.mockAd__bar::after { content: ''; position: absolute; inset: 0; background: #ffd84d; transform-origin: left; animation: mockAd 2.2s linear forwards; }
+@keyframes mockAd { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.res .resCol { display: flex; flex: 1; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; min-width: 22px; text-align: left; }
+.res .resCol .resT { font-size: 11px; }
+
+/* 선물 상자 (game/livesUi.ts): in play, right edge just under the settings button (46px at --toss-top + 11px). Ready = cream gift "광고보고 아이템 받기",
+   filling = grey gift with the time left */
+#gift { position: fixed; right: 12px; top: calc(var(--toss-top) + 67px); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: 64px; min-width: 0; min-height: 0; height: auto; padding: 5px 3px 6px; border: 2.5px solid #6e6a64; border-radius: 15px;
+  background: linear-gradient(180deg, #a9a5a0, #85817b); box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), inset 0 2px 0 rgba(255,255,255,.3), 0 3px 0 rgba(40,25,10,.25);
+  font: 400 10.5px/1.15 var(--font-title); color: #f3f1ee; text-shadow: 0 1px 0 rgba(0,0,0,.25); white-space: pre-line; text-align: center; }
+#gift .giftIcon { width: 36px; height: 36px; object-fit: contain; }
+#gift.ready { border-color: var(--cb-edge); background: linear-gradient(180deg, var(--cb1), var(--cb2)); color: var(--cb-ink); text-shadow: 0 1px 0 #fff;
+  box-shadow: inset 0 -3px 0 rgba(185,139,82,.28), inset 0 2px 0 rgba(255,255,255,.8), 0 3px 0 rgba(107,58,18,.24); animation: giftBeat 1.6s ease-in-out infinite; }
+#gift:active { transform: translateY(2px); }
+@keyframes giftBeat { 50% { transform: scale(1.06); } }
+body.on-title #gift { display: none; }
+body.tut-on #gift { filter: brightness(.38); pointer-events: none; }
+
+/* the box popup and the shop's owned counts */
+.rewardRow { display: flex; justify-content: center; gap: 18px; margin: 6px 0; }
+.reward { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 400 17px/1 var(--font-title); color: var(--tp-ink); }
+.rewardIcon { width: 46px; height: 46px; object-fit: contain; }
+.shopOwn { font-size: 12px; color: var(--tp-gold); }
+
+/* small phones (≤360 px wide, e.g. 320×568): the top row, the bottom bar and the box fit without overlapping */
+@media (max-width: 360px) {
+  #hud { gap: 4px !important; padding-left: 8px !important; }
+  #res { gap: 4px; }
+  #levelLabel { padding: 0 9px !important; gap: 3px !important; }
+  .lvK { font-size: 15px; }
+  .lvN { font-size: 19px; }
+  #lives { width: 86px !important; }
+  #coins { width: 74px !important; }
+  .res { gap: 3px; padding-left: 6px; font-size: 17px; }
+  .res .resIcon { width: 20px; height: 20px; }
+  #settings { right: 8px !important; }
+  #bar .gb-bar span { white-space: nowrap; font-size: 14px; }
+  #gift { width: 64px; padding: 4px 3px 5px; font-size: 10.5px; border-radius: 14px; }
+  #gift .giftIcon { width: 36px; height: 36px; }
+}
+.gb-bar span { white-space: nowrap; }
+/* short screens (≤640 px tall): the title's logo higher and the buttons lower so they never overlap */
+@media (max-height: 640px) {
+  #title.has-intro .tHead { top: 31% !important; }
+  #title.has-intro .tButtons { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 24px) !important; }
+}

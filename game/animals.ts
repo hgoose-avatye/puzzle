@@ -207,10 +207,10 @@ export class PieceView {
       const q = trackAt(this.track, sHead - i * BLOCK_SPACING);
       seg.position.copy(this.world(q.x, q.y));
       seg.rotation.y = q.angle;
-      // idle sway or running hop, delayed block by block so the chain ripples
-      const phase = this.clock * (running ? 16 : 2.6) - i * 0.7;
+      // running hop, delayed block by block so the chain ripples; standing still is still (2026-11-09: no idle bob)
+      const phase = this.clock * 16 - i * 0.7;
       const part = seg.children[0];
-      part.position.y = running ? Math.abs(Math.sin(phase)) * 0.09 : Math.sin(phase) * 0.018;
+      part.position.y = running ? Math.abs(Math.sin(phase)) * 0.09 : 0;
     });
     this.halos.forEach((halo, i) => {
       const q = trackAt(this.track, sHead - i * BLOCK_SPACING);

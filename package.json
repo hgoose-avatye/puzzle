@@ -12,6 +12,8 @@
     "dev": "vite viewer",
     "dev:game": "vite --config experiments/2-5d-game/vite.config.ts",
     "build:game": "tsc --noEmit && vite build --config experiments/2-5d-game/vite.config.ts",
+    "build:toss": "tsc --noEmit && vite build --config experiments/2-5d-game/vite.config.ts --mode toss",
+    "package:toss": "npm run build:toss && ait build",
     "test:e2e": "node tests/e2e/run.mjs"
   },
   "repository": {
@@ -27,6 +29,8 @@
   },
   "homepage": "https://github.com/hgoose-avatye/puzzle#readme",
   "devDependencies": {
+    "@apps-in-toss/ait-format": "^1.0.0",
+    "@apps-in-toss/web-framework": "^3.3.0",
     "@types/three": "^0.186.0",
     "puppeteer-core": "^25.16.0",
     "typescript": "^7.0.2",
