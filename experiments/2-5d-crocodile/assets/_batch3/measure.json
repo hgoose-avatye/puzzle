@@ -1,0 +1,140 @@
+{
+ "snake_head_000": {
+  "w": 0.9,
+  "top": 219,
+  "bottom": 647
+ },
+ "snake_head_090": {
+  "w": 1.03,
+  "top": 225,
+  "bottom": 640
+ },
+ "snake_head_180": {
+  "w": 0.86,
+  "top": 209,
+  "bottom": 640
+ },
+ "snake_body_000": {
+  "w": 0.88,
+  "top": 222,
+  "bottom": 640
+ },
+ "snake_body_090": {
+  "w": 0.94,
+  "top": 241,
+  "bottom": 640
+ },
+ "snake_body_180": {
+  "w": 0.88,
+  "top": 222,
+  "bottom": 640
+ },
+ "snake_tail_000": {
+  "w": 0.82,
+  "top": 222,
+  "bottom": 640
+ },
+ "snake_tail_090": {
+  "w": 1.0,
+  "top": 254,
+  "bottom": 640
+ },
+ "snake_tail_180": {
+  "w": 0.81,
+  "top": 222,
+  "bottom": 640
+ },
+ "snake_k": 3.195,
+ "caterpillar_head_000": {
+  "w": 0.89,
+  "top": 109,
+  "bottom": 643
+ },
+ "caterpillar_head_090": {
+  "w": 0.95,
+  "top": 103,
+  "bottom": 640
+ },
+ "caterpillar_head_180": {
+  "w": 0.88,
+  "top": 112,
+  "bottom": 640
+ },
+ "caterpillar_body_000": {
+  "w": 0.88,
+  "top": 262,
+  "bottom": 643
+ },
+ "caterpillar_body_090": {
+  "w": 0.95,
+  "top": 278,
+  "bottom": 640
+ },
+ "caterpillar_body_180": {
+  "w": 0.87,
+  "top": 259,
+  "bottom": 640
+ },
+ "caterpillar_tail_000": {
+  "w": 0.82,
+  "top": 256,
+  "bottom": 640
+ },
+ "caterpillar_tail_090": {
+  "w": 0.99,
+  "top": 275,
+  "bottom": 640
+ },
+ "caterpillar_tail_180": {
+  "w": 0.79,
+  "top": 269,
+  "bottom": 640
+ },
+ "caterpillar_k": 3.129,
+ "dachshund_head_000": {
+  "w": 1.08,
+  "top": 191,
+  "bottom": 642
+ },
+ "dachshund_head_090": {
+  "w": 0.93,
+  "top": 193,
+  "bottom": 642
+ },
+ "dachshund_head_180": {
+  "w": 1.06,
+  "top": 200,
+  "bottom": 640
+ },
+ "dachshund_body_000": {
+  "w": 0.88,
+  "top": 320,
+  "bottom": 640
+ },
+ "dachshund_body_090": {
+  "w": 1.03,
+  "top": 330,
+  "bottom": 640
+ },
+ "dachshund_body_180": {
+  "w": 0.85,
+  "top": 317,
+  "bottom": 640
+ },
+ "dachshund_tail_000": {
+  "w": 0.77,
+  "top": 261,
+  "bottom": 641
+ },
+ "dachshund_tail_090": {
+  "w": 1.0,
+  "top": 235,
+  "bottom": 643
+ },
+ "dachshund_tail_180": {
+  "w": 0.77,
+  "top": 238,
+  "bottom": 640
+ },
+ "dachshund_k": 2.926
+}

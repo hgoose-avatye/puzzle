@@ -1,0 +1,22 @@
+{
+  "species": "chick",
+  "note": "approved 2026-11-02: facings cut from received/chick_4dir_sheet.png into the SPRITES.md frame (tools/chick_import.py), 58° camera with no yaw. 0, 180, 270 drawn; 90 is the mirror of 270; 45/135/225/315 use the nearest. The earlier cut-outs (chick_front/back/side_right.png, three-quarter views) are kept beside this file.",
+  "frame": {
+    "size": 1024,
+    "cellPx": 512,
+    "anchor": [
+      512,
+      640
+    ]
+  },
+  "scale": 1.2,
+  "parts": {
+    "single": {
+      "drawn": {
+        "0": "approved/chick_000.png",
+        "180": "approved/chick_180.png",
+        "270": "approved/chick_270.png"
+      }
+    }
+  }
+}

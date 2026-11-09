@@ -1,0 +1,277 @@
+// P0 checks in the real game (docs/rules.md R1, R3, R5, traffic, clear timing, retry and fail cleanup).
+// Each scenario opens its own page; a scenario that throws counts as one FAIL and the run goes on.
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * @param {import('puppeteer-core').Browser} browser
+ * @param {string} base game URL, e.g. http://localhost:5299/
+ * @param {{ pass: (name: string, info?: string) => void, fail: (name: string, info?: string) => void,
+ *           skip: (name: string, info?: string) => void, info: (text: string) => void }} report
+ */
+export async function runP0Checks(browser, base, report) {
+  const url = (query) => new URL(query, base).href;
+  const CROSS = url('?demo=cross');
+  const check = (name, ok, info = '') => (ok ? report.pass(name, info) : report.fail(name, info));
+
+  async function open(address) {
+    const p = await browser.newPage();
+    await p.setViewport({ width: 390, height: 780, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    p.errs = [];
+    p.on('pageerror', (e) => p.errs.push(String(e)));
+    await p.goto(address, { waitUntil: 'networkidle0' });
+    await p.waitForFunction(() => window.__game?.ids().length > 0, { timeout: 15000 });
+    await sleep(500);
+    // a first-time tutorial (a fresh save on a ?level= entry) is skipped so the checks play the level as it is
+    await p.evaluate(() => { const t = document.getElementById('tutorial'); if (t && !t.hidden) [...t.querySelectorAll('.tutSkip, #tutorial.info .tutBubble')].find((b) => !b.hidden)?.click(); });
+    // per-frame monitor: closest gap between different animals' blocks while any runs, and the win shown while animals still run
+    await p.evaluate(() => {
+      const g = window.__game; window.__mon = { min: 9, earlyPopup: 0, waits: {}, resumes: {}, startS: {} };
+      (function s() {
+        const m = window.__mon;
+        const vs = [...g.views().values()].filter((v) => v.group.visible);
+        for (let i = 0; i < vs.length; i++) for (let j = i + 1; j < vs.length; j++) {
+          if (!(vs[i].running || vs[j].running)) continue;
+          for (const a of vs[i].segments) for (const c of vs[j].segments) m.min = Math.min(m.min, Math.hypot(a.position.x - c.position.x, a.position.z - c.position.z));
+        }
+        for (const r of g.traffic?.runners ?? []) {
+          m.startS[r.id] ??= r.s;
+          if (r.state === 'waiting') m.waits[r.id] = Math.max(m.waits[r.id] ?? -1, r.s);
+          else if (m.waits[r.id] !== undefined) m.resumes[r.id] = true;
+        }
+        const pop = document.getElementById('popup');
+        if (!pop.hidden && document.getElementById('popupTitle').textContent === '구출 성공!' && [...g.views().values()].some((v) => v.running)) m.earlyPopup++;
+        requestAnimationFrame(s);
+      })();
+    });
+    return p;
+  }
+  const st = (p) => p.evaluate(() => window.__game.state());
+  const pos = (p, id) => p.evaluate((i) => window.__game.screenOf(i), id);
+  const tap = async (p, id) => { const q = await pos(p, id); await p.touchscreen.tap(q.x, q.y); };
+  const popup = (p) => p.evaluate(() => (document.getElementById('popup').hidden ? null : document.getElementById('popupTitle').textContent));
+  const settled = (p) => p.evaluate(() => { const g = window.__game; return { runners: g.traffic.runners.length, running: [...g.views().values()].filter((v) => v.running).length, visible: [...g.views().entries()].filter(([, v]) => v.group.visible).map(([k]) => k).sort() }; });
+
+  /** Run one scenario on a fresh page; an exception is reported as a failure of that scenario. */
+  async function scenario(name, address, body) {
+    let p;
+    try {
+      p = await open(address);
+      await body(p);
+    } catch (e) {
+      report.fail(`${name} (scenario crashed)`, String(e?.message ?? e));
+    } finally {
+      await p?.close().catch(() => {});
+    }
+  }
+
+  await scenario('R1 touch double tap', CROSS, async (p) => {
+    await p.evaluate(() => { window.__ups = []; document.querySelector('canvas').addEventListener('pointerup', () => window.__ups.push(performance.now())); });
+    await tap(p, 4); await sleep(80); await tap(p, 4);
+    const a = await st(p);
+    const gap = await p.evaluate(() => Math.round(window.__ups[1] - window.__ups[0]));
+    // the guard is 400 ms by design: when a slow headless frame spreads the two taps further apart, there is nothing to judge
+    if (gap >= 400) { report.skip('R1 touch double tap', `the taps reached the page ${gap} ms apart`); return; }
+    await sleep(500); await tap(p, 4);
+    const c = await st(p);
+    check('R1 quick double tap on blocked animal: one heart', a.hearts === 2 && a.blocked === 1, `${gap} ms apart, hearts ${a.hearts}, blocked ${a.blocked}`);
+    check('R1 tap again after 0.4 s counts', c.hearts === 1 && c.blocked === 2, `hearts ${c.hearts}`);
+  });
+
+  await scenario('R1 same moment', CROSS, async (p) => {
+    const a = await p.evaluate(() => { window.__game.tap(4); window.__game.tap(4); return window.__game.state(); });
+    check('R1 two taps at the same moment on a blocked animal: one heart', a.hearts === 2 && a.blocked === 1, `hearts ${a.hearts}, blocked ${a.blocked}`);
+  });
+
+  await scenario('R1 way opened', CROSS, async (p) => {
+    await tap(p, 4); await sleep(60); await tap(p, 2); await sleep(60); await tap(p, 4);
+    const a = await st(p);
+    check('R1 repeat after the way opened still exits', !a.alive.includes(4) && a.hearts === 2, `alive ${a.alive}, hearts ${a.hearts}`);
+  });
+
+  // the demo bomb board: 5 can be pushed one cell, 1 can leave, the bomb (2) starts at 2
+  await scenario('R1 bomb level', url('?demo=bomb'), async (p) => {
+    const blocked = 5;
+    const f0 = await st(p);
+    await tap(p, blocked); await sleep(80); await tap(p, blocked);
+    const f1 = await st(p);
+    const moved = JSON.stringify(f0.cells[blocked]) !== JSON.stringify(f1.cells[blocked]);
+    const drop = Object.keys(f0.fuses).map((k) => f0.fuses[k] - f1.fuses[k]);
+    // a push burns every fuse once; the repeat within 0.4 s is the same tap (R1); a blocked tap that goes nowhere burns nothing
+    // (the demo keeps the old rule's three hearts for these checks: the double tap costs one, as R1 says)
+    check('R1 bomb level: double tap on a blocked animal counts once and burns each fuse at most once', drop.every((d) => d === (moved ? 1 : 0)) && f1.blocked === 1 && (f0.hearts == null ? f1.hearts == null : f1.hearts === f0.hearts - 1), `moved ${moved}, fuse drops ${drop}, blocked ${f1.blocked}, hearts ${f0.hearts}->${f1.hearts}`);
+    const free = 1;
+    await tap(p, free); await sleep(80); await tap(p, free);
+    const f2 = await st(p);
+    const drop2 = Object.keys(f1.fuses).map((k) => f1.fuses[k] - (f2.fuses[k] ?? NaN));
+    check('bomb level: an exit (tapped twice) lowers no fuse', drop2.every((d) => d === 0) && !f2.alive.includes(free), `fuse drops ${drop2}`);
+    await sleep(2500);
+    const f3 = await st(p);
+    check('bomb level: fuses unchanged while the runner finishes', JSON.stringify(f3.fuses) === JSON.stringify(f2.fuses), JSON.stringify(f3.fuses));
+  });
+
+  await scenario('R5 two fingers', CROSS, async (p) => {
+    const cdp = await p.createCDPSession();
+    const A = await pos(p, 1), B = await pos(p, 3);
+    const pt = (q, id) => ({ x: q.x, y: q.y, id });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pt(A, 0)] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pt(A, 0), pt(B, 1)] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [pt(A, 0)] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(100);
+    const a = await st(p);
+    check('R5 paths hidden after both fingers lift', (await p.evaluate(() => [...window.__game.views().values()].filter((v) => v.chevrons.visible).length)) === 0);
+    check('R5 second finger does not cancel the first', !a.alive.includes(1) && !a.alive.includes(3) && a.taps === 2, `alive ${a.alive}, taps ${a.taps}`);
+    // two fingers on one blocked animal: one tap
+    const C = await pos(p, 4);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pt(C, 0)] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pt(C, 0), pt({ x: C.x + 3, y: C.y + 3 }, 1)] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [pt(C, 0)] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(100);
+    const c = await st(p);
+    const paths = await p.evaluate(() => [...window.__game.views().values()].filter((v) => v.chevrons.visible).length);
+    check('R5 two fingers on one blocked animal: one heart', c.hearts === 2 && c.blocked === 1, `hearts ${c.hearts}`);
+    check('R5 no path left showing after fingers lift', paths === 0, `paths showing ${paths}`);
+  });
+
+  await scenario('traffic and clear', CROSS, async (p) => {
+    await tap(p, 1); await sleep(30); await tap(p, 2); await sleep(150); await tap(p, 4); await sleep(400); await tap(p, 3);
+    const logical = await st(p);
+    const early = await popup(p);
+    await sleep(4000);
+    const m = await p.evaluate(() => window.__mon);
+    const s = await settled(p);
+    check('logic: clear decided at the last tap', logical.cleared === true);
+    check('screen: clear popup not shown while animals still run', early === null && m.earlyPopup === 0, `popup right after last tap: ${early}, frames with early popup ${m.earlyPopup}`);
+    check('no pass-through: different animals never closer than one cell', m.min >= 0.98, `closest ${m.min.toFixed(3)}`);
+    check('follower moved up before waiting', m.waits[2] !== undefined && m.waits[2] > m.startS[2] + 0.2, `2 waited at s=${m.waits[2]?.toFixed(2)} from ${m.startS[2]?.toFixed(2)}`);
+    check('waiting animals resume by themselves', Object.keys(m.waits).every((id) => m.resumes[id]), `waits ${JSON.stringify(m.waits)} resumes ${JSON.stringify(m.resumes)}`);
+    check('screen matches logic: every exited animal left the screen', s.runners === 0 && s.running === 0 && s.visible.length === 0, JSON.stringify(s));
+    check('clear popup shows once all are off', (await popup(p)) === '구출 성공!');
+    check('no page errors', p.errs.length === 0, p.errs.join(' | '));
+  });
+
+  await scenario('retry during a wait', CROSS, async (p) => {
+    await tap(p, 1); await sleep(30); await tap(p, 2);
+    for (let k = 0; k < 300 && (await p.evaluate(() => window.__game.traffic?.get(2)?.state)) !== 'waiting'; k++) await sleep(10);
+    const waiting = await p.evaluate(() => window.__game.traffic.get(2)?.state);
+    await p.click('#retry');
+    await p.click('#retryYes'); // something was tapped, so retry asks first
+    await sleep(50);
+    const s0 = await settled(p), a = await st(p);
+    await sleep(3000);
+    const s1 = await settled(p);
+    check('retry during a wait clears the queue', waiting === 'waiting' && s0.runners === 0 && s0.running === 0 && s0.visible.length === 4, `was ${waiting}, after ${JSON.stringify(s0)}`);
+    check('retry restores the start state', a.hearts === 3 && a.taps === 0 && a.alive.length === 4);
+    check('nothing from the old run fires after retry', (await popup(p)) === null && s1.visible.length === 4 && s1.runners === 0, JSON.stringify(s1));
+    check('no page errors', p.errs.length === 0, p.errs.join(' | '));
+  });
+
+  await scenario('fail and retry', CROSS, async (p) => {
+    await tap(p, 1); await sleep(20);
+    for (let k = 0; k < 3; k++) { await tap(p, 4); await sleep(420); }
+    const a = await st(p), title = await popup(p);
+    const runningAtFail = await p.evaluate(() => window.__game.traffic.runners.length);
+    await p.click('#popupBtn');
+    await sleep(2500);
+    const s = await settled(p), c = await st(p);
+    check('fail shows on the third blocked tap', a.failed && title === '하트가 모두 떨어졌어요', `${title}, runners then ${runningAtFail}`);
+    check('retry after fail: clean board, no stray clear', s.runners === 0 && s.visible.length === 4 && c.hearts === 3 && (await popup(p)) === null, JSON.stringify(s));
+    check('no page errors', p.errs.length === 0, p.errs.join(' | '));
+  });
+
+  // a tap lands on the animal drawn under the finger, not on the floor cell behind it (camera looks down at 58 degrees)
+  await scenario('tap picks the animal drawn there', url('?level=10'), async (p) => {
+    const t = await p.evaluate(() => {
+      const c = { ok: 0, wrong: 0, miss: 0 };
+      for (let y = 2; y < innerHeight; y += 6) for (let x = 2; x < innerWidth; x += 6) {
+        const q = window.__game.probe(x, y);
+        if (q.seen === null || q.top !== 'canvas') continue;
+        c[q.picked === q.seen ? 'ok' : q.picked === null ? 'miss' : 'wrong']++;
+      }
+      return c;
+    });
+    const n = t.ok + t.wrong + t.miss;
+    // what is left is mostly the floor marks and plate edges, drawn as part of an animal but not tappable
+    check('tap picks the animal drawn there (level 10): at least 90%, another animal at most 3%', t.ok / n >= 0.9 && t.wrong / n <= 0.03, `ok ${(100 * t.ok / n).toFixed(1)}%, wrong ${(100 * t.wrong / n).toFixed(1)}%, miss ${(100 * t.miss / n).toFixed(1)}% of ${n} points`);
+  });
+
+  // ?demo=bomb: the cross board with a bomb (fuse 2) on 2 (two cells), which has to wait behind 1; 5 then 6 can be pushed one cell each (the fuse counts pushes)
+  const BOMB = url('?demo=bomb');
+  /** Every animal's dynamite as drawn (number, red at 1); the old HUD chip and bar are gone (2026-11-08). */
+  const dynamite = (p) => p.evaluate(() => ({ drawn: window.__game.dynamite(), chip: document.getElementById('bombChip'), bar: document.getElementById('bombBar') }));
+
+  await scenario('dynamite at 1 turns red on the animal itself', BOMB, async (p) => {
+    const before = await dynamite(p);
+    await tap(p, 5); await sleep(150); // a push: 5 runs one cell up to 3
+    const at1 = await dynamite(p);
+    if (process.env.E2E_SHOTS) await p.screenshot({ path: `${process.env.E2E_SHOTS}/dynamite-at-1.png` });
+    check('dynamite shows 2 on animal 2 at the start, not red; no HUD chip or bar exists', before.chip === null && before.bar === null && before.drawn.length === 1 && before.drawn[0].id === 2 && before.drawn[0].count === 2 && !before.drawn[0].danger, JSON.stringify(before));
+    check('after the push that bumps it, the dynamite shows 1 in red', at1.drawn[0]?.count === 1 && at1.drawn[0].danger === true, JSON.stringify(at1));
+  });
+
+  // two bombs (level 139): every dynamite shows its own number as fuses burn, and none is drawn once it has left
+  await scenario('two dynamites each show their own number', url('?level=139'), async (p) => {
+    const read = () => p.evaluate(() => {
+      const s = window.__game.state();
+      const fuses = Object.fromEntries(Object.entries(s.fuses).filter(([id]) => s.alive.includes(Number(id))).map(([id, f]) => [Number(id), f]));
+      const drawn = Object.fromEntries(window.__game.dynamite().map((d) => [d.id, d.count]));
+      return { fuses, drawn, failed: s.failed };
+    });
+    const seen = [];
+    for (let k = 0; k < 60; k++) {
+      seen.push(await read());
+      const done = await p.evaluate(() => { const g = window.__game; const s = g.state(); if (s.cleared || s.failed) return true; const id = g.hint(); if (id === null) return true; return g.tap(id) === 'repeat (R1)' ? 'wait' : false; });
+      if (done === true) break;
+      if (done === 'wait') await sleep(250);
+      await sleep(120);
+    }
+    const wrong = seen.filter((r) => !r.failed && JSON.stringify(r.fuses) !== JSON.stringify(r.drawn));
+    check('two dynamites: what is drawn on each animal equals its fuse after every tap, and leaves with it', wrong.length === 0 && seen.some((r) => Object.keys(r.fuses).length === 2), JSON.stringify({ wrong: wrong.slice(0, 3), steps: seen.length }));
+  });
+
+  await scenario('bomb at 1: bomb first is saved while it waits', BOMB, async (p) => {
+    await tap(p, 5); await settled(p); // fuse 1
+    await tap(p, 1); await sleep(30); await tap(p, 2); await sleep(30); await tap(p, 3);
+    let waited = false;
+    for (let k = 0; k < 300 && (await p.evaluate(() => window.__game.traffic.runners.length)) > 0; k++) {
+      if ((await p.evaluate(() => window.__game.traffic.get(2)?.state)) === 'waiting') waited = true;
+      await sleep(10);
+    }
+    const a = await st(p);
+    check('bomb at 1: tapping the bomb then another saves it, even though it waited behind a runner', waited && !a.failed && !a.alive.includes(2) && (await popup(p)) === null, `waited ${waited}, ${JSON.stringify(a)}`);
+  });
+
+  await scenario('bomb at 1: another first sets it off', BOMB, async (p) => {
+    await tap(p, 5); await settled(p); // fuse 1
+    await tap(p, 6); await sleep(30); await tap(p, 2); // the second push sets it off; the bomb's tap comes too late
+    const a = await st(p);
+    // 2.5D shows the bomb card after the burst (BOMB_BLAST_MS 400 in game/main.ts)
+    for (let k = 0; k < 50 && (await popup(p)) === null; k++) await sleep(20);
+    check('bomb at 1: tapping another animal first explodes it, the bomb tap after that is ignored', a.failed && a.alive.includes(2) && (await popup(p)) === '펑! 폭탄이 터졌어요', `${JSON.stringify(a)}, popup ${await popup(p)}`);
+  });
+
+  // run speed slowed so the first animal surely still runs when the level is lost
+  await scenario('fail while another animal runs', CROSS, async (p) => {
+    await p.evaluate(() => { window.__runSpeed = 1.2; });
+    await tap(p, 1); await sleep(20);
+    for (let k = 0; k < 3; k++) { await tap(p, 4); await sleep(420); }
+    const atFail = await p.evaluate(() => ({ runners: window.__game.traffic.runners.length, running: [...window.__game.views().values()].filter((v) => v.running).length }));
+    const title = await popup(p);
+    const titles = [];
+    for (let k = 0; k < 200 && (await p.evaluate(() => window.__game.traffic.runners.length)) > 0; k++) { titles.push(await popup(p)); await sleep(100); }
+    titles.push(await popup(p));
+    await sleep(300);
+    const after = await settled(p), a = await st(p);
+    check('fail while another animal runs: it was still running at the fail', atFail.runners === 1 && atFail.running === 1, JSON.stringify(atFail));
+    check('fail while another animal runs: fail popup shown at once and never replaced', title === '하트가 모두 떨어졌어요' && titles.every((t) => t === title), `${titles.length} samples, titles seen ${[...new Set(titles)].join(' / ')}`);
+    check('fail while another animal runs: the runner still leaves the board', after.runners === 0 && after.running === 0 && !after.visible.includes(1), JSON.stringify(after));
+    check('fail while another animal runs: rules frozen after the fail', a.failed && a.hearts === 0 && a.alive.length === 3, JSON.stringify(a));
+    await p.click('#popupBtn');
+    await sleep(1500);
+    const r = await settled(p), c = await st(p);
+    check('fail while another animal runs: retry is clean', r.runners === 0 && r.visible.length === 4 && c.hearts === 3 && (await popup(p)) === null, JSON.stringify(r));
+    check('no page errors', p.errs.length === 0, p.errs.join(' | '));
+  });
+}

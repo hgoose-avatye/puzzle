@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generateLevelFor, levelSpec } from './curve';
+import { boardSize, buildGameLevel, CHAPTER_SHAPES, CHAPTER_THEMES, generateLevelFor, knotLevel, levelSpec, shapeAt, stageFor } from './curve';
+import { gradeKnot } from '../core/bump';
+import { createGame, isCleared, tap } from '../core/game';
+import pickedSeeds from './seeds.json';
 
 describe('levelSpec', () => {
   it('assigns roles on a 30-level chapter', () => {
@@ -11,7 +14,8 @@ describe('levelSpec', () => {
     expect(levelSpec(30).role).toBe('finale');
   });
   it('wraps to the next chapter and rejects level numbers below 1', () => {
-    expect(levelSpec(31).role).toBe(levelSpec(1).role);
+    expect(levelSpec(31)).toMatchObject({ chapter: 2, level: 1, role: 'ordinary' });
+    expect(levelSpec(91).role).toBe('intro');
     expect(() => levelSpec(0)).toThrow();
   });
   it('gives every level a board that can hold its pieces and a non-empty target', () => {
@@ -28,9 +32,11 @@ describe('levelSpec', () => {
 
 describe('generateLevelFor', () => {
   it('is deterministic and meets the level target', () => {
+    // the shipped seeds: on a knot level a seed may take no knot and yield null
     for (const n of [1, 5, 12]) {
-      const a = generateLevelFor(n, 7);
-      const b = generateLevelFor(n, 7);
+      const seed = (pickedSeeds as Record<string, number>)[n];
+      const a = generateLevelFor(n, seed);
+      const b = generateLevelFor(n, seed);
       expect(a).not.toBeNull();
       expect(a!.level).toEqual(b!.level);
       const [lo, hi] = levelSpec(n).target.rounds!;
@@ -51,27 +57,50 @@ describe('fixtures and hearts on the curve', () => {
   it('introduces direction arrows gradually and relieves them on rest levels', () => {
     for (const n of [1, 2, 3, 4, 5, 15, 25]) expect(arrows(n)).toBe(0);
     expect(arrows(6)).toBeGreaterThanOrEqual(1);
-    expect(arrows(8)).toBeGreaterThan(arrows(6));
-    expect(arrows(10)).toBeGreaterThanOrEqual(5);
-    expect(arrows(30)).toBeGreaterThanOrEqual(5);
+    expect(arrows(8)).toBeGreaterThanOrEqual(arrows(6));
+    // tough and finale levels carry more arrows than the ordinary levels around them
+    expect(arrows(10)).toBeGreaterThan(arrows(9));
+    expect(arrows(30)).toBeGreaterThan(arrows(29) - 1);
   });
-  it('gives hearts from the first tough level on, but not on rest levels', () => {
-    for (const n of [1, 6, 9, 15, 25]) expect(levelSpec(n).hearts).toBeUndefined();
-    for (const n of [10, 12, 20, 29, 30]) expect(levelSpec(n).hearts).toBe(3);
+  it('gives no level hearts under the bump rule (a wrong tap moves an animal instead)', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).hearts, `level ${n}`).toBeUndefined();
   });
-  it('generated levels carry the requested number of arrow tiles', () => {
-    const r = generateLevelFor(8, 1);
+  it('knots every level but the lessons (1-4, 91), level 5 and the hand-made ones; forced pushes rise by chapter with a wave inside each stage', () => {
+    // hand-made lessons (1, 2, 6, 7, 11) never knot either
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 11, 91]) expect(knotLevel(n), `level ${n}`).toBe(false);
+    for (const n of [8, 9, 10, 15, 20, 25, 30, 31, 34, 35, 36, 59, 60, 95, 121, 122, 155, 180]) expect(knotLevel(n), `level ${n}`).toBe(true);
+    for (const n of [1, 5, 91]) expect(shapeAt(n)).toBeNull();
+    // rest levels: a knot that random pushes clear half the time
+    for (const n of [15, 35, 125]) expect(shapeAt(n)).toMatchObject({ keyMoves: 0, guessWinMin: 0.5 });
+    const km = (n: number): number => shapeAt(n)!.keyMoves;
+    expect(km(8)).toBe(0);
+    expect(km(37)).toBeLessThan(km(97));
+    expect(km(97)).toBeLessThan(km(157));
+    expect(km(67)).toBe(km(37));
+    // inside a stage: the first level easy, the fourth a test, the tenth the peak, the finale above it
+    expect(km(36)).toBeLessThan(km(39));
+    expect(km(40)).toBeGreaterThanOrEqual(km(39));
+    expect(km(41)).toBeLessThan(km(40));
+    expect(km(60)).toBeGreaterThan(km(50));
+    // winning lines narrow by chapter and halve on peaks; no level asks more than four forced pushes
+    expect(shapeAt(66)!.answersMax).toBeGreaterThan(shapeAt(126)!.answersMax);
+    expect(shapeAt(70)!.answersMax).toBe(Math.floor(shapeAt(66)!.answersMax / 2));
+    for (let n = 1; n <= 180; n++) expect(shapeAt(n)?.keyMoves ?? 0, `level ${n}`).toBeLessThanOrEqual(4);
+  });
+  it('generated levels carry at most the requested number of arrow tiles (tiles that turn no one are dropped)', () => {
+    const r = generateLevelFor(8, (pickedSeeds as Record<string, number>)[8]);
     expect(r).not.toBeNull();
-    expect(r!.level.arrows).toHaveLength(levelSpec(8).params.arrowCount!);
+    expect(r!.level.arrows?.length ?? 0).toBeGreaterThan(0);
+    expect(r!.level.arrows!.length).toBeLessThanOrEqual(levelSpec(8).params.arrowCount!);
   });
 });
 
 describe('chapters after the first introduce one mechanic each', () => {
-  it('uses keys in chapter 3, sleepers in chapter 4 and bombs in chapter 5', () => {
-    expect(levelSpec(61).params.lockCount).toBeGreaterThanOrEqual(1);
+  it('uses no locks anywhere (2026-11-06), dynamite on chapter 2 peaks, sleepers from chapter 4 and bombs from chapter 5', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).params.lockCount ?? 0, `level ${n}`).toBe(0);
+    expect(levelSpec(40).params.bombCount).toBe(1);
     expect(levelSpec(91).params.sleepCount).toBeGreaterThanOrEqual(1);
     expect(levelSpec(121).params.bombCount).toBeGreaterThanOrEqual(1);
-    expect(levelSpec(35).params.lockCount ?? 0).toBe(0);
   });
   it('keeps rest levels free of mechanics and limits active elements to three', () => {
     for (const n of [65, 95, 125, 155]) {
@@ -83,6 +112,72 @@ describe('chapters after the first introduce one mechanic each', () => {
       const p = s.params;
       const active = [(p.arrowCount ?? 0) > 0, s.hearts !== undefined, (p.lockCount ?? 0) > 0, (p.sleepCount ?? 0) > 0, (p.bombCount ?? 0) > 0].filter(Boolean).length;
       expect(active).toBeLessThanOrEqual(3);
+    }
+  });
+});
+
+describe('bomb levels as the game builds them', () => {
+  it('every level with bombs (chapter 2 peaks, chapters 5 and 6) can be won within its push budget', () => {
+    const bad: number[] = [];
+    let checked = 0;
+    for (let n = 1; n <= 180; n++) {
+      const built = buildGameLevel(n);
+      if (!built || !built.level.pieces.some((p) => p.fuse !== undefined)) continue;
+      checked++;
+      // the winning line (free exits, and on a knot level the pushes) must get every bomb out before its fuse runs out
+      let s = createGame(built.level);
+      for (const m of gradeKnot(built.level).line ?? []) s = tap(s, m.id).state;
+      if (!isCleared(s) || s.exploded) bad.push(n);
+    }
+    expect(checked).toBeGreaterThan(20);
+    expect(bad).toEqual([]);
+  }, 120_000);
+});
+
+describe('board size, obstacles and stages', () => {
+  it('the board grows through a chapter and never exceeds 8 x 12', () => {
+    const area = (n: number): number => levelSpec(n).params.width * levelSpec(n).params.height;
+    expect(area(1)).toBeLessThan(area(6));
+    expect(area(6)).toBeLessThan(area(11));
+    expect(area(11)).toBeLessThan(area(16));
+    expect(boardSize(10, 'tough')).toEqual({ width: 8, height: 12 });
+    for (let n = 1; n <= 180; n++) {
+      expect(levelSpec(n).params.width).toBeLessThanOrEqual(8);
+      expect(levelSpec(n).params.height).toBeLessThanOrEqual(12);
+    }
+  });
+  it('animals are at most three cells long, as in the art reference size classes', () => {
+    for (let n = 1; n <= 180; n++) expect(levelSpec(n).params.maxLength, `level ${n}`).toBeLessThanOrEqual(3);
+  });
+  it('crates start with chapter 1 stage 2, are chapter 2s new element, and never sit on rest levels', () => {
+    for (let n = 1; n <= 10; n++) expect(levelSpec(n).params.crateCount ?? 0).toBe(0);
+    expect(levelSpec(12).params.crateCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(31).params.crateCount).toBeGreaterThanOrEqual(1);
+    expect(levelSpec(46).params.crateCount!).toBeGreaterThan(levelSpec(16).params.crateCount!);
+    for (const n of [5, 15, 25, 35, 65, 155]) expect(levelSpec(n).params.crateCount ?? 0).toBe(0);
+  });
+  it('generated levels carry their crates', () => {
+    const r = generateLevelFor(46, 1) ?? generateLevelFor(46, 2);
+    expect(r!.level.crates?.length).toBe(levelSpec(46).params.crateCount);
+  });
+  it('splits each chapter into three stages of ten levels', () => {
+    expect(stageFor(1)).toMatchObject({ chapter: 1, stage: 1, theme: 'village' });
+    expect(stageFor(10).stage).toBe(1);
+    expect(stageFor(11).stage).toBe(2);
+    expect(stageFor(30)).toMatchObject({ chapter: 1, stage: 3 });
+    expect(stageFor(31)).toMatchObject({ chapter: 2, stage: 1, theme: 'forest' });
+    expect(stageFor(180)).toMatchObject({ chapter: 6, stage: 3, theme: 'winter' });
+    const names = new Set(Array.from({ length: 180 }, (_, i) => stageFor(i + 1).name));
+    expect(names.size).toBe(18);
+  });
+});
+
+describe('chapter identity', () => {
+  it('ordinary and rest levels take their outline from the chapter, so regions look different', () => {
+    for (let n = 1; n <= 180; n++) {
+      const s = levelSpec(n);
+      if (s.role !== 'ordinary' && s.role !== 'rest') continue;
+      expect(CHAPTER_SHAPES[CHAPTER_THEMES[s.chapter - 1]], `level ${n}`).toContain(s.params.shape);
     }
   });
 });

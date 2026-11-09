@@ -1,0 +1,872 @@
+{
+ "demo=dirs A": {
+  "animalPts": 2525,
+  "ok": 2051,
+  "other": 474,
+  "none": 0,
+  "otherViaClear": 474,
+  "floorPts": 4479,
+  "phantom": 3686,
+  "phantomViaClear": 3627,
+  "visibleNotFloorOwner": 318,
+  "taps": [
+   {
+    "at": [
+     282,
+     374
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     310,
+     374
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     338,
+     374
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     302,
+     378
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     94,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     98,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "demo=dirs A+alphahit": {
+  "animalPts": 2519,
+  "ok": 2519,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 4485,
+  "phantom": 949,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 321,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     94,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     98,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "demo=dirs C": {
+  "animalPts": 2565,
+  "ok": 2110,
+  "other": 455,
+  "none": 0,
+  "otherViaClear": 455,
+  "floorPts": 4439,
+  "phantom": 3574,
+  "phantomViaClear": 3511,
+  "visibleNotFloorOwner": 397,
+  "taps": [
+   {
+    "at": [
+     282,
+     374
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     310,
+     374
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     338,
+     374
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     306,
+     378
+    ],
+    "expected": 8,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     94,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     90,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "demo=dirs C+alphahit": {
+  "animalPts": 2561,
+  "ok": 2561,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 4443,
+  "phantom": 936,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 392,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     94,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     86,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "level=20 A": {
+  "animalPts": 2341,
+  "ok": 1483,
+  "other": 858,
+  "none": 0,
+  "otherViaClear": 858,
+  "floorPts": 5241,
+  "phantom": 2510,
+  "phantomViaClear": 2464,
+  "visibleNotFloorOwner": 325,
+  "taps": [
+   {
+    "at": [
+     322,
+     306
+    ],
+    "expected": 13,
+    "rulePick": 1,
+    "ran": [
+     1
+    ],
+    "viaClear": true
+   },
+   {
+    "at": [
+     314,
+     314
+    ],
+    "expected": 13,
+    "rulePick": 1,
+    "ran": [
+     1
+    ],
+    "viaClear": true
+   },
+   {
+    "at": [
+     318,
+     318
+    ],
+    "expected": 13,
+    "rulePick": 1,
+    "ran": [
+     1
+    ],
+    "viaClear": true
+   },
+   {
+    "at": [
+     322,
+     322
+    ],
+    "expected": 13,
+    "rulePick": 1,
+    "ran": [
+     1
+    ],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     270,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     290,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "level=20 A+alphahit": {
+  "animalPts": 2338,
+  "ok": 2338,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 5244,
+  "phantom": 720,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 313,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     270,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     290,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "level=20 C": {
+  "animalPts": 2369,
+  "ok": 1544,
+  "other": 825,
+  "none": 0,
+  "otherViaClear": 825,
+  "floorPts": 5213,
+  "phantom": 2478,
+  "phantomViaClear": 2433,
+  "visibleNotFloorOwner": 377,
+  "taps": [
+   {
+    "at": [
+     270,
+     266
+    ],
+    "expected": 1,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     274,
+     270
+    ],
+    "expected": 1,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     278,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     282,
+     278
+    ],
+    "expected": 1,
+    "rulePick": 11,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     270,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     302,
+     302
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "level=20 C+alphahit": {
+  "animalPts": 2371,
+  "ok": 2371,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 5211,
+  "phantom": 712,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 376,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     270,
+     258
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     290,
+     274
+    ],
+    "expected": 1,
+    "rulePick": 1,
+    "ran": [
+     1
+    ]
+   }
+  ]
+ },
+ "level=60 A": {
+  "animalPts": 3082,
+  "ok": 1973,
+  "other": 1109,
+  "none": 0,
+  "otherViaClear": 1109,
+  "floorPts": 4500,
+  "phantom": 2860,
+  "phantomViaClear": 2833,
+  "visibleNotFloorOwner": 334,
+  "taps": [
+   {
+    "at": [
+     314,
+     254
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     314,
+     258
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     314,
+     262
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     314,
+     266
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     322,
+     246
+    ],
+    "expected": 16,
+    "rulePick": 16,
+    "ran": [
+     16
+    ]
+   }
+  ]
+ },
+ "level=60 A+alphahit": {
+  "animalPts": 3082,
+  "ok": 3082,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 4500,
+  "phantom": 947,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 335,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     322,
+     246
+    ],
+    "expected": 16,
+    "rulePick": 16,
+    "ran": [
+     16
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     310,
+     266
+    ],
+    "expected": 16,
+    "rulePick": 16,
+    "ran": [
+     16
+    ]
+   }
+  ]
+ },
+ "level=60 C": {
+  "animalPts": 3119,
+  "ok": 2128,
+  "other": 991,
+  "none": 0,
+  "otherViaClear": 991,
+  "floorPts": 4463,
+  "phantom": 2809,
+  "phantomViaClear": 2781,
+  "visibleNotFloorOwner": 407,
+  "taps": [
+   {
+    "at": [
+     306,
+     258
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     306,
+     262
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     306,
+     266
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     306,
+     270
+    ],
+    "expected": 16,
+    "rulePick": 2,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     326,
+     242
+    ],
+    "expected": 16,
+    "rulePick": 16,
+    "ran": [
+     16
+    ]
+   }
+  ]
+ },
+ "level=60 C+alphahit": {
+  "animalPts": 3112,
+  "ok": 3112,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 4470,
+  "phantom": 932,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 398,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     326,
+     242
+    ],
+    "expected": 16,
+    "rulePick": 16,
+    "ran": []
+   },
+   {
+    "control": true,
+    "at": [
+     338,
+     262
+    ],
+    "expected": 16,
+    "rulePick": 16,
+    "ran": [
+     16
+    ]
+   }
+  ]
+ },
+ "level=120 A": {
+  "animalPts": 2536,
+  "ok": 1646,
+  "other": 890,
+  "none": 0,
+  "otherViaClear": 890,
+  "floorPts": 5046,
+  "phantom": 2767,
+  "phantomViaClear": 2767,
+  "visibleNotFloorOwner": 438,
+  "taps": [
+   {
+    "at": [
+     174,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     202,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     230,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 17,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     194,
+     234
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     162,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 14,
+    "ran": [
+     14
+    ]
+   }
+  ]
+ },
+ "level=120 A+alphahit": {
+  "animalPts": 2536,
+  "ok": 2536,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 5046,
+  "phantom": 719,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 440,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     162,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 14,
+    "ran": [
+     14
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     230,
+     234
+    ],
+    "expected": 14,
+    "rulePick": 14,
+    "ran": [
+     14
+    ]
+   }
+  ]
+ },
+ "level=120 C": {
+  "animalPts": 2591,
+  "ok": 1668,
+  "other": 923,
+  "none": 0,
+  "otherViaClear": 923,
+  "floorPts": 4991,
+  "phantom": 2690,
+  "phantomViaClear": 2690,
+  "visibleNotFloorOwner": 532,
+  "taps": [
+   {
+    "at": [
+     170,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     198,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     226,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "at": [
+     186,
+     234
+    ],
+    "expected": 14,
+    "rulePick": 5,
+    "ran": [],
+    "viaClear": true
+   },
+   {
+    "control": true,
+    "at": [
+     162,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 14,
+    "ran": [
+     14
+    ]
+   }
+  ]
+ },
+ "level=120 C+alphahit": {
+  "animalPts": 2589,
+  "ok": 2589,
+  "other": 0,
+  "none": 0,
+  "otherViaClear": 0,
+  "floorPts": 4993,
+  "phantom": 691,
+  "phantomViaClear": 0,
+  "visibleNotFloorOwner": 527,
+  "taps": [
+   {
+    "control": true,
+    "at": [
+     162,
+     230
+    ],
+    "expected": 14,
+    "rulePick": 14,
+    "ran": [
+     14
+    ]
+   },
+   {
+    "control": true,
+    "at": [
+     158,
+     238
+    ],
+    "expected": 14,
+    "rulePick": 14,
+    "ran": [
+     14
+    ]
+   }
+  ]
+ }
+}

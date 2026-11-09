@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { headDirection, traceExit, validateLevel } from '../core/rules';
 import { solve } from '../solver/solver';
-import { generateLevel } from './generate';
+import { generateLevel, withoutIdleArrows } from './generate';
 
 describe('generateLevel with obstacles and direction arrows', () => {
   it('places the fixtures, keeps every piece able to exit, and bends some paths', () => {
@@ -14,7 +14,10 @@ describe('generateLevel with obstacles and direction arrows', () => {
       );
       expect(level).not.toBeNull();
       expect(level!.obstacles).toHaveLength(6);
-      expect(level!.arrows).toHaveLength(4);
+      // tiles that turn no one are dropped (withoutIdleArrows), so at most the four asked for, each one turning someone
+      const arrows = level!.arrows ?? [];
+      expect(arrows.length).toBeLessThanOrEqual(4);
+      expect(withoutIdleArrows(level!).arrows ?? []).toEqual(arrows);
       expect(validateLevel(level!, { straightOnly: true, minLength: 1, maxLength: 3 })).toEqual([]);
       expect(solve(level!).solvable).toBe(true);
       for (const piece of level!.pieces) if (traceExit(level!, piece).endDir !== headDirection(piece)) bent++;

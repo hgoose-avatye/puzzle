@@ -1,4 +1,5 @@
-import type { Cell, Direction, Level, Piece } from './types';
+import { isOrthogonallyConvex } from './shapes';
+import type { Cell, Crate, Direction, Level, Piece } from './types';
 
 const VECTORS: Record<Direction, Cell> = {
   up: { x: 0, y: -1 },
@@ -17,6 +18,8 @@ export function headDirection(piece: Piece): Direction {
     if (!piece.dir) throw new Error(`piece ${piece.id}: a one-cell piece needs dir`);
     return piece.dir;
   }
+  // a piece that stopped on an arrow tile (bump rule) keeps going the tile's way, not its body's
+  if (piece.dir) return piece.dir;
   const dx = piece.cells[0].x - piece.cells[1].x;
   const dy = piece.cells[0].y - piece.cells[1].y;
   if (Math.abs(dx) + Math.abs(dy) !== 1) throw new Error(`piece ${piece.id}: head and next cell are not adjacent`);
@@ -25,8 +28,17 @@ export function headDirection(piece: Piece): Direction {
   return dy === 1 ? 'down' : 'up';
 }
 
-const inBounds = (level: Level, x: number, y: number): boolean =>
-  x >= 0 && y >= 0 && x < level.width && y < level.height;
+const voidSets = new WeakMap<Level, Set<string>>();
+const voidSet = (level: Level): Set<string> => {
+  let s = voidSets.get(level);
+  if (!s) { s = new Set((level.voids ?? []).map((c) => `${c.x},${c.y}`)); voidSets.set(level, s); }
+  return s;
+};
+
+/** Is (x, y) a cell of the board: inside the box and not one of its voids? */
+export const onBoard = (level: Level, x: number, y: number): boolean =>
+  x >= 0 && y >= 0 && x < level.width && y < level.height && (!level.voids?.length || !voidSet(level).has(`${x},${y}`));
+const inBounds = onBoard;
 
 const OPPOSITE: Record<Direction, Direction> = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
@@ -118,12 +130,37 @@ export function isAsleep(level: Level, piece: Piece, alive: ReadonlySet<number>)
   return !neighborsOf(level, piece).some((id) => !alive.has(id));
 }
 
+/** Pieces with a cell right next to (x, y). */
+export function piecesAround(level: Level, x: number, y: number): number[] {
+  const found: number[] = [];
+  for (const p of level.pieces) if (p.cells.some((c) => Math.abs(c.x - x) + Math.abs(c.y - y) === 1)) found.push(p.id);
+  return found;
+}
+
+/**
+ * Cracks a crate has taken: one per neighbouring animal that has left. Derived from `alive` alone, so no extra game
+ * state is needed and every rule user (solver, generator, hints, simulator) sees crates the same way.
+ */
+export function crateCracks(level: Level, crate: Crate, alive: ReadonlySet<number>): number {
+  return piecesAround(level, crate.x, crate.y).filter((id) => !alive.has(id)).length;
+}
+
+export const crateStanding = (level: Level, crate: Crate, alive: ReadonlySet<number>): boolean => crateCracks(level, crate, alive) < crate.hits;
+
+/** Crates still standing on this piece's way out. */
+export function cratesInWay(level: Level, piece: Piece, alive: ReadonlySet<number>): Crate[] {
+  if (!level.crates?.length) return [];
+  const ray = new Set(exitRay(level, piece).map((c) => `${c.x},${c.y}`));
+  return level.crates.filter((k) => ray.has(`${k.x},${k.y}`) && crateStanding(level, k, alive));
+}
+
 export function canExit(level: Level, id: number, alive: ReadonlySet<number>): boolean {
   const piece = level.pieces.find((q) => q.id === id);
   return (
     piece !== undefined &&
     traceExit(level, piece).reachesEdge &&
     blockersOf(level, piece, alive).length === 0 &&
+    cratesInWay(level, piece, alive).length === 0 &&
     lockedBy(level, piece, alive) === undefined &&
     !isAsleep(level, piece, alive)
   );
@@ -137,10 +174,15 @@ export interface ValidateOptions {
 
 export function validateLevel(level: Level, options: ValidateOptions = {}): string[] {
   const errors: string[] = [];
+  if (level.voids?.length && !isOrthogonallyConvex(level.width, level.height, level.voids)) errors.push('board outline is not orthogonally convex');
   const ids = new Set<number>();
   const owner = new Map<string, number>();
   const fixtures = new Set<string>();
-  for (const f of [...(level.obstacles ?? []), ...(level.arrows ?? [])]) {
+  for (const k of level.crates ?? []) {
+    if (!Number.isInteger(k.hits) || k.hits < 1) errors.push(`crate (${k.x},${k.y}): hits must be a positive integer`);
+    if (piecesAround(level, k.x, k.y).length < k.hits) errors.push(`crate (${k.x},${k.y}): fewer neighbours than hits, it can never break`);
+  }
+  for (const f of [...(level.obstacles ?? []), ...(level.arrows ?? []), ...(level.crates ?? [])]) {
     if (!inBounds(level, f.x, f.y)) errors.push(`fixture (${f.x},${f.y}) out of bounds`);
     const fk = `${f.x},${f.y}`;
     if (fixtures.has(fk)) errors.push(`fixture (${f.x},${f.y}) overlaps another fixture`);

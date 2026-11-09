@@ -1,3 +1,6 @@
 node_modules
 dist
 .superpowers
+
+# intermediate parts and logs of scripts/pick-all.sh (the merged result is docs/sim/curve-selection.json + picked-levels.json)
+docs/sim/picks/

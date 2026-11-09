@@ -2,16 +2,11 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { directionVector, exitCell, exitDirection, traceExit } from '../src/core/rules';
 import type { Level, Piece } from '../src/core/types';
-import { exitPath } from '../src/game/path';
-import { smoothPath, trackAt, type Track } from '../src/game/smooth';
-import { buildAnimal } from './blocks';
-
-/** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
-const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
-  one: ['penguin', 'chick', 'parrot'],
-  two: ['cow', 'pig', 'fox', 'tiger', 'husky'],
-  long: ['snake', 'caterpillar', 'dachshund', 'crocodile'],
-};
+import { routeOf } from '../src/game/flow';
+import { trackAt, type Track } from '../src/game/smooth';
+import { buildAnimal } from './cards';
+import { SPECIES } from './species';
+import { DYNAMITE, dynamiteBundleTexture, dynamiteScreenTexture, statusPixelScale, statusTexture } from './statusIcons';
 
 /** Demo scenes can pin a species to a piece id (e.g. the species sheet). */
 export const speciesOverride = new Map<number, string>();
@@ -23,115 +18,181 @@ export function speciesFor(piece: Piece): string {
   return pool[piece.id % pool.length];
 }
 
+/** 2.5D cards (approved 2026-11-02): the plate under each cell is a soft shadow pad, not the animal's hue */
+const CARD_PLATE = { color: 0x000000, opacity: 0.1 };
+/**
+ * The hint's halo (2026-11-07): an orange ring on the floor under every cell of the animal, wider than its plate so it
+ * shows around the picture or block without covering the head, scarf, badges or dynamite. Orange, thick: the one
+ * colour that read on every stage in the 2026-11-04 glow check.
+ */
+const HALO = { color: 0xff8a1c, opacity: 0.9, width: 1.18, depth: 1.3, height: 0.07 };
 const RUN_SPEED = 7.5;
-/** Corner radius (cells) of the rounded exit path. */
-const CORNER_RADIUS = 0.3;
+/** Current running speed in cells/s (on the dev server, tests may override it with window.__runSpeed). */
+export const runSpeed = (): number => (import.meta.env.DEV && typeof window !== 'undefined' ? (window as unknown as { __runSpeed?: number }).__runSpeed : undefined) ?? RUN_SPEED;
+
+/** Collision "!" bubble: appear, hold, fade out. */
+const ALERT_IN = 0.08;
+const ALERT_HOLD = 0.2;
+const ALERT_OUT = 0.15;
+const ALERT_TOTAL = ALERT_IN + ALERT_HOLD + ALERT_OUT;
+const FLINCH_TIME = 0.12;
+/** unit bar for the floor mark at the front edge of a one-cell animal's tile, scaled per use */
+/** Badge starting scale (replaced by the status icon's screen size once shown), and how long a count change pops it. */
+const BADGE_W = 1.9;
+const BADGE_POP = 0.35;
+/** seconds a 2.5D bomb icon at zero swells before it is gone (the burst plays where it was) */
+const BOMB_SWELL = 0.15;
+/** 2.5D blocked tap: the head picture tilts left, right, left (up to 8°, easing off) for this many seconds */
+const HEAD_SHAKE = 0.3;
+const HEAD_SHAKE_ROLL = (8 * Math.PI) / 180;
+/**
+ * 2.5D cards: the status icon sits on the top of its own animal's picture (no pointer since the status UI of
+ * 2026-11-05). A badge floating over the head lands on the animal behind once the camera tilts, so on a crowded board
+ * it read as that animal's. spriteCards' badgeTip is 0.25 of the picture inside its top; the icon is lifted this many
+ * css px off it, onto the top edge, so it does not cover a one-cell animal's face.
+ */
+const CARD_ICON_LIFT_PX = 10;
+const LAUNCH_TIME = 0.2;
+/** cells past the board edge over which a block shrinks away */
+const GATE_FADE = 0.8;
+/** The chick tutorial's breathing on the animal to tap: up to 6% bigger and back, once per period (seconds). */
+const BREATHE = { amount: 0.06, period: 1.2 };
 /** Distance between block centers along the path: blocks are slightly longer than a cell so they touch. */
 const BLOCK_SPACING = 1;
 
 export const pieceColor = (id: number): THREE.Color => new THREE.Color().setHSL(((id * 47) % 360) / 360, 0.7, 0.55);
 
-function badgeTexture(items: string[], number?: number): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 128;
-  const ctx = c.getContext('2d')!;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '72px system-ui, sans-serif';
-  items.forEach((it, i) => ctx.fillText(it, 128 + (i - (items.length - 1) / 2) * 84, 56));
-  if (number !== undefined) {
-    ctx.font = 'bold 54px system-ui, sans-serif';
-    ctx.lineWidth = 10;
-    ctx.strokeStyle = '#fff';
-    ctx.fillStyle = number <= 2 ? '#d22' : '#222';
-    ctx.strokeText(String(number), 128, 108);
-    ctx.fillText(String(number), 128, 108);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
-function zzzTexture(): THREE.CanvasTexture {
+function alertTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 128;
   c.height = 128;
   const ctx = c.getContext('2d')!;
+  ctx.beginPath();
+  ctx.arc(64, 64, 52, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffd84a';
+  ctx.fill();
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#fffbe8';
+  ctx.stroke();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.font = '900 100px system-ui, sans-serif';
-  ctx.lineWidth = 16;
-  ctx.strokeStyle = '#2d4a8a';
-  ctx.strokeText('Z', 64, 68);
-  ctx.fillStyle = '#fff';
-  ctx.fillText('Z', 64, 68);
+  ctx.font = '900 84px system-ui, sans-serif';
+  ctx.fillStyle = '#8a5a00';
+  ctx.fillText('!', 64, 70);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-type Anim = { kind: 'idle' } | { kind: 'run'; s: number; onDone: () => void } | { kind: 'done' };
+function dotsTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 64;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = 'rgba(255, 251, 232, 0.92)';
+  ctx.beginPath();
+  ctx.roundRect(4, 6, 120, 52, 26);
+  ctx.fill();
+  ctx.fillStyle = '#8a7a5a';
+  for (const x of [38, 64, 90]) { ctx.beginPath(); ctx.arc(x, 32, 7, 0, Math.PI * 2); ctx.fill(); }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+type Anim =
+  | { kind: 'idle' }
+  | { kind: 'run'; s: number; onDone: () => void; onExit?: () => void }
+  | { kind: 'slide'; s: number; to: number; onArrive: () => void }
+  | { kind: 'done' };
 
 export class PieceView {
   readonly group = new THREE.Group();
   readonly piece: Piece;
   /** Exit path with rounded corners; every block is placed by arc length along it. */
-  private readonly track: Track;
-  private readonly headStart: number;
+  readonly track: Track;
+  readonly headStart: number;
   private readonly segments: THREE.Group[];
   private readonly plates: THREE.Mesh[] = [];
+  private readonly halos: THREE.Mesh[] = [];
   private readonly markers: THREE.Object3D[] = [];
   private readonly chevrons = new THREE.Group();
+  /** low mark on the floor at the front edge of a one-cell animal's tile, showing which way it faces */
+  private readonly aheadMarks = new THREE.Group();
   private readonly badge: THREE.Sprite;
-  private readonly zzz = new THREE.Group();
-  private zzzT = Math.random() * 6;
   private clock = Math.random() * 6;
   private lastS = 0;
   private anim: Anim = { kind: 'idle' };
-  private shakeT = 0;
+  private flinchT = 0;
+  /** take-off squash and stretch */
+  private launchT = 0;
+  private alertT = 0;
+  private alert: THREE.Sprite | null = null;
+  private badgeKey = '';
+  private badgeNumber: number | undefined;
+  private badgePopT = 0;
+  /** 2.5D bomb gone off: seconds of swelling left, then the icon stays hidden (null: not gone off) */
+  private blowT: number | null = null;
+  /** 2.5D blocked tap: seconds of head shake left */
+  private headShakeT = 0;
+  private dots: THREE.Sprite | null = null;
+  private waiting = false;
+  /** seconds the current wait has lasted */
+  private waitT = 0;
   private pulseT = 0;
-  private readonly bodyLen: number;
+  /** seconds into the tutorial's breathing, or null when it is off */
+  private breatheT: number | null = null;
+  readonly bodyLen: number;
+  /** where the path leaves the board, just past its last cell: the rescue burst and sparkles play here */
+  private gatePos = new THREE.Vector3();
+  /** the badge's items and whether the animal sleeps, so either change repaints one badge */
+  private badgeItems: string[] = [];
+  private asleep = false;
+  /** badge starting height over width */
+  private readonly badgeRatio = 0.4;
+  /** 2.5D: the status icons' size on the screen, css px */
+  private iconSize = { w: 0, h: 0 };
 
   constructor(private readonly level: Level, piece: Piece, private readonly world: (x: number, y: number) => THREE.Vector3) {
     this.piece = piece;
     this.bodyLen = piece.cells.length;
-    this.track = smoothPath(exitPath(level, piece), CORNER_RADIUS);
-    this.headStart = this.track.vertexU[this.bodyLen - 1];
+    ({ track: this.track, headStart: this.headStart } = routeOf(level, piece));
     const color = pieceColor(piece.id);
 
     this.segments = buildAnimal(speciesFor(piece), this.bodyLen);
     for (const seg of this.segments) this.group.add(seg);
 
-    // Colored plate under each cell, following the path, so the whole animal reads as one color.
+    // Plate under each cell, following the path: a neutral shadow pad (the pictures carry the identity).
+    const plateMaterial = (): THREE.Material =>
+      new THREE.MeshStandardMaterial({ color: CARD_PLATE.color, transparent: true, opacity: CARD_PLATE.opacity, roughness: 1 });
     for (let i = 0; i < this.bodyLen; i++) {
-      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), new THREE.MeshStandardMaterial({ color }));
+      const plate = new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.1, 1.02, 2, 0.04), plateMaterial());
       this.plates.push(plate);
       this.markers.push(plate);
       this.group.add(plate);
+      const halo = new THREE.Mesh(new RoundedBoxGeometry(HALO.width, HALO.height, HALO.depth, 2, 0.05), new THREE.MeshBasicMaterial({ color: HALO.color, transparent: true, opacity: HALO.opacity }));
+      halo.visible = false;
+      halo.renderOrder = -1;
+      this.halos.push(halo);
+      this.group.add(halo);
     }
 
-    this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false }));
-    this.badge.scale.set(1.1, 0.55, 1);
+    // 2.5D: a fixed size on the screen (statusPixelScale), anchored at its bottom centre on the top of the picture
+    this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, sizeAttenuation: false }));
+    this.badge.center.set(0.5, 0);
+    this.badge.scale.set(BADGE_W, BADGE_W * this.badgeRatio, 1);
     this.badge.renderOrder = 10;
     this.badge.visible = false;
     this.group.add(this.badge);
 
-    const zTex = zzzTexture();
-    for (let i = 0; i < 3; i++) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthTest: false }));
-      sp.renderOrder = 11;
-      this.zzz.add(sp);
-    }
-    this.zzz.visible = false;
-    this.group.add(this.zzz);
-
     this.buildChevrons(color);
+    this.group.add(this.aheadMarks);
     this.group.add(this.chevrons);
-    const gate = this.buildGate(color);
-    this.markers.push(gate);
-    this.group.add(gate);
+    // no gate is drawn: any board edge lets an animal out (rules.ts traceExit), so a door at one spot would suggest a
+    // rule the game does not have; only the point where this path leaves is kept, for the rescue effects
+    const v = directionVector(exitDirection(this.level, this.piece));
+    const cell = exitCell(this.level, this.piece);
+    this.gatePos = this.world(cell.x + v.x * 0.62, cell.y + v.y * 0.62);
     this.place(this.headStart);
   }
 
@@ -151,14 +212,22 @@ export class PieceView {
       const part = seg.children[0];
       part.position.y = running ? Math.abs(Math.sin(phase)) * 0.09 : Math.sin(phase) * 0.018;
     });
+    this.halos.forEach((halo, i) => {
+      const q = trackAt(this.track, sHead - i * BLOCK_SPACING);
+      halo.position.copy(this.world(q.x, q.y)).setY(0.02);
+      halo.rotation.y = q.angle;
+    });
     this.plates.forEach((plate, i) => {
       const q = trackAt(this.track, sHead - i * BLOCK_SPACING);
       plate.position.copy(this.world(q.x, q.y)).setY(0.05);
       plate.rotation.y = q.angle;
     });
     const h = this.segments[0].position;
-    this.badge.position.set(h.x, 1.75, h.z);
-    this.zzz.position.set(h.x, 0, h.z);
+    // just inside the top of the head picture as last drawn (spriteCards sets badgeTip each frame; over the head until
+    // the first frame is drawn); the icon's own anchor lifts it onto the top edge (CARD_ICON_LIFT_PX)
+    const tip = this.segments[0].userData.badgeTip as THREE.Vector3 | undefined;
+    if (tip) this.badge.position.copy(tip);
+    else this.badge.position.set(h.x, 2.1, h.z);
   }
 
   private buildChevrons(color: THREE.Color): void {
@@ -177,26 +246,12 @@ export class PieceView {
     this.chevrons.visible = false;
   }
 
-  private buildGate(color: THREE.Color): THREE.Object3D {
-    const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
-    const v = directionVector(exitDirection(this.level, this.piece));
-    const cell = exitCell(this.level, this.piece);
-    const along = v.x !== 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
-    for (const s of [-0.42, 0.42]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.75, 0.12), mat);
-      post.position.copy(along).multiplyScalar(s).setY(0.375);
-      g.add(post);
-    }
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(v.x !== 0 ? 0.12 : 1.0, 0.12, v.x !== 0 ? 1.0 : 0.12), mat);
-    lintel.position.y = 0.78;
-    g.add(lintel);
-    g.position.copy(this.world(cell.x + v.x * 0.62, cell.y + v.y * 0.62));
-    g.traverse((o) => { o.castShadow = true; });
-    return g;
+  /** The floor cue's parts (none since the direction V was removed; kept for the dev measurements). */
+  markParts(): THREE.Object3D[] {
+    return [...this.aheadMarks.children];
   }
 
-  /** Hide the color plates and gate so the bare animal can be inspected. */
+  /** Hide the color plates so the bare animal can be inspected. */
   hideMarkers(): void {
     for (const m of this.markers) m.visible = false;
   }
@@ -205,48 +260,322 @@ export class PieceView {
     this.chevrons.visible = visible;
   }
 
+  /** The hint's halo under every cell of the animal. */
+  setHalo(on: boolean): void {
+    for (const h of this.halos) h.visible = on;
+  }
+
+  /** A bomb at zero swells its icon for BOMB_SWELL and then the icon is gone. False when no icon is shown. */
+  explode(): boolean {
+    if (this.dynBundle?.visible) { this.dynBlowT = BOMB_SWELL; return true; }
+    if (!this.badge.visible) return false;
+    this.blowT = BOMB_SWELL;
+    return true;
+  }
+
   setBadges(items: string[], number?: number): void {
+    if (this.bodyLen >= 2) {
+      const bomb = items.includes('💣') && number !== undefined;
+      this.showDynamite(bomb ? number : undefined);
+      if (bomb) { items = items.filter((it) => it !== '💣'); number = undefined; }
+    }
+    this.badgeItems = items;
+    this.badgeCount = number;
+    this.showBadge(this.asleep ? [...items, '💤'] : items, number);
+  }
+
+  private badgeCount: number | undefined;
+  /** 2.5D count dynamite on the body block of a 2-3 cell animal (bundle behind the blocks in front, screen on top) */
+  private dynBundle: THREE.Sprite | null = null;
+  private dynScreen: THREE.Sprite | null = null;
+  private dynCount: number | undefined;
+  private dynSize = 0;
+  private dynPopT = 0;
+  private dynBlowT: number | null = null;
+
+  /** The dynamite drawn on this animal (bundle on the body, or a one-cell animal's badge count): its number, red at 1; null without one. */
+  get dynamite(): { count: number; danger: boolean } | null {
+    const count = this.dynBundle?.visible ? this.dynCount : this.badgeCount;
+    return count === undefined ? null : { count, danger: count <= 1 };
+  }
+
+  private showDynamite(count: number | undefined): void {
+    if (count === undefined) { if (this.dynBundle) this.dynBundle.visible = this.dynScreen!.visible = false; return; }
+    if (!this.dynBundle) {
+      this.dynBundle = new THREE.Sprite(new THREE.SpriteMaterial({ map: dynamiteBundleTexture(), transparent: true, alphaTest: 0.5, depthWrite: false, sizeAttenuation: false }));
+      this.dynBundle.center.set(DYNAMITE.screen.cx, 1 - DYNAMITE.screen.cy);
+      this.dynBundle.renderOrder = 9;
+      this.dynScreen = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, sizeAttenuation: false }));
+      this.dynScreen.renderOrder = 10;
+      this.group.add(this.dynBundle, this.dynScreen);
+    }
+    if (count === this.dynCount && this.dynBundle.visible) return;
+    if (this.dynBlowT !== null) return;
+    if (this.dynCount !== undefined && count < this.dynCount) this.dynPopT = BADGE_POP;
+    this.dynCount = count;
+    const mat = this.dynScreen!.material as THREE.SpriteMaterial;
+    mat.map?.dispose();
+    const scr = dynamiteScreenTexture(count);
+    mat.map = scr.tex;
+    mat.needsUpdate = true;
+    this.dynSize = scr.size;
+    this.dynBundle.visible = this.dynScreen!.visible = true;
+  }
+
+  private animateDynamite(dt: number): void {
+    if (!this.dynBundle?.visible) return;
+    const tip = this.segments[1]?.userData.bodyTip as THREE.Vector3 | undefined;
+    if (tip) {
+      // a little toward the camera (58° up, no yaw) so the bundle is in front of its own body card, behind the head at 0°
+      const toCam = new THREE.Vector3(0, Math.sin((58 * Math.PI) / 180), Math.cos((58 * Math.PI) / 180)).multiplyScalar(0.12);
+      this.dynBundle.position.copy(tip).add(toCam);
+      this.dynScreen!.position.copy(this.dynBundle.position);
+    }
+    let k = 1;
+    if (this.dynBlowT !== null) {
+      this.dynBlowT = Math.max(0, this.dynBlowT - dt);
+      if (this.dynBlowT === 0) { this.dynBundle.visible = this.dynScreen!.visible = false; return; }
+      k = 1 + (1 - this.dynBlowT / BOMB_SWELL) * 0.5;
+    } else {
+      if (this.dynPopT > 0) {
+        this.dynPopT = Math.max(0, this.dynPopT - dt);
+        k += Math.sin((1 - this.dynPopT / BADGE_POP) * Math.PI) * 0.35;
+      }
+      if (this.dynCount !== undefined && this.dynCount <= 2) k += Math.max(0, Math.sin(this.clock * 7)) * 0.12;
+    }
+    const px = statusPixelScale() * k;
+    this.dynBundle.scale.set(DYNAMITE.w * px, DYNAMITE.w * DYNAMITE.aspect * px, 1);
+    this.dynScreen!.scale.set(this.dynSize * px, this.dynSize * px, 1);
+  }
+
+  private showBadge(items: string[], number?: number): void {
     if (items.length === 0) {
       this.badge.visible = false;
       return;
     }
+    const key = `${items.join('')}:${number ?? ''}`;
+    if (key === this.badgeKey && this.badge.visible) return;
+    if (this.blowT !== null) return; // a bomb going off keeps its last icon until it is gone
+    // a bomb's count going down pops the badge so the change is noticed
+    if (number !== undefined && this.badgeNumber !== undefined && number < this.badgeNumber) this.badgePopT = BADGE_POP;
+    this.badgeKey = key;
+    this.badgeNumber = number;
     const mat = this.badge.material as THREE.SpriteMaterial;
     mat.map?.dispose();
-    mat.map = badgeTexture(items, number);
+    const icon = statusTexture(items, number);
+    mat.map = icon.tex;
+    this.iconSize = { w: icon.w, h: icon.h };
+    this.badge.center.set(0.5, -CARD_ICON_LIFT_PX / icon.h);
     mat.needsUpdate = true;
     this.badge.visible = true;
   }
 
-  /** Three Z's rise from the head one after another, growing and fading out. */
-  private animateZzz(): void {
-    this.zzz.children.forEach((c, i) => {
-      const sp = c as THREE.Sprite;
-      const t = ((this.zzzT * 0.45 + i / 3) % 1);
-      sp.position.set(0.15 + t * 0.5 + Math.sin(t * 6) * 0.06, 1.35 + t * 0.9, 0);
-      const k = 0.35 + t * 0.55;
-      sp.scale.set(k, k, 1);
-      (sp.material as THREE.SpriteMaterial).opacity = Math.min(1, t * 5) * (1 - t * t);
+  /** Pop on a count change, and a steady heartbeat while a bomb is about to go off. */
+  private animateBadge(dt: number): void {
+    if (!this.badge.visible) return;
+    let k = 1;
+    if (this.blowT !== null) {
+      this.blowT = Math.max(0, this.blowT - dt);
+      if (this.blowT === 0) { this.badge.visible = false; return; }
+      const px = statusPixelScale() * (1 + (1 - this.blowT / BOMB_SWELL) * 0.5);
+      this.badge.scale.set(this.iconSize.w * px, this.iconSize.h * px, 1);
+      return;
+    }
+    if (this.badgePopT > 0) {
+      this.badgePopT = Math.max(0, this.badgePopT - dt);
+      k += Math.sin((1 - this.badgePopT / BADGE_POP) * Math.PI) * 0.35;
+    }
+    if (this.badgeNumber !== undefined && this.badgeNumber <= 2) k += Math.max(0, Math.sin(this.clock * 7)) * 0.12;
+    const px = statusPixelScale() * k;
+    this.badge.scale.set(this.iconSize.w * px, this.iconSize.h * px, 1);
+  }
+
+  get running(): boolean { return this.anim.kind === 'run'; }
+
+  /** World position of the head block (for effects). */
+  headWorld(): THREE.Vector3 { return this.segments[0].position; }
+
+  /** The body blocks, the colour plates under them and the badge over the head (not the path); dev measurements use it. */
+  tapTargets(): THREE.Object3D[] {
+    return [...this.segments, ...this.plates, this.badge];
+  }
+
+  /**
+   * What a finger can land on: not the status icon, which is drawn over the animal behind and took its taps
+   * (2026-11-05); a tap there goes to whatever is under the icon.
+   */
+  touchTargets(): THREE.Object3D[] {
+    return [...this.segments, ...this.plates];
+  }
+
+  /** World position where the path leaves the board (the rescue effects play here). */
+  gateWorld(): THREE.Vector3 { return this.gatePos; }
+
+  get color(): number { return pieceColor(this.piece.id).getHex(); }
+
+  /** The sleep icon over the head, so it points at its sleeper like the others. */
+  setAsleep(asleep: boolean): void {
+    if (asleep === this.asleep) return;
+    this.asleep = asleep;
+    this.showBadge(asleep ? [...this.badgeItems, '💤'] : this.badgeItems, this.badgeCount);
+  }
+
+  /**
+   * Whether the ray hits an opaque pixel of this animal's count-bomb icon (not its transparent margin). pick()
+   * asks only after no animal was found under the finger, so the icon never takes another animal's touch (2026-11-05).
+   */
+  bombIconHit(ray: THREE.Raycaster): boolean {
+    if (this.badgeNumber === undefined || !this.badge.visible || !this.group.visible) return false;
+    const hit = ray.intersectObject(this.badge, false)[0];
+    const canvas = (this.badge.material as THREE.SpriteMaterial).map?.image as HTMLCanvasElement | undefined;
+    if (!hit?.uv || !canvas) return false;
+    const x = Math.min(canvas.width - 1, Math.floor(hit.uv.x * canvas.width));
+    const y = Math.min(canvas.height - 1, Math.floor((1 - hit.uv.y) * canvas.height));
+    return canvas.getContext('2d')!.getImageData(x, y, 1, 1).data[3] > 127;
+  }
+
+  /** Tap test on the picture cards: distance to the nearest opaque card pixel under the ray (spriteCards drops transparent texels), else null. */
+  cardHitDistance(ray: THREE.Raycaster): number | null {
+    if (!this.group.visible) return null;
+    const drawn = (o: THREE.Object3D | null): boolean => { for (; o && o !== this.group; o = o.parent) if (!o.visible) return false; return true; };
+    const hit = ray.intersectObjects(this.segments, true).find((h) => h.object.userData.spriteCard === true && drawn(h.object));
+    return hit ? hit.distance : null;
+  }
+
+  /** `onExit` fires once when the head crosses the board edge; `onDone` when the whole body is gone. */
+  runOut(onDone: () => void, onExit?: () => void): void {
+    this.chevrons.visible = false;
+    this.aheadMarks.visible = false;
+    this.pulseT = 0;
+    this.breatheT = null;
+    for (const seg of this.segments) seg.scale.setScalar(1);
+    this.anim = { kind: 'run', s: this.lastS, onDone, onExit };
+    this.launchT = LAUNCH_TIME;
+  }
+
+  /** Bump rule: run along the way out to head arc length `to` and stand there. */
+  slideTo(to: number, onArrive: () => void): void {
+    this.anim = { kind: 'slide', s: this.lastS, to, onArrive };
+  }
+
+  /** Bump rule: stand with the head at arc length `s` (a board rebuilt after an undo). */
+  setHead(s: number): void {
+    this.anim = { kind: 'idle' };
+    this.place(s);
+  }
+
+  /** Running position, driven by the traffic system (see src/game/traffic.ts). */
+  setRun(sHead: number, waiting: boolean): void {
+    if (this.anim.kind !== 'run') return;
+    this.anim.s = sHead;
+    this.waiting = waiting;
+  }
+
+  /** Running but held up by an animal ahead. */
+  get isWaiting(): boolean { return this.anim.kind === 'run' && this.waiting; }
+
+  /** Collision with another animal: a short flinch and one "!" over the head. A repeat restarts the same bubble. */
+  collide(): void {
+    this.flinchT = FLINCH_TIME;
+    this.alertT = ALERT_TOTAL;
+    if (!this.alert) {
+      this.alert = new THREE.Sprite(new THREE.SpriteMaterial({ map: alertTexture(), transparent: true, depthTest: false }));
+      this.alert.renderOrder = 12;
+      this.group.add(this.alert);
+    }
+    this.updateAlert();
+  }
+
+  /** Small "…" over the head while waiting, once the "!" is gone. Built once, only shown or hidden afterwards. */
+  private updateDots(): void {
+    const show = this.isWaiting && this.alertT <= 0 && this.waitT > 0.15;
+    if (!show) { if (this.dots) this.dots.visible = false; return; }
+    if (!this.dots) {
+      this.dots = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotsTexture(), transparent: true, depthTest: false, opacity: 0.9 }));
+      this.dots.renderOrder = 12;
+      this.dots.scale.set(0.5, 0.25, 1);
+      this.group.add(this.dots);
+    }
+    const h = this.segments[0].position;
+    this.dots.position.set(h.x, 1.65 + Math.sin(this.clock * 3) * 0.03, h.z);
+    this.dots.visible = true;
+  }
+
+  /** True while the "!" is showing (for tests). */
+  get alerting(): boolean { return this.alertT > 0; }
+
+  private updateAlert(): void {
+    const a = this.alert;
+    if (!a) return;
+    if (this.alertT <= 0) { a.visible = false; return; }
+    const t = ALERT_TOTAL - this.alertT;
+    const k = t < ALERT_IN ? t / ALERT_IN : t < ALERT_IN + ALERT_HOLD ? 1 : 1 - (t - ALERT_IN - ALERT_HOLD) / ALERT_OUT;
+    const pop = t < ALERT_IN ? 0.7 + 0.5 * k : 1;
+    const h = this.segments[0].position;
+    a.visible = true;
+    a.position.set(h.x, 1.7 + (t / ALERT_TOTAL) * 0.25, h.z);
+    a.scale.setScalar(0.62 * pop);
+    (a.material as THREE.SpriteMaterial).opacity = Math.max(0, Math.min(1, k));
+  }
+
+  /** Squash down, then stretch forward, then settle: the "here I go" before running. */
+  private animateLaunch(dt: number): void {
+    if (this.launchT <= 0) return;
+    this.launchT = Math.max(0, this.launchT - dt);
+    const t = 1 - this.launchT / LAUNCH_TIME;
+    const y = this.launchT === 0 ? 1 : t < 0.4 ? 1 - 0.2 * Math.sin((t / 0.4) * Math.PI) : 1 + 0.12 * Math.sin(((t - 0.4) / 0.6) * Math.PI);
+    const xz = 1 / Math.sqrt(y);
+    for (const seg of this.segments) seg.scale.set(xz, y, xz);
+  }
+
+  /**
+   * Past the board edge each block shrinks away within GATE_FADE cells, as if stepping off it, so nothing runs on into
+   * the scenery around the board.
+   */
+  private shrinkIntoGate(): void {
+    if (this.anim.kind !== 'run') return;
+    const gateU = this.track.length - (this.bodyLen + 2) + 0.62;
+    this.segments.forEach((seg, i) => {
+      const k = Math.max(0, Math.min(1, 1 - (this.anim.kind === 'run' ? this.anim.s - i - gateU : 0) / GATE_FADE));
+      if (k < 1) seg.scale.setScalar(k); // set, not multiply: the scale carries over between frames
+      seg.visible = k > 0.02;
+      this.plates[i].visible = k > 0.5;
     });
   }
 
-  setAsleep(asleep: boolean): void {
-    this.zzz.visible = asleep;
+  /** Heading of the head block (rotation about y), for effects. */
+  get heading(): number { return this.segments[0].rotation.y; }
+
+  /** World position of the tail block (for footprints). */
+  tailWorld(): THREE.Vector3 { return this.segments[this.segments.length - 1].position; }
+
+  /**
+   * Short flinch; true while it is playing. Standing animals jiggle sideways; a running one only hops and nods, so it
+   * never shifts toward the animal it is waiting behind.
+   */
+  private flinch(dt: number, lateral = true): boolean {
+    if (this.flinchT <= 0) return false;
+    this.flinchT = Math.max(0, this.flinchT - dt);
+    const f = this.flinchT / FLINCH_TIME;
+    if (lateral) this.group.position.x = Math.sin(f * Math.PI * 3) * 0.08 * f;
+    else this.group.position.y = Math.sin(f * Math.PI) * 0.06;
+    this.segments[0].children[0].rotation.x = this.flinchT > 0 ? Math.sin((1 - f) * Math.PI) * 0.2 : 0;
+    return true;
   }
 
-  runOut(onDone: () => void): void {
-    this.chevrons.visible = false;
-    this.pulseT = 0;
-    for (const seg of this.segments) seg.scale.setScalar(1);
-    this.anim = { kind: 'run', s: this.headStart, onDone };
-  }
-
-  /** Blocked tap: shake sideways and nod the head. */
+  /** Blocked tap: the head picture shakes. */
   bump(): void {
-    this.shakeT = 0.4;
+    this.headShakeT = HEAD_SHAKE;
   }
 
   pulse(): void {
     this.pulseT = 0.35;
+  }
+
+  /** The chick tutorial's slow breathing (1.00 to 1.06 and back) on an animal that stands; off puts it back at 1. */
+  setBreathe(on: boolean): void {
+    this.breatheT = on ? 0 : null;
+    if (!on && !this.running && this.pulseT === 0) for (const s of this.segments) s.scale.setScalar(1);
   }
 
   /** Free what this view owns. Block geometry and materials are shared and stay alive. */
@@ -257,7 +586,7 @@ export class PieceView {
       if (shared.has(o)) return;
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) {
-        mesh.geometry.dispose();
+        if (!mesh.userData.sharedGeometry) mesh.geometry.dispose();
         for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) m.dispose();
       }
       const sprite = o as THREE.Sprite;
@@ -270,32 +599,62 @@ export class PieceView {
 
   update(dt: number): void {
     this.clock += dt;
-    this.zzzT += dt;
-    if (this.zzz.visible) this.animateZzz();
+    this.animateBadge(dt);
+    this.animateDynamite(dt);
+    if (this.alertT > 0) this.alertT = Math.max(0, this.alertT - dt);
     if (this.anim.kind === 'run') {
-      this.anim.s += ((window as unknown as { __runSpeed?: number }).__runSpeed ?? RUN_SPEED) * dt;
       this.place(this.anim.s);
+      this.waitT = this.waiting ? this.waitT + dt : 0;
+      this.flinch(dt, false);
+      this.updateAlert();
+      this.updateDots();
+      this.animateLaunch(dt);
+      this.shrinkIntoGate();
+      if (this.anim.onExit && this.anim.s >= this.track.length - (this.bodyLen + 2)) {
+        const exit = this.anim.onExit;
+        this.anim.onExit = undefined;
+        exit();
+      }
       if (this.anim.s >= this.track.length) {
         const done = this.anim.onDone;
         this.anim = { kind: 'done' };
         this.group.visible = false;
+        this.updateDots();
         done();
       }
       return;
     }
+    if (this.anim.kind === 'slide') {
+      const a = this.anim;
+      a.s = Math.min(a.to, a.s + runSpeed() * dt);
+      this.place(a.s);
+      if (a.s >= a.to) {
+        this.anim = { kind: 'idle' };
+        a.onArrive();
+      }
+      return;
+    }
     this.place(this.lastS);
-    if (this.shakeT > 0) {
-      this.shakeT = Math.max(0, this.shakeT - dt);
-      this.group.position.x = Math.sin(this.shakeT * 70) * 0.07 * (this.shakeT / 0.4);
-      this.segments[0].children[0].rotation.x = Math.sin((1 - this.shakeT / 0.4) * Math.PI) * 0.25;
+    this.updateAlert();
+    if (this.flinch(dt)) {
+      // flinch owns the offset this frame
     } else {
       this.group.position.x = 0;
       this.segments[0].children[0].rotation.x = 0;
     }
+    // the head card's tilt, read by the card placement (spriteCards: root.userData.roll)
+    this.headShakeT = Math.max(0, this.headShakeT - dt);
+    const p = 1 - this.headShakeT / HEAD_SHAKE;
+    this.segments[0].userData.roll = this.headShakeT > 0 ? HEAD_SHAKE_ROLL * Math.sin(p * Math.PI * 3) * (1 - 0.4 * p) : 0;
     if (this.pulseT > 0) {
       this.pulseT = Math.max(0, this.pulseT - dt);
       const k = 1 + Math.sin((1 - this.pulseT / 0.35) * Math.PI) * 0.12;
       for (const s of this.segments) s.scale.setScalar(this.pulseT === 0 ? 1 : k);
+    }
+    if (this.breatheT !== null && this.pulseT === 0) {
+      this.breatheT += dt;
+      const k = 1 + (BREATHE.amount * (1 - Math.cos((this.breatheT / BREATHE.period) * Math.PI * 2))) / 2;
+      for (const s of this.segments) s.scale.setScalar(k);
     }
   }
 }

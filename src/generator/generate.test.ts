@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
-import { validateLevel } from '../core/rules';
+import { onBoard, validateLevel } from '../core/rules';
+import { BOARD_SHAPES } from '../core/shapes';
 import { solve } from '../solver/solver';
 import { generateLevel, generateMatching, type GenParams } from './generate';
 
@@ -37,5 +38,24 @@ describe('generateMatching', () => {
   });
   it('returns null when the target cannot be met', () => {
     expect(generateMatching(params, { rounds: [100, 200] }, createRng(2), 20)).toBeNull();
+  });
+});
+
+describe('shaped boards', () => {
+  it('every shape yields valid, solvable levels with nothing on a void, arrows included', () => {
+    for (const shape of BOARD_SHAPES) {
+      const p: GenParams = { width: 8, height: 12, shape, pieceCount: 22, minLength: 1, maxLength: 3, arrowCount: 3 };
+      let produced = 0;
+      for (let seed = 0; seed < 5; seed++) {
+        const level = generateLevel(p, createRng(seed));
+        if (!level) continue;
+        produced++;
+        expect(validateLevel(level), shape).toEqual([]);
+        expect(solve(level).solvable, shape).toBe(true);
+        for (const q of level.pieces) for (const c of q.cells) expect(onBoard(level, c.x, c.y), shape).toBe(true);
+        expect((level.voids?.length ?? 0) > 0, shape).toBe(shape !== 'rect');
+      }
+      expect(produced, shape).toBeGreaterThan(0);
+    }
   });
 });

@@ -1,8 +1,12 @@
-import { blockersOf, canExit, isAsleep, lockedBy } from './rules';
+import { bumpResult, burnOnCollision } from './bump';
+import { blockersOf, canExit, cratesInWay, isAsleep, lockedBy } from './rules';
 import type { Level } from './types';
 
 export interface GameState {
+  /** The board as it is now: under the bump rule a blocked animal's cells move. */
   readonly level: Level;
+  /** The bump rule (the game's rule): a blocked animal runs up to what stops it and stays there (src/core/bump.ts). */
+  readonly bump?: boolean;
   readonly alive: ReadonlySet<number>;
   readonly taps: number;
   readonly blockedTaps: number;
@@ -15,16 +19,25 @@ export interface GameState {
 
 export type TapEvent =
   | { type: 'exited'; id: number }
-  | { type: 'blocked'; id: number; blockers: number[]; lockedBy?: number; asleep?: boolean }
+  | { type: 'blocked'; id: number; blockers: number[]; lockedBy?: number; asleep?: boolean; crates?: number; moved?: number }
   | { type: 'ignored'; id: number };
 
-export function createGame(level: Level, options: { hearts?: number } = {}): GameState {
+/** `bump: false` is the old rule (a blocked animal stays put), kept for comparisons and the simulated player. */
+export function createGame(level: Level, options: { hearts?: number; bump?: boolean } = {}): GameState {
   const fuses: Record<number, number> = {};
   for (const p of level.pieces) if (p.fuse !== undefined) fuses[p.id] = p.fuse;
-  return { level, alive: new Set(level.pieces.map((p) => p.id)), taps: 0, blockedTaps: 0, hearts: options.hearts, fuses, exploded: false };
+  return {
+    level,
+    alive: new Set(level.pieces.map((p) => p.id)), taps: 0, blockedTaps: 0, hearts: options.hearts, fuses, exploded: false,
+    ...(options.bump ?? true ? { bump: true } : {}),
+  };
 }
 
-/** Every counted tap burns one fuse step; a bomb still on the board at zero explodes. */
+/**
+ * The old rule's fuse (bump: false, read by the exit-based planner solver/plan.ts and the simulated player): every exit
+ * takes one step off every bomb still on the board; one left at zero explodes. Under the bump rule the dynamite counts
+ * its own collisions instead (burnOnCollision, docs/rules.md 5).
+ */
 function burnFuses(state: GameState): GameState {
   const fuses: Record<number, number> = {};
   let exploded = state.exploded;
@@ -43,20 +56,32 @@ export function tap(state: GameState, id: number): { state: GameState; event: Ta
     const blockers = blockersOf(state.level, piece, state.alive);
     const lock = lockedBy(state.level, piece, state.alive);
     const asleep = isAsleep(state.level, piece, state.alive);
+    const crates = cratesInWay(state.level, piece, state.alive).length;
+    const bump = state.bump ? bumpResult(state.level, piece, state.alive) : null;
+    const moved = bump?.moved ?? 0;
     const counted: GameState = {
       ...state,
+      ...(bump ? { level: bump.level } : {}),
       taps: state.taps + 1,
       blockedTaps: state.blockedTaps + 1,
       hearts: state.hearts === undefined ? undefined : state.hearts - 1,
     };
+    // the dynamite counts its own collisions: the push of the bomb itself, or a push that stops against it
+    const burnt = state.bump && bump ? burnOnCollision(state.fuses, state.alive, id, bump.stopper) : null;
     return {
-      state: burnFuses(counted),
-      event: { type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}) },
+      state: burnt ? { ...counted, fuses: burnt.fuses, exploded: counted.exploded || burnt.exploded } : counted,
+      event: {
+        type: 'blocked', id, blockers, ...(lock !== undefined ? { lockedBy: lock } : {}), ...(asleep ? { asleep } : {}), ...(crates ? { crates } : {}),
+        ...(moved > 0 ? { moved } : {}),
+      },
     };
   }
   const alive = new Set(state.alive);
   alive.delete(id);
-  return { state: burnFuses({ ...state, alive, taps: state.taps + 1 }), event: { type: 'exited', id } };
+  if (!state.bump) return { state: burnFuses({ ...state, alive, taps: state.taps + 1 }), event: { type: 'exited', id } };
+  // a bomb that leaves takes its fuse with it; nothing else burns on an exit
+  const { [id]: _gone, ...fuses } = state.fuses;
+  return { state: { ...state, alive, fuses, taps: state.taps + 1 }, event: { type: 'exited', id } };
 }
 
 export function isCleared(state: GameState): boolean {

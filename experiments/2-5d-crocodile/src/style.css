@@ -1,0 +1,27 @@
+:root { --cream: #fff6e3; --ink: #4a3424; --green: #55b23a; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; touch-action: none; user-select: none; color: var(--ink);
+  background: radial-gradient(120% 80% at 50% 40%, #9bd36a, #6fb34a);
+  font-family: system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif;
+}
+#board { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#hud {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 2; display: flex; gap: 8px; align-items: center; justify-content: space-between;
+  padding: max(10px, env(safe-area-inset-top)) 10px 0; pointer-events: none;
+}
+.card { display: flex; gap: 10px; align-items: baseline; background: var(--cream); border: 3px solid #c98c4f; border-radius: 14px; padding: 5px 10px; font-size: 15px; }
+#hearts { color: #e0564a; letter-spacing: 1px; }
+.tag { font-size: 12px; background: #ffe08a; border-radius: 10px; padding: 3px 8px; }
+button { font: inherit; border: 0; border-radius: 12px; background: var(--cream); color: var(--ink); min-height: 36px; padding: 0 10px; box-shadow: 0 2px 0 #c9a774; }
+#reset { pointer-events: auto; min-height: 40px; font-weight: 700; }
+#panel {
+  position: fixed; left: 8px; right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); z-index: 2;
+  background: rgba(255, 246, 227, .94); border-radius: 14px; padding: 6px 8px 8px; font-size: 13px;
+}
+#panel p { margin: 2px 0 4px; }
+#msg { font-weight: 700; font-size: 15px; }
+#note { color: #7a5a3c; }
+#scenes { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+#scenes button { font-size: 13px; min-height: 32px; }
+#scenes button.on { background: var(--green); color: #fff; box-shadow: 0 2px 0 #3d8a2a; }
+.opts { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }

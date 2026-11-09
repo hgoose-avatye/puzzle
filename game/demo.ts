@@ -1,4 +1,5 @@
 import type { Direction, Level } from '../src/core/types';
+import { cellsOf } from './species';
 
 /**
  * Hand-made scene for eyeballing every body type: ids pick the species (see speciesFor).
@@ -39,12 +40,17 @@ export function turnLevel(from: Direction, to: Direction, len: number, id: numbe
 export const SHEET_SPECIES = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'husky', 'snake', 'caterpillar', 'dachshund', 'crocodile'];
 const HEADINGS: Direction[] = ['up', 'down', 'left', 'right'];
 
-/** One row per species, one column per heading (up, down, left, right). Pieces are `len` cells long. */
-export function sheetLevel(names: string[], len = 1, headings: Direction[] = HEADINGS): { level: Level; species: Map<number, string> } {
+/**
+ * One row per species, one column per heading (up, down, left, right). Pieces are `len` cells long, or without `len`
+ * each species at its own size (game/species.ts), so the default sheet shows every animal as the levels draw it.
+ */
+export function sheetLevel(names: string[], fixedLen?: number, headings: Direction[] = HEADINGS): { level: Level; species: Map<number, string> } {
   const species = new Map<number, string>();
   const pieces: Level['pieces'] = [];
-  const pitch = len + 1;
+  const lenOf = (name: string): number => fixedLen ?? cellsOf(name) ?? 1;
+  const pitch = Math.max(1, ...names.map(lenOf)) + 1;
   names.forEach((name, row) => {
+    const len = lenOf(name);
     headings.forEach((dir, col) => {
       const id = 100 + row * 10 + col;
       species.set(id, name);
@@ -60,4 +66,80 @@ export function sheetLevel(names: string[], len = 1, headings: Direction[] = HEA
     });
   });
   return { level: { width: headings.length * pitch, height: names.length * pitch, pieces }, species };
+}
+
+/**
+ * Crossing paths on one 9x9 board, for checking simultaneous runs: 1 (3 cells) runs right along row 4; 2 drops down column 5,
+ * waits just above row 4 while 1 passes and then goes on by itself; 4 queues behind 2; 3 climbs through (7,4) after
+ * 1 has passed (no wait).
+ */
+export function crossLevel(): Level {
+  return {
+    width: 9,
+    height: 9,
+    pieces: [
+      { id: 1, cells: [{ x: 2, y: 4 }, { x: 1, y: 4 }, { x: 0, y: 4 }] },
+      { id: 2, cells: [{ x: 5, y: 1 }], dir: 'down' },
+      { id: 3, cells: [{ x: 7, y: 5 }], dir: 'up' },
+      { id: 4, cells: [{ x: 5, y: 0 }], dir: 'down' },
+    ],
+  };
+}
+
+/**
+ * crossLevel with a bomb on 2 (fuse 2), for checking bombs by hand: tap 1 and the bar warns at 1; then tapping 2 saves
+ * it even while it waits behind 1, and tapping 3 first sets it off. One-cell animals carry no bombs (2026-11-05), so 2
+ * is two cells long here, over 4's cell; 4 waits in the bottom corner, out of everyone's way, so the board is not
+ * cleared by the bomb checks.
+ */
+export function bombLevel(): Level {
+  const level = crossLevel();
+  // One-cell animals carry no bombs (2026-11-05): 2 is two cells long here, over 4's old cell; 4 waits in the bottom
+  // corner out of everyone's way. 5 (from the left) and 6 (from the right) run along row 1 and stop against the
+  // dynamite: the collisions its number (2) counts. Neither is in 2's way down.
+  const bomb = { id: 2, cells: [{ x: 5, y: 1 }, { x: 5, y: 0 }], fuse: 2 };
+  return { ...level, pieces: [...level.pieces.map((p) => (p.id === 2 ? bomb : p.id === 4 ? { ...p, cells: [{ x: 8, y: 8 }] } : p)), { id: 5, cells: [{ x: 0, y: 1 }], dir: 'right' }, { id: 6, cells: [{ x: 8, y: 1 }], dir: 'left' }] };
+}
+
+/**
+ * Board for comparing direction cues (?demo=dirs): 1-, 2- and 3-cell animals facing up, down, left and right, then a
+ * crowded bottom row where animals stand right in front of each other or between the camera and another animal.
+ */
+export function dirsLevel(): { level: Level; species: Map<number, string> } {
+  const rows: Array<[number, string, Array<[number, number]>, Direction?]> = [
+    [1, 'penguin', [[1, 1]], 'up'], [2, 'chick', [[3, 1]], 'down'], [3, 'parrot', [[5, 1]], 'left'], [4, 'penguin', [[7, 1]], 'right'],
+    [5, 'fox', [[1, 3], [1, 4]]], [6, 'pig', [[3, 4], [3, 3]]], [7, 'tiger', [[5, 3], [6, 3]]], [8, 'husky', [[8, 4], [7, 4]]],
+    [9, 'dachshund', [[1, 6], [1, 7], [1, 8]]], [10, 'snake', [[3, 8], [3, 7], [3, 6]]], [11, 'crocodile', [[5, 6], [6, 6], [7, 6]]], [12, 'caterpillar', [[8, 8], [7, 8], [6, 8]]],
+    // crowded: an animal ahead of it, or between it and the camera
+    [13, 'chick', [[1, 10]], 'up'], [14, 'parrot', [[1, 11]], 'left'], [15, 'penguin', [[1, 9]], 'right'],
+    [16, 'fox', [[3, 9], [3, 10]]], [17, 'pig', [[4, 11], [3, 11]]],
+    [18, 'parrot', [[5, 10]], 'down'], [19, 'penguin', [[5, 11]], 'right'],
+    [20, 'chick', [[7, 10]], 'left'], [21, 'penguin', [[6, 10]], 'up'],
+  ];
+  const species = new Map<number, string>();
+  const pieces: Level['pieces'] = rows.map(([id, name, cells, dir]) => {
+    species.set(id, name);
+    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(dir ? { dir } : {}) };
+  });
+  return { level: { width: 9, height: 12, pieces }, species };
+}
+
+/**
+ * Ten animals for the "which way will it go?" test (?demo=quiz): five one-cell, three two-cell, two three-cell, dark
+ * ones (penguin, husky) included, two crowded (a chick facing a penguin, with a dachshund on its camera side). Answers
+ * are in docs/verification/direction-test.md and nowhere on screen: up 3, down 3, left 2, right 2.
+ */
+export function quizLevel(): { level: Level; species: Map<number, string> } {
+  const rows: Array<[number, string, Array<[number, number]>, Direction?]> = [
+    [1, 'penguin', [[1, 1]], 'up'], [2, 'chick', [[4, 1]], 'left'], [3, 'parrot', [[5, 4]], 'left'],
+    [4, 'penguin', [[2, 6]], 'down'], [5, 'chick', [[2, 7]], 'up'],
+    [6, 'husky', [[3, 3], [2, 3]]], [7, 'fox', [[1, 5], [1, 4]]], [8, 'cow', [[4, 6], [4, 5]]],
+    [9, 'snake', [[6, 1], [6, 2], [6, 3]]], [10, 'dachshund', [[3, 8], [2, 8], [1, 8]]],
+  ];
+  const species = new Map<number, string>();
+  const pieces: Level['pieces'] = rows.map(([id, name, cells, dir]) => {
+    species.set(id, name);
+    return { id, cells: cells.map(([x, y]) => ({ x, y })), ...(dir ? { dir } : {}) };
+  });
+  return { level: { width: 7, height: 9, pieces }, species };
 }

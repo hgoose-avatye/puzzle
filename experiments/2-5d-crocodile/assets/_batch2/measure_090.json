@@ -1,0 +1,62 @@
+{
+ "cow_head": {
+  "len": 0.97,
+  "top": 99,
+  "bottom": 575
+ },
+ "cow_tail": {
+  "len": 1.02,
+  "top": 207,
+  "bottom": 640
+ },
+ "cow_k": 1.578,
+ "cow_legs_head": "none drawn",
+ "pig_head": {
+  "len": 0.86,
+  "top": 96,
+  "bottom": 574
+ },
+ "pig_tail": {
+  "len": 0.94,
+  "top": 230,
+  "bottom": 640
+ },
+ "pig_k": 1.574,
+ "pig_legs_head": "none drawn",
+ "fox_head": {
+  "len": 0.88,
+  "top": 92,
+  "bottom": 569
+ },
+ "fox_tail": {
+  "len": 1.0,
+  "top": 198,
+  "bottom": 640
+ },
+ "fox_k": 1.55,
+ "fox_legs_head": "none drawn",
+ "tiger_head": {
+  "len": 1.0,
+  "top": 95,
+  "bottom": 571
+ },
+ "tiger_tail": {
+  "len": 1.08,
+  "top": 202,
+  "bottom": 640
+ },
+ "tiger_k": 1.638,
+ "tiger_legs_head": "none drawn",
+ "husky_head": {
+  "len": 0.93,
+  "top": 75,
+  "bottom": 568
+ },
+ "husky_tail": {
+  "len": 1.05,
+  "top": 185,
+  "bottom": 640
+ },
+ "husky_k": 1.577,
+ "husky_legs_head": "none drawn"
+}

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { validateLevel } from '../core/rules';
 import { solve } from '../solver/solver';
-import { tapsToExit } from '../solver/plan';
 import { generateLevel } from './generate';
 
 describe('generateLevel with keys, sleepers and bombs', () => {
@@ -20,7 +19,8 @@ describe('generateLevel with keys, sleepers and bombs', () => {
       expect(level!.pieces.filter((p) => p.sleeping)).toHaveLength(2);
       const bombs = level!.pieces.filter((p) => p.fuse !== undefined);
       expect(bombs).toHaveLength(2);
-      for (const b of bombs) expect(b.fuse!).toBeGreaterThanOrEqual(tapsToExit(level!, b.id)!);
+      // the fuse is a push budget (docs/rules.md 5): slack alone on a board that peels, at least one push
+      for (const b of bombs) expect(b.fuse!).toBeGreaterThanOrEqual(1);
     }
   });
 });

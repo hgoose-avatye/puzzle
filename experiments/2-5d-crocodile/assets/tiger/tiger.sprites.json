@@ -1,0 +1,80 @@
+{
+  "species": "tiger",
+  "frame": {
+    "size": 1024,
+    "cellPx": 512,
+    "anchor": [
+      512,
+      640
+    ]
+  },
+  "scale": 1.2,
+  "tuck": 0,
+  "parts": {
+    "head": {
+      "drawn": {
+        "0": {
+          "file": "approved/tiger_head_000.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "90": {
+          "file": "fixed/tiger_head_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "180": {
+          "file": "approved/tiger_head_180.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            117
+          ]
+        }
+      }
+    },
+    "tail": {
+      "drawn": {
+        "90": {
+          "file": "approved/tiger_tail_090.png",
+          "anchor": [
+            512,
+            510
+          ]
+        },
+        "0": {
+          "file": "fixed/tiger_tail_000.png",
+          "anchor": [
+            512,
+            510
+          ],
+          "offset": [
+            0,
+            265
+          ]
+        },
+        "180": {
+          "file": "approved/tiger_tail_180.png",
+          "anchor": [
+            512,
+            510
+          ]
+        }
+      }
+    }
+  },
+  "extend": {
+    "tiger_tail_000.png": {
+      "band": 545,
+      "rows": 15
+    }
+  },
+  "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: tiger_head_090.png, tiger_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
+}
