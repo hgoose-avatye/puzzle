@@ -75,26 +75,9 @@ const measure = () => page.evaluate(async () => {
   return out;
 });
 
-// Classic 3D baseline (?render=3d): per animal the projected floor point and cell width of every block; the drawn pixels
-// come from the frame with and without the animal's blocks (the first bodyLen children of the view group)
-const measure3d = () => page.evaluate(() => {
-  const camera = window.__diagCamera, rect = document.querySelector('canvas').getBoundingClientRect();
-  const V = window.__game.scene().position.constructor;
-  const toScreen = (p) => { const q = p.clone().project(camera); return [rect.left + ((q.x + 1) / 2) * rect.width, rect.top + ((1 - q.y) / 2) * rect.height]; };
-  const out = [];
-  for (const [id, view] of window.__game.views()) {
-    view.group.children.slice(0, view.bodyLen).forEach((root, index) => {
-      const r = root.getWorldPosition(new V());
-      const l = toScreen(r.clone().setY(0.1).add(new V(-0.5, 0, 0))), rr = toScreen(r.clone().setY(0.1).add(new V(0.5, 0, 0)));
-      out.push({ id, index, deg: (root.rotation.y * 180) / Math.PI, block: [r.x, r.z], floorTop: toScreen(r.clone().setY(0.1)), cellPx: rr[0] - l[0] });
-    });
-  }
-  return out;
-});
-const setBlocks3d = (on) => page.evaluate((on) => { for (const v of window.__game.views().values()) v.group.children.slice(0, v.bodyLen).forEach((s) => { s.visible = on; }); }, on);
 const setCards = (on) => page.evaluate((on) => window.__game.scene().traverse((o) => { if (o.isMesh && o.userData.spriteCard) o.material.visible = on; }), on);
 for (const [sp, len] of SCENES) {
-  for (const mode of MODES.filter((m) => m !== '3D')) {
+  for (const mode of MODES) {
     const name = `${sp}-${mode}`;
     try {
       await page.goto(`http://localhost:5431/?demo=sheet&species=${Array(ROWS).fill(sp).join(',')}&len=${len}&cardmode=${mode}${EXTRA}`, { waitUntil: 'load', timeout: 30000 });
@@ -110,23 +93,8 @@ for (const [sp, len] of SCENES) {
     } catch (e) { errs.push(`${name}: ${e.message}`); }
   }
 }
-if (MODES.includes('3D')) {
-  for (const [sp, len] of SCENES) {
-    const name = `${sp}-3D`;
-    await page.goto(`http://localhost:5431/?demo=sheet&species=${Array(ROWS).fill(sp).join(',')}&len=${len}&render=3d`, { waitUntil: 'load', timeout: 30000 });
-    await page.waitForFunction(() => window.__game && window.__diagCamera, { timeout: 20000 });
-    await sleep(1200);
-    const blocks = await measure3d();
-    await page.screenshot({ path: `${OUT}/${name}-on.png` });
-    await setBlocks3d(false); await sleep(250);
-    await page.screenshot({ path: `${OUT}/${name}-off.png` });
-    await setBlocks3d(true);
-    writeFileSync(`${OUT}/${name}.json`, JSON.stringify({ species: sp, len, mode: '3D', view: [VW, VH], blocks }, null, 1));
-    console.log(name, blocks.length, 'blocks');
-  }
-}
 // crowded mixed board (adjacent animals, one in front of another), current renderer and the two alternatives
-for (const mode of MODES.filter((m) => m !== '3D')) {
+for (const mode of MODES) {
   await page.goto(`http://localhost:5431/?demo=dirs&cardmode=${mode}`, { waitUntil: 'load', timeout: 30000 });
   await page.waitForFunction(() => window.__game && window.__diagCamera, { timeout: 20000 }).catch(() => {});
   await sleep(1500);

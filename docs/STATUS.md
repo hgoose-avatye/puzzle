@@ -35,7 +35,7 @@
 
 ### 실행
 
-- 게임(2.5D): `npm run dev:game` 후 http://localhost:5420 (Classic 3D 비교용은 `npm run dev:game3d`, 5200)
+- 게임(2.5D): `npm run dev:game` 후 http://localhost:5420
   - `?level=N`: 해당 레벨 바로 열기
   - `?demo=cross`: 동시 이동 확인용 장면
   - `?demo=1`: 동물 종류 확인용 장면

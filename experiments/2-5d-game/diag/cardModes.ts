@@ -11,7 +11,6 @@
  */
 import * as THREE from 'three';
 import { buildAnimal as buildA } from '../spriteCards';
-import { buildAnimal as build3d } from '../../../game/blocks';
 import { nearestSprite, offsetWeight, partsFor, type SpeciesSprites } from '../../2-5d-crocodile/src/sprites';
 import { TUCK } from '../../2-5d-crocodile/src/spriteRender';
 
@@ -165,6 +164,6 @@ function build(species: string, cells: number): THREE.Group[] {
   }
   const n = Math.max(1, Math.min(3, Math.floor(cells || 1)));
   const entry = registry.get(species);
-  if (!entry || !partsFor(n).every((part) => Object.keys(entry.sprites.parts[part]?.drawn ?? {}).length)) return build3d(species, cells);
+  if (!entry || !partsFor(n).every((part) => Object.keys(entry.sprites.parts[part]?.drawn ?? {}).length)) return buildA(species, cells); // throws: not drawable
   return partsFor(n).map((part, i) => cardBlock(entry, part, i, species));
 }

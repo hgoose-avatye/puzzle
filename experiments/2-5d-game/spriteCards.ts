@@ -1,7 +1,8 @@
 /**
- * buildAnimal for the 2.5D integration entry (vite.config.ts redirects game/animals.ts's `./blocks` here).
- * A species with a sprite manifest (any *.sprites.json in the experiment, keyed by its `species`) is built as 2D
- * image cards; every other species gets the original 3D blocks. No species is named in this file.
+ * buildAnimal for the game entry (vite.config.ts resolves game/animals.ts's `./cards` here). A species with a sprite
+ * manifest (any *.sprites.json in the experiment, keyed by its `species`) is built as 2D image cards. There is no
+ * other look: an animal without complete pictures is an error (spriteCheck.ts; the build checks every species the game
+ * draws). No species is named in this file.
  *
  * Each block keeps the structure PieceView drives (root > animated > content), so placement on the track, the run,
  * the gate shrink, the hop and the flinch all work unchanged. The card itself, every frame (onBeforeRender):
@@ -15,15 +16,13 @@
  * Depth against walls, props and other animals comes from the normal depth buffer; transparent pixels are cut out.
  */
 import * as THREE from 'three';
-import { buildAnimal as build3d } from '../../game/blocks';
 import { nearestSprite, offsetWeight, partsFor, type SpeciesSprites } from '../2-5d-crocodile/src/sprites';
 import { TUCK } from '../2-5d-crocodile/src/spriteRender';
 import spritePictures from 'virtual:sprite-pictures';
+import { spriteProblems } from './spriteCheck';
 
 // comparison switches below work on the dev server only; a production build always draws the shipped cards
 const query = import.meta.env.DEV ? new URLSearchParams(location.search) : new URLSearchParams();
-/** ?render=3d Classic 3D, ?render=25d (default in this entry) Illustrated 2.5D */
-const USE_CARDS = query.get('render') !== '3d';
 /** size candidate for comparisons (?cardScale=1.2), times the manifest's optional per-species `scale`; feet stay put */
 const CARD_SCALE = Number(query.get('cardScale') ?? 1) || 1;
 /** comparison only: ?tuck=0 / 0.05 overrides the 0.10-cell visual tuck */
@@ -70,7 +69,7 @@ function foldV(f: Fold | undefined, v: number): number | null {
 }
 
 /** Species drawn as cards in this run (for the test hook and reports). */
-export const spriteSpecies = (): string[] => (USE_CARDS ? [...registry.keys()] : []);
+export const spriteSpecies = (): string[] => [...registry.keys()];
 
 const loader = new THREE.TextureLoader();
 const textures = new Map<string, THREE.Texture>();
@@ -332,22 +331,40 @@ function jointCard(entry: { sprites: SpeciesSprites; dir: string }, ahead: THREE
   return card;
 }
 
-/** every buildAnimal call: the species the game chose (speciesFor) and how it was drawn, for the capture script */
-const built: Array<{ species: string; cells: number; as: 'cards' | '3d' }> = [];
-/** species the game asked for that have no 2.5D art yet (drawn with the 3D fallback): the conversion to-do list */
-const missingSpecies = (): string[] => (USE_CARDS ? [...new Set(built.filter((b) => b.as === '3d').map((b) => b.species))].sort() : []);
+/** every buildAnimal call: the species the game chose (speciesFor) and whether it could be drawn, for the capture scripts */
+const built: Array<{ species: string; cells: number; as: 'cards' | 'missing' }> = [];
+/** species the game asked for without complete pictures (buildAnimal threw for them); empty on a sound run */
+const missingSpecies = (): string[] => [...new Set(built.filter((b) => b.as === 'missing').map((b) => b.species))].sort();
 if (import.meta.env.DEV) {
   (window as unknown as { __cards: unknown }).__cards = { built, stats: cardStats, species: spriteSpecies, missingSpecies, scale: CARD_SCALE };
-  if (USE_CARDS) console.info('[2.5D] sprite species:', spriteSpecies().join(', '));
+  console.info('[2.5D] sprite species:', spriteSpecies().join(', '));
+}
+
+/** dev only: the missing pictures in a red box over the game, so a blank or broken board is never the only sign */
+function showMissing(message: string): void {
+  if (!import.meta.env.DEV) return;
+  let box = document.getElementById('missing-sprites');
+  if (!box) {
+    box = document.createElement('pre');
+    box.id = 'missing-sprites';
+    box.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:99999;margin:0;padding:10px;background:#b00020;color:#fff;font:12px/1.4 monospace;white-space:pre-wrap;pointer-events:none';
+    document.body.appendChild(box);
+  }
+  box.textContent += `${box.textContent ? '\n' : ''}${message}`;
 }
 
 export function buildAnimal(species: string, cells: number): THREE.Group[] {
   const n = Math.max(1, Math.min(3, Math.floor(cells || 1)));
-  // cards only when every part of this animal has at least one picture (a species still being drawn stays 3D)
-  const found = USE_CARDS ? registry.get(species) : undefined;
-  const entry = found && partsFor(n).every((part) => Object.keys(found.sprites.parts[part]?.drawn ?? {}).length) ? found : undefined;
-  built.push({ species, cells, as: entry ? 'cards' : '3d' });
-  if (!entry) return build3d(species, cells);
+  const entry = registry.get(species);
+  const problems = spriteProblems(entry?.sprites, species, n);
+  if (!entry || problems.length) {
+    built.push({ species, cells, as: 'missing' });
+    const message = `[2.5D] cannot draw ${species} (${n} cell${n > 1 ? 's' : ''}): ${problems.join('; ')}`;
+    console.error(message);
+    showMissing(message);
+    throw new Error(message);
+  }
+  built.push({ species, cells, as: 'cards' });
   const parts = partsFor(n);
   const blocks: THREE.Group[] = [];
   parts.forEach((part, i) => blocks.push(cardBlock(entry, part, i, blocks)));

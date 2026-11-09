@@ -1,4 +1,5 @@
 import type { Direction, Level } from '../src/core/types';
+import { cellsOf } from './species';
 
 /**
  * Hand-made scene for eyeballing every body type: ids pick the species (see speciesFor).
@@ -39,12 +40,17 @@ export function turnLevel(from: Direction, to: Direction, len: number, id: numbe
 export const SHEET_SPECIES = ['penguin', 'chick', 'parrot', 'cow', 'pig', 'fox', 'tiger', 'husky', 'snake', 'caterpillar', 'dachshund', 'crocodile'];
 const HEADINGS: Direction[] = ['up', 'down', 'left', 'right'];
 
-/** One row per species, one column per heading (up, down, left, right). Pieces are `len` cells long. */
-export function sheetLevel(names: string[], len = 1, headings: Direction[] = HEADINGS): { level: Level; species: Map<number, string> } {
+/**
+ * One row per species, one column per heading (up, down, left, right). Pieces are `len` cells long, or without `len`
+ * each species at its own size (game/species.ts), so the default sheet shows every animal as the levels draw it.
+ */
+export function sheetLevel(names: string[], fixedLen?: number, headings: Direction[] = HEADINGS): { level: Level; species: Map<number, string> } {
   const species = new Map<number, string>();
   const pieces: Level['pieces'] = [];
-  const pitch = len + 1;
+  const lenOf = (name: string): number => fixedLen ?? cellsOf(name) ?? 1;
+  const pitch = Math.max(1, ...names.map(lenOf)) + 1;
   names.forEach((name, row) => {
+    const len = lenOf(name);
     headings.forEach((dir, col) => {
       const id = 100 + row * 10 + col;
       species.set(id, name);
