@@ -4,15 +4,9 @@ import { directionVector, exitCell, exitDirection, traceExit } from '../src/core
 import type { Level, Piece } from '../src/core/types';
 import { routeOf } from '../src/game/flow';
 import { trackAt, type Track } from '../src/game/smooth';
-import { buildAnimal } from './blocks';
+import { buildAnimal } from './cards';
+import { SPECIES } from './species';
 import { DYNAMITE, dynamiteBundleTexture, dynamiteScreenTexture, statusPixelScale, statusTexture } from './statusIcons';
-
-/** Species per size class, following docs/art-reference/09-size-classes-1-2-3cell.png. */
-const SPECIES: Record<'one' | 'two' | 'long', string[]> = {
-  one: ['penguin', 'chick', 'parrot'],
-  two: ['cow', 'pig', 'fox', 'tiger', 'husky'],
-  long: ['snake', 'caterpillar', 'dachshund', 'crocodile'],
-};
 
 /** Demo scenes can pin a species to a piece id (e.g. the species sheet). */
 export const speciesOverride = new Map<number, string>();

@@ -3,21 +3,22 @@ import { dirname, relative, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import { buildDefine } from '../../tools/build-info';
 import type { SpeciesSprites } from '../2-5d-crocodile/src/sprites';
+import { SPECIES } from '../../game/species';
+import { spriteProblems } from './spriteCheck';
 
 /**
- * The real game (game/ unchanged) with 2.5D animals: game/animals.ts imports `./blocks` for buildAnimal; this entry
- * points that one import at spriteCards.ts, which draws species that have a sprite manifest as 2D image cards in the
- * same Three.js scene and hands every other species to the original 3D buildAnimal. `?render=3d` turns the cards off.
- * This is the game: `npm run dev:game` / `build:game` / `test:e2e` use it. Classic 3D (vite.game.config.ts) only runs with `npm run dev:game3d`.
+ * The game entry: `npm run dev:game` / `build:game` / `test:e2e` use it. game/animals.ts imports `./cards` for
+ * buildAnimal (typed by game/cards.d.ts); this entry resolves it to spriteCards.ts, which draws every animal as 2.5D
+ * image cards in the game's Three.js scene. There is no other renderer.
  */
 const here = new URL('.', import.meta.url).pathname;
 const game = new URL('../../game/', import.meta.url).pathname;
 
-const swapBlocks: Plugin = {
+const swapCards: Plugin = {
   name: 'two-five-d-animals',
   enforce: 'pre',
   async resolveId(source, importer) {
-    if (source === './blocks' && importer?.endsWith('/game/animals.ts')) return `${here}spriteCards.ts`;
+    if (source === './cards' && importer?.endsWith('/game/animals.ts')) return `${here}spriteCards.ts`;
     return null;
   },
 };
@@ -58,6 +59,32 @@ export default { ${keys.map((key, i) => `${JSON.stringify(key)}: p${i}`).join(',
   },
 };
 
+/**
+ * Every species the game draws (game/species.ts, at its size class; the levels, the title and the dirs / quiz / sheet
+ * demos only use these) must have a manifest whose parts have a picture on disk for all four board headings. Checked
+ * when the dev server or a build starts: a missing picture fails here, never as a blank or stand-in animal in the game.
+ */
+const checkSprites: Plugin = {
+  name: 'two-five-d-sprite-check',
+  buildStart() {
+    const found = new Map<string, { sprites: SpeciesSprites; dir: string }>();
+    for (const root of ['assets', 'public']) {
+      for (const rel of readdirSync(`${sprites}${root}`, { recursive: true }) as string[]) {
+        if (!rel.endsWith('.sprites.json') || rel.split('/').includes('candidate')) continue;
+        const file = `${sprites}${root}/${rel}`;
+        const manifest = JSON.parse(readFileSync(file, 'utf8')) as SpeciesSprites;
+        found.set(manifest.species, { sprites: manifest, dir: dirname(file) });
+      }
+    }
+    const pools: Array<[string[], number]> = [[SPECIES.one, 1], [SPECIES.two, 2], [SPECIES.long, 3]];
+    const problems = pools.flatMap(([names, cells]) => names.flatMap((species) => {
+      const entry = found.get(species);
+      return spriteProblems(entry?.sprites, species, cells, (pic) => existsSync(resolve(entry!.dir, pic)));
+    }));
+    if (problems.length) this.error(`2.5D sprites incomplete:\n  ${problems.join('\n  ')}`);
+  },
+};
+
 const repo = new URL('../../', import.meta.url).pathname;
 
-export default defineConfig({ root: game, publicDir: `${game}public`, plugins: [swapBlocks, spritePictures], server: { port: 5420, strictPort: true }, define: buildDefine(repo) });
+export default defineConfig({ root: game, publicDir: `${game}public`, plugins: [swapCards, spritePictures, checkSprites], server: { port: 5420, strictPort: true }, define: buildDefine(repo) });

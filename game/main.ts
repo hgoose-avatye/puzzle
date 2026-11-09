@@ -97,7 +97,7 @@ function buildLevel(n: number): { level: Level; hearts?: number } | null {
   if (params.get('demo') === 'sheet') {
     const names = params.get('species')?.split(',') ?? SHEET_SPECIES.slice(0, 6);
     const dirs = params.get('dirs')?.split(',') as Direction[] | undefined;
-    const sheet = sheetLevel(names, Number(params.get('len') ?? 1), dirs);
+    const sheet = sheetLevel(names, params.has('len') ? Number(params.get('len')) : undefined, dirs);
     speciesOverride.clear();
     for (const [id, name] of sheet.species) speciesOverride.set(id, name);
     return { level: sheet.level };
