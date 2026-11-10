@@ -239,12 +239,20 @@ const BLOCK_MSG_MS = 2000;
 const HINT_COUNT_KEY = 'animal-rescue-hint-count';
 const readHintCount = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(HINT_COUNT_KEY) ?? '{}') ?? {}; } catch { return {}; } };
 const bumpHintCount = (cause: BlockCause): void => { try { const c = readHintCount(); c[cause] = (c[cause] ?? 0) + 1; localStorage.setItem(HINT_COUNT_KEY, JSON.stringify(c)); } catch { /* ignore */ } };
-/** A blocked-tap line goes away after BLOCK_MSG_MS, but only if it is still the one on screen (a lesson's words stay). */
-function sayBlocked(text: string): void {
-  const msg = $('msg');
-  msg.textContent = text;
+/** The blocked-tap line on screen, if any: only this text is ever removed by the timer or by the next tap. */
+let blockMsgText: string | undefined;
+function clearBlocked(): void {
   window.clearTimeout(blockMsgTimer);
-  blockMsgTimer = window.setTimeout(() => { if (msg.textContent === text) msg.textContent = ''; }, BLOCK_MSG_MS);
+  const msg = $('msg');
+  if (blockMsgText !== undefined && msg.textContent === blockMsgText) msg.textContent = '';
+  blockMsgText = undefined;
+}
+/** A blocked-tap line goes away after BLOCK_MSG_MS or at the next tap, but only if it is still the one on screen (a lesson's words stay). */
+function sayBlocked(text: string): void {
+  clearBlocked();
+  $('msg').textContent = text;
+  blockMsgText = text;
+  blockMsgTimer = window.setTimeout(clearBlocked, BLOCK_MSG_MS);
 }
 
 /**
@@ -258,6 +266,7 @@ function clearBoard(): number {
   loopSpeed = null;
   $('msg').textContent = '';
   window.clearTimeout(blockMsgTimer);
+  blockMsgText = undefined;
   blockStreak = null;
   fx.clear();
   sound.stopAll();
@@ -560,6 +569,7 @@ function onTap(id: number): TapOutcome {
     playlog?.tap('ignored');
     return 'repeat (R1)';
   }
+  clearBlocked(); // a new tap, push or exit: the last blocked line no longer holds (a lesson's words stay)
   // the record tells a free animal's exit from a push (a blocked tap that moved) and a bump that moved nothing
   playlog?.tap(ev.type === 'exited' ? 'exit' : ev.type === 'blocked' ? (ev.moved ? 'push' : 'bump') : 'ignored');
   if (ev.type === 'ignored') {
