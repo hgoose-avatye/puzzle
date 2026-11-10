@@ -2,6 +2,7 @@ import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { LEVELS as EXP_LEVELS } from '../experiments/knot-small/levels';
 import { PlayLog } from '../src/game/playlog';
+import { decideHint, extendStreak, type BlockCause, type Streak } from '../src/game/blockedHint';
 import { buildGameLevel, levelSpec, STAGE_LENGTH, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, crateStanding, cratesInWay, headDirection, isAsleep, lockedBy, piecesAround, traceExit } from '../src/core/rules';
 import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
@@ -231,6 +232,29 @@ function refreshHud(): void {
   }
 }
 
+/** Blocked-tap words (src/game/blockedHint.ts): the streak of taps on one stuck animal, and the 2 s timer of the line shown. */
+let blockStreak: Streak | null = null;
+let blockMsgTimer: number | undefined;
+const BLOCK_MSG_MS = 2000;
+const HINT_COUNT_KEY = 'animal-rescue-hint-count';
+const readHintCount = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(HINT_COUNT_KEY) ?? '{}') ?? {}; } catch { return {}; } };
+const bumpHintCount = (cause: BlockCause): void => { try { const c = readHintCount(); c[cause] = (c[cause] ?? 0) + 1; localStorage.setItem(HINT_COUNT_KEY, JSON.stringify(c)); } catch { /* ignore */ } };
+/** The blocked-tap line on screen, if any: only this text is ever removed by the timer or by the next tap. */
+let blockMsgText: string | undefined;
+function clearBlocked(): void {
+  window.clearTimeout(blockMsgTimer);
+  const msg = $('msg');
+  if (blockMsgText !== undefined && msg.textContent === blockMsgText) msg.textContent = '';
+  blockMsgText = undefined;
+}
+/** A blocked-tap line goes away after BLOCK_MSG_MS or at the next tap, but only if it is still the one on screen (a lesson's words stay). */
+function sayBlocked(text: string): void {
+  clearBlocked();
+  $('msg').textContent = text;
+  blockMsgText = text;
+  blockMsgTimer = window.setTimeout(clearBlocked, BLOCK_MSG_MS);
+}
+
 /**
  * Drop whatever is on the board: the level in play, its animals (so no run that is still under way can call back with
  * a result), popups, timers and sounds. Returns the new load token. Shared by starting a level and going home.
@@ -241,6 +265,9 @@ function clearBoard(): number {
   $('banner').hidden = true;
   loopSpeed = null;
   $('msg').textContent = '';
+  window.clearTimeout(blockMsgTimer);
+  blockMsgText = undefined;
+  blockStreak = null;
   fx.clear();
   sound.stopAll();
   stopTutorials();
@@ -533,6 +560,7 @@ type TapOutcome = 'exited' | 'blocked' | 'repeat (R1)' | 'ignored: running' | 'i
 function onTap(id: number): TapOutcome {
   if (!flow) return 'no level';
   if (isCleared(flow.state) || flow.lost || stuckOut) return 'level over';
+  if (blockStreak && blockStreak.id !== id) blockStreak = null;
   // null: a repeat on an animal still shaking from its blocked tap, the same tap (no second heart)
   const ev = flow.tap(id, performance.now());
   if (!ev) {
@@ -541,6 +569,7 @@ function onTap(id: number): TapOutcome {
     playlog?.tap('ignored');
     return 'repeat (R1)';
   }
+  clearBlocked(); // a new tap, push or exit: the last blocked line no longer holds (a lesson's words stay)
   // the record tells a free animal's exit from a push (a blocked tap that moved) and a bump that moved nothing
   playlog?.tap(ev.type === 'exited' ? 'exit' : ev.type === 'blocked' ? (ev.moved ? 'push' : 'bump') : 'ignored');
   if (ev.type === 'ignored') {
@@ -564,6 +593,7 @@ function onTap(id: number): TapOutcome {
       fx.escape(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
+    blockStreak = null;
     crateLessonExit(id); // the lesson's line (crackCrates may replace it with the break's)
     // its crate cracks once it sets off (the frame loop), not at the tap
     const runner = flow.traffic.get(id);
@@ -589,7 +619,30 @@ function onTap(id: number): TapOutcome {
     } else feedback();
     // the words follow the rules exactly (2026-11-07 audit): a crate cracks per neighbour that leaves, as many times as
     // its dots show; a sleeper's neighbours are whoever stands next to it now
-    $('msg').textContent = pushLesson ? (tutorialShown?.id === 'cratePush' ? '' : BUMP_LESSON_MSG) : ev.asleep ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요' : ev.lockedBy !== undefined ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요' : ev.blockers.length === 0 && ev.crates ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요' : ev.moved ? PUSHED_MSG : '앞이 막혔어요';
+    const cause: BlockCause = ev.asleep ? 'sleep' : ev.lockedBy !== undefined ? 'key' : ev.blockers.length === 0 && ev.crates ? 'crate' : 'plain';
+    if (pushLesson) {
+      blockStreak = null;
+      $('msg').textContent = tutorialShown?.id === 'cratePush' ? '' : BUMP_LESSON_MSG;
+    } else {
+      // a push changed the board; a tap that moved nothing extends the streak on this animal
+      blockStreak = ev.moved ? null : extendStreak(blockStreak, id);
+      const seen = readSeen();
+      const text = cause === 'sleep' ? '쿨쿨 자고 있어요. 지금 옆에 있는 친구가 나가면 깨어나요'
+        : cause === 'key' ? '잠겨 있어요. 열쇠를 가진 친구가 먼저예요'
+        : cause === 'crate' ? '상자가 막고 있어요. 바로 옆에서 친구가 나갈 때마다 금이 가고, 표시된 만큼 금이 가면 부서져요'
+        : ev.moved ? PUSHED_MSG : '앞이 막혔어요';
+      const lesson = cause === 'plain' ? undefined : cause === 'sleep' ? 'sleep' : cause === 'key' ? 'key' : 'crate';
+      if (ev.moved && cause === 'plain') { if (!seen.includes('bump')) sayBlocked(text); }
+      else {
+        const streak = blockStreak ?? { id, n: 1, said: false };
+        const d = decideHint(cause, streak, lesson ? seen.includes(lesson) : true, readHintCount()[cause] ?? 0);
+        if (d.say) {
+          sayBlocked(text);
+          if (d.count) bumpHintCount(cause);
+          if (blockStreak) blockStreak = { ...blockStreak, said: true };
+        }
+      }
+    }
   }
   refreshHud();
   checkStuck();
