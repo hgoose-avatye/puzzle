@@ -1,0 +1,40 @@
+{
+  "imageSize": {
+    "width": 3072,
+    "height": 1024
+  },
+  "frames": {
+    "front": {
+      "x": 0,
+      "y": 0,
+      "width": 1024,
+      "height": 1024
+    },
+    "side": {
+      "x": 1024,
+      "y": 0,
+      "width": 1024,
+      "height": 1024
+    },
+    "back": {
+      "x": 2048,
+      "y": 0,
+      "width": 1024,
+      "height": 1024
+    }
+  },
+  "sheets": {
+    "caterpillar": "caterpillar-sheet.png",
+    "chick": "chick-sheet.png",
+    "cow": "cow-sheet.png",
+    "crocodile": "crocodile-sheet.png",
+    "dachshund": "dachshund-sheet.png",
+    "fox": "fox-sheet.png",
+    "husky": "husky-sheet.png",
+    "parrot": "parrot-sheet.png",
+    "penguin": "penguin-sheet.png",
+    "pig": "pig-sheet.png",
+    "snake": "snake-sheet.png",
+    "tiger": "tiger-sheet.png"
+  }
+}

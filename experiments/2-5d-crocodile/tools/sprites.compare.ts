@@ -9,7 +9,9 @@ import { smoothPath as gameSmooth, trackAt as gameTrackAt } from '../../../src/g
 import { smoothPath } from '../src/rules';
 import { blockPoses, drawOrder, headingOf, missingHeadings, nearestSprite, offsetWeight, partsFor, type SpeciesSprites, spriteFor } from '../src/sprites';
 
-const manifestUrl = new URL('../assets/crocodile/crocodile.sprites.json', import.meta.url);
+// the crocodile as first approved, all 8 headings drawn (frozen here: the game's crocodile now uses the 2026-11-09
+// redraw with 0/90/180 only); its pictures stay in assets/crocodile/*-approved/
+const manifestUrl = new URL('./fixtures/crocodile-8dir.sprites.json', import.meta.url);
 const croc = JSON.parse(readFileSync(manifestUrl, 'utf8')) as SpeciesSprites;
 
 describe('parts per size class', () => {
@@ -61,26 +63,26 @@ describe('chick manifest (1 cell, standard-frame pictures; approved 2026-11-02)'
   });
 
   it('4 facings as the old chick drawing: down front, up back, left side, right side mirrored', () => {
-    expect(spriteFor(chick, 'single', 0)).toEqual({ file: 'approved/chick_000.png', mirror: false });
-    expect(spriteFor(chick, 'single', 180)?.file).toBe('approved/chick_180.png');
-    expect(spriteFor(chick, 'single', 270)).toMatchObject({ file: 'approved/chick_270.png', mirror: false });
-    expect(spriteFor(chick, 'single', 90)).toMatchObject({ file: 'approved/chick_270.png', mirror: true });
+    expect(spriteFor(chick, 'single', 0)).toEqual({ file: 'v3/chick_single_000.png', mirror: false });
+    expect(spriteFor(chick, 'single', 180)?.file).toBe('v3/chick_single_180.png');
+    expect(spriteFor(chick, 'single', 270)).toMatchObject({ file: 'v3/chick_single_270.png', mirror: false });
+    expect(spriteFor(chick, 'single', 90)).toMatchObject({ file: 'v3/chick_single_270.png', mirror: true });
   });
 
   it('diagonals have no picture: nearestSprite takes the next facing clockwise, as the old chick drawing rounded', () => {
     expect(missingHeadings(chick, 'single')).toEqual([45, 135, 225, 315]);
     // legacy: Math.round(angle / 90°) -> 45° is the right side, 135° the back, 225° the left side, 315° the front
-    expect(nearestSprite(chick, 'single', 45)).toMatchObject({ file: 'approved/chick_270.png', mirror: true, heading: 90 });
-    expect(nearestSprite(chick, 'single', 135)).toMatchObject({ file: 'approved/chick_180.png', heading: 180 });
-    expect(nearestSprite(chick, 'single', 225)).toMatchObject({ file: 'approved/chick_270.png', mirror: false, heading: 270 });
-    expect(nearestSprite(chick, 'single', 315)).toMatchObject({ file: 'approved/chick_000.png', heading: 0 });
+    expect(nearestSprite(chick, 'single', 45)).toMatchObject({ file: 'v3/chick_single_270.png', mirror: true, heading: 90 });
+    expect(nearestSprite(chick, 'single', 135)).toMatchObject({ file: 'v3/chick_single_180.png', heading: 180 });
+    expect(nearestSprite(chick, 'single', 225)).toMatchObject({ file: 'v3/chick_single_270.png', mirror: false, heading: 270 });
+    expect(nearestSprite(chick, 'single', 315)).toMatchObject({ file: 'v3/chick_single_000.png', heading: 0 });
   });
 
   it('switches on the continuous angle, halfway between drawn facings (not after rounding to 45°)', () => {
     // 30° into a bend from down to right: still the front (legacy: Math.round(30 / 90) = 0)
-    expect(nearestSprite(chick, 'single', 30)).toMatchObject({ file: 'approved/chick_000.png', heading: 0 });
-    expect(nearestSprite(chick, 'single', 44)).toMatchObject({ file: 'approved/chick_000.png', heading: 0 });
-    expect(nearestSprite(chick, 'single', 46)).toMatchObject({ file: 'approved/chick_270.png', mirror: true, heading: 90 });
+    expect(nearestSprite(chick, 'single', 30)).toMatchObject({ file: 'v3/chick_single_000.png', heading: 0 });
+    expect(nearestSprite(chick, 'single', 44)).toMatchObject({ file: 'v3/chick_single_000.png', heading: 0 });
+    expect(nearestSprite(chick, 'single', 46)).toMatchObject({ file: 'v3/chick_single_270.png', mirror: true, heading: 90 });
     for (let deg = 0; deg < 360; deg += 1.5) {
       const legacy = Math.round(deg / 90) % 4; // 0 front, 1 right side, 2 back, 3 left side
       expect(nearestSprite(chick, 'single', deg)!.heading, `${deg}°`).toBe(legacy * 90);
@@ -253,7 +255,7 @@ describe('batch 3 (3 cells): snake and caterpillar on provisional received/ mani
     });
   }
 
-  it('dachshund = colour variant of the caterpillar (2026-11-02): same frame, anchors and offsets, pictures under variant/', () => {
+  it('dachshund: same frame, anchors and offsets as the caterpillar (2026-11-09: its own redrawn dog pictures under v3/)', () => {
     const m = load('dachshund'), c = load('caterpillar');
     expect(m.frame).toEqual(c.frame);
     expect(m.scale).toBe(c.scale);
@@ -263,7 +265,7 @@ describe('batch 3 (3 cells): snake and caterpillar on provisional received/ mani
       for (const [h, pic] of Object.entries(c.parts[part]!.drawn)) {
         const mine = m.parts[part]!.drawn[h as keyof typeof c.parts.head.drawn]!;
         const file = (p: typeof pic) => (typeof p === 'string' ? p : p!.file);
-        expect(file(mine)).toBe(`variant/${file(pic).slice(file(pic).lastIndexOf('/') + 1)}`);
+        expect(file(mine)).toBe(`v3/dachshund_${part}_${String(h).padStart(3, '0')}.png`);
         if (typeof pic === 'object') expect(mine).toMatchObject({ anchor: pic!.anchor, ...(pic!.offset ? { offset: pic!.offset } : {}) });
       }
     }

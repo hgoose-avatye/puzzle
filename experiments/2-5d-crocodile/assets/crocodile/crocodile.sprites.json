@@ -1,41 +1,37 @@
 {
-  "species": "crocodile",
-  "frame": {
-    "size": 1024,
-    "cellPx": 512,
-    "anchor": [
-      512,
-      640
-    ]
+ "species": "crocodile",
+ "frame": {
+  "size": 1024,
+  "cellPx": 512,
+  "anchor": [
+   512,
+   640
+  ]
+ },
+ "scale": 1.2,
+ "tuck": 0,
+ "parts": {
+  "head": {
+   "drawn": {
+    "0": "v3/crocodile_head_000.png",
+    "90": "v3/crocodile_head_090.png",
+    "180": "v3/crocodile_head_180.png"
+   }
   },
-  "scale": 1.2,
-  "tuck": 0,
-  "parts": {
-    "head": {
-      "drawn": {
-        "0": "head-approved/crocodile_head_000.png",
-        "45": "head-approved/crocodile_head_045.png",
-        "90": "head-approved/crocodile_head_090.png",
-        "135": "head-approved/crocodile_head_135.png",
-        "180": "head-approved/crocodile_head_180.png"
-      }
-    },
-    "body": {
-      "frontBack": true,
-      "drawn": {
-        "0": "body-approved/crocodile_body_000.png",
-        "45": "body-approved/crocodile_body_045.png",
-        "90": "body-approved/crocodile_body_090.png"
-      }
-    },
-    "tail": {
-      "drawn": {
-        "0": "tail-approved/crocodile_tail_000.png",
-        "45": "tail-approved/crocodile_tail_045.png",
-        "90": "tail-approved/crocodile_tail_090.png",
-        "135": "tail-approved/crocodile_tail_135.png",
-        "180": "tail-approved/crocodile_tail_180.png"
-      }
-    }
+  "body": {
+   "frontBack": true,
+   "drawn": {
+    "0": "v3/crocodile_body_000.png",
+    "90": "v3/crocodile_body_090.png"
+   }
+  },
+  "tail": {
+   "drawn": {
+    "0": "v3/crocodile_tail_000.png",
+    "90": "v3/crocodile_tail_090.png",
+    "180": "v3/crocodile_tail_180.png"
+   }
   }
+ },
+ "note": "2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced."
 }

@@ -14,6 +14,87 @@ import { buildScenery, obstacleFor, PALETTES } from './scenery';
 import { composeScene } from './scenes';
 import { buildPlaza } from './plaza';
 
+/**
+ * Painted stage backgrounds (2026-11-09): one picture per stage in game/bg/, named `<theme>-<slug>.webp|png` after the
+ * stage (BG_SLUGS). A stage with a picture lays it under the board instead of the low-poly props and drops the
+ * tilt-shift blur; a stage without one keeps the props. Dropping a correctly named file in game/bg/ is all it takes.
+ */
+const BG_SLUGS: Record<Theme, [string, string, string]> = {
+  village: ['flower', 'farm', 'plaza'],
+  forest: ['camp', 'river', 'deep'],
+  pirate: ['beach', 'harbor', 'cave'],
+  jungle: ['gate', 'falls', 'ruins'],
+  haunted: ['pumpkin', 'grave', 'castle'],
+  winter: ['town', 'lake', 'xmas'],
+};
+const BG_FILES = import.meta.glob<string>('./bg/*.{webp,png,jpg}', { eager: true, query: '?url', import: 'default' });
+const BG_URLS = new Map(Object.entries(BG_FILES).map(([path, url]) => [path.replace(/^\.\/bg\//, '').replace(/\.\w+$/, ''), url]));
+/** The picture laid flat: this many cells wide, this much taller than wide (it is drawn at a slant and the camera squashes it). */
+/** How far down the board may reach in screen units (-1 is the bottom edge): just clear of the bottom bar. */
+const FIT_BOTTOM = 0.8;
+const BG_SIZE = 20;
+/** Share of the picture, from its top, taken by the scenery; the board starts below it. */
+const BG_SCENERY = 0.34;
+const BG_STRETCH = 1.4;
+/** How far the background plane reaches, in pictures: the picture in the middle, mirrored copies around it. */
+const BG_EXTEND = 2.2;
+/** Dev: ?bg=<file in /assets/bg/> tries a candidate picture on any stage (?bgsize, ?bgstretch, ?bgy to tune it). */
+const BG_TRY = ((): { url: string; size: number; shift: number; stretch: number } | null => {
+  if (typeof location === 'undefined') return null;
+  const q = new URLSearchParams(location.search);
+  const file = q.get('bg');
+  return file ? { url: `/assets/bg/${file}`, size: Number(q.get('bgsize')) || BG_SIZE, shift: Number(q.get('bgy')) || 0, stretch: Number(q.get('bgstretch')) || BG_STRETCH } : null;
+})();
+/** The stage's picture URL, or undefined (props). */
+export function stageBackground(theme: Theme, stage: number): string | undefined {
+  return BG_URLS.get(`${theme}-${BG_SLUGS[theme][Math.max(0, Math.min(2, stage - 1))]}`);
+}
+/** The picture's bottom-edge colour, so the plain ground past its edges runs on in the same grass (sand, snow...). */
+const bgEdge = new Map<string, THREE.Color>();
+const bgTextures = new Map<string, THREE.Texture>();
+const bgWaiting = new Map<string, Array<() => void>>();
+/** Load (once) and keep a stage picture; used ahead of time for the next stage so it shows without a gap. */
+export function loadBackground(url: string): THREE.Texture {
+  let tex = bgTextures.get(url);
+  if (tex) return tex;
+  tex = new THREE.TextureLoader().load(url, (t) => {
+    const img = t.image as HTMLImageElement;
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 64;
+    const ctx = c.getContext('2d')!;
+    ctx.drawImage(img, 0, 0, 64, 64);
+    const d = ctx.getImageData(0, 60, 64, 4).data;
+    let r = 0, g = 0, b = 0;
+    for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+    const n = d.length / 4;
+    bgEdge.set(url, new THREE.Color().setRGB(r / n / 255, g / n / 255, b / n / 255, THREE.SRGBColorSpace));
+    for (const f of bgWaiting.get(url) ?? []) f();
+    bgWaiting.delete(url);
+  });
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 16;
+  // past its edges the picture continues mirrored (no flat band where it ends on tall or wide screens)
+  tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
+  bgTextures.set(url, tex);
+  return tex;
+}
+function bgPlane(url: string, size: number, shift: number, stretch: number, ground: THREE.MeshStandardMaterial): THREE.Mesh {
+  const tex = loadBackground(url);
+  const tint = (): void => { const c = bgEdge.get(url); if (c) { ground.map = null; ground.color.copy(c); ground.needsUpdate = true; } };
+  if (bgEdge.has(url)) tint();
+  else bgWaiting.set(url, [...(bgWaiting.get(url) ?? []), tint]);
+  // unlit: the picture shows in its own painted colours and light, not shaded again by the scene
+  // the plane reaches BG_EXTEND times the picture each way; the extra is the picture mirrored (texture wrap above)
+  const geo = new THREE.PlaneGeometry(size * BG_EXTEND, size * stretch * BG_EXTEND);
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) - 0.5) * BG_EXTEND + 0.5, (uv.getY(i) - 0.5) * BG_EXTEND + 0.5);
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  m.rotation.x = -Math.PI / 2;
+  // the picture's top is the far side; ?bgy moves it away so the board lands that share below its middle
+  m.position.set(0, -0.07, -shift * size * stretch);
+  return m;
+}
+
 /** Soft lighter and darker patches over the base colour, so the grass is not one flat colour. Repeats across the plane. */
 function groundTexture(color: number): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -123,6 +204,10 @@ export class Stage {
   /** How many arrow bounces were played (for checks). */
   arrowBounces = 0;
   private tilt!: ShaderPass;
+  /** The painted background and where it sits before fit() moves it to stay put on screen. */
+  private bgMesh: THREE.Mesh | null = null;
+  private bgZ = 0;
+  private bgSize = { w: BG_SIZE, h: BG_SIZE * BG_STRETCH };
 
   constructor(private readonly container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -183,7 +268,8 @@ export class Stage {
     const rng = createRng(seed * 7 + 3);
 
     // grass (or sea, snow...) all around, level with the plaza
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ map: groundTexture(pal.ground), roughness: 1 }));
+    const groundMat = new THREE.MeshStandardMaterial({ map: groundTexture(pal.ground), roughness: 1 });
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.08;
     ground.receiveShadow = true;
@@ -196,8 +282,15 @@ export class Stage {
       const v = directionVector(exitDirection(level, p));
       return { p: this.worldOf(level, c.x + v.x * 0.6, c.y + v.y * 0.6), v: new THREE.Vector3(v.x, 0, v.y) };
     });
-    const composed = composeScene(theme, stage, { hw: w / 2, hz: h / 2, gates }, rng);
-    if (composed) this.board.add(composed);
+    // a painted stage background replaces the props and brings its own depth, so no tilt-shift blur over it
+    const bgUrl = BG_TRY?.url ?? stageBackground(theme, stage);
+    this.tilt.enabled = !bgUrl;
+    const composed = bgUrl ? null : composeScene(theme, stage, { hw: w / 2, hz: h / 2, gates }, rng);
+    this.bgMesh = bgUrl ? bgPlane(bgUrl, BG_TRY?.size ?? BG_SIZE, BG_TRY?.shift ?? 0, BG_TRY?.stretch ?? BG_STRETCH, groundMat) : null;
+    this.bgZ = this.bgMesh?.position.z ?? 0;
+    this.bgSize = { w: BG_TRY?.size ?? BG_SIZE, h: (BG_TRY?.size ?? BG_SIZE) * (BG_TRY?.stretch ?? BG_STRETCH) };
+    if (this.bgMesh) this.board.add(this.bgMesh);
+    else if (composed) this.board.add(composed);
     else {
       // generic scatter for stages without a composed scene yet
       const near = (x: number, y: number): boolean => cells.some((c) => Math.max(Math.abs(c.x - x), Math.abs(c.y - y)) < 1.6);
@@ -282,6 +375,22 @@ export class Stage {
     this.camera.clearViewOffset();
     const d = this.fitDistance(this.keepZoom ? 58 : this.elevation);
     this.place(this.elevation, d);
+    // with a painted background, lower the board just enough to clear the scenery along the picture's top (2026-11-09),
+    // never past the bottom bar; the picture itself stays put on screen
+    const { width: w, height: h } = this.level;
+    const px = (z: number): number => (1 - new THREE.Vector3(0, 0, z).project(this.camera).y) * this.container.clientHeight / 2;
+    const ys = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => new THREE.Vector3(sx * (w / 2 + 0.45), 0, sz * (h / 2 + 0.8)).project(this.camera).y);
+    const room = Math.max(0, Math.min(...ys) + FIT_BOTTOM) * this.container.clientHeight / 2;
+    let shift = 0;
+    if (this.bgMesh) {
+      const size = this.bgSize;
+      const sceneryEdge = px(this.bgZ - size.h / 2 + size.h * BG_SCENERY);
+      const boardTop = px(-(h / 2 + 0.3));
+      shift = Math.round(Math.min(room, Math.max(0, sceneryEdge - boardTop)));
+      const perCell = px(0) - px(-1);
+      this.bgMesh.position.z = this.bgZ - (perCell > 0 ? shift / perCell : 0);
+    }
+    if (shift) this.frame(1, shift);
   }
 
   /**
@@ -307,6 +416,9 @@ export class Stage {
 
   /** The nearest camera distance at this elevation that shows the whole board with its margins. */
   private fitDistance(elevationDeg: number): number {
+    // below the top UI (the Apps in Toss bar and the HUD, #topSpace in index.html), at least 7% of the screen
+    const reserve = document.getElementById('topSpace')?.offsetHeight ?? 0;
+    const top = Math.min(0.86, 1 - (2 * reserve) / Math.max(1, this.container.clientHeight));
     const { width: w, height: h } = this.level!;
     const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => new THREE.Vector3(sx * (w / 2 + 0.45), 0, sz * (h / 2 + 0.8)));
     let d = 6;
@@ -314,7 +426,7 @@ export class Stage {
       this.place(elevationDeg, d);
       const fits = corners.every((c) => {
         const p = c.clone().project(this.camera);
-        return Math.abs(p.x) < 0.97 && p.y > -0.8 && p.y < 0.86;
+        return Math.abs(p.x) < 0.97 && p.y > -FIT_BOTTOM && p.y < top;
       });
       if (fits) break;
     }
@@ -360,13 +472,29 @@ export class Stage {
    * Bring the crates in line with who has left: a new crack shows the crack lines and shakes the crate, a broken one
    * disappears. Returns what changed so the caller can play sounds and effects.
    */
-  updateCrates(level: Level, alive: ReadonlySet<number>): Array<{ pos: THREE.Vector3; broke: boolean; x: number; y: number }> {
+  /**
+   * Bring the crates up to date with who has left. `quiet`: a board rebuilt by an undo, where the cracks and breaks
+   * already happened, so the crates take their state at once with no shake, pop, fall or shards (and none is returned).
+   */
+  updateCrates(level: Level, alive: ReadonlySet<number>, quiet = false): Array<{ pos: THREE.Vector3; broke: boolean; x: number; y: number }> {
     const out: Array<{ pos: THREE.Vector3; broke: boolean; x: number; y: number }> = [];
     for (const c of this.crates) {
       const cracks = crateCracks(level, c.crate, alive);
       if (cracks <= c.cracks) continue;
       c.cracks = cracks;
       const broke = cracks >= c.crate.hits;
+      if (quiet) {
+        if (broke) { c.obj.visible = false; c.pips.visible = false; }
+        else {
+          c.crack.visible = true;
+          const m = c.pips.material;
+          m.map?.dispose();
+          m.map = pipTexture(c.crate.hits - cracks);
+          m.needsUpdate = true;
+          c.pips.scale.x = PIP_W(c.crate.hits - cracks);
+        }
+        continue;
+      }
       if (broke) {
         // the crate falls in for BREAK_FALL while its pieces fly off, then it is gone
         c.breakT = BREAK_FALL;

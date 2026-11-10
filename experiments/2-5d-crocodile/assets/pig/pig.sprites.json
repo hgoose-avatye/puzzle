@@ -1,80 +1,80 @@
 {
-  "species": "pig",
-  "frame": {
-    "size": 1024,
-    "cellPx": 512,
-    "anchor": [
+ "species": "pig",
+ "frame": {
+  "size": 1024,
+  "cellPx": 512,
+  "anchor": [
+   512,
+   640
+  ]
+ },
+ "scale": 1.2,
+ "tuck": 0,
+ "parts": {
+  "head": {
+   "drawn": {
+    "0": {
+     "file": "v3/pig_head_000.png",
+     "anchor": [
       512,
-      640
-    ]
-  },
-  "scale": 1.2,
-  "tuck": 0,
-  "parts": {
-    "head": {
-      "drawn": {
-        "0": {
-          "file": "approved/pig_head_000.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "90": {
-          "file": "fixed/pig_head_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "approved/pig_head_180.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            131
-          ]
-        }
-      }
+      510
+     ]
     },
-    "tail": {
-      "drawn": {
-        "90": {
-          "file": "approved/pig_tail_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "0": {
-          "file": "fixed/pig_tail_000.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            283
-          ]
-        },
-        "180": {
-          "file": "approved/pig_tail_180.png",
-          "anchor": [
-            512,
-            510
-          ]
-        }
-      }
+    "90": {
+     "file": "v3/pig_head_090.png",
+     "anchor": [
+      512,
+      510
+     ]
+    },
+    "180": {
+     "file": "v3/pig_head_180.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      131
+     ]
     }
+   }
   },
-  "extend": {
-    "pig_tail_000.png": {
-      "band": 545,
-      "rows": 50
+  "tail": {
+   "drawn": {
+    "90": {
+     "file": "v3/pig_tail_090.png",
+     "anchor": [
+      512,
+      510
+     ]
+    },
+    "0": {
+     "file": "v3/pig_tail_000.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      283
+     ]
+    },
+    "180": {
+     "file": "v3/pig_tail_180.png",
+     "anchor": [
+      512,
+      510
+     ]
     }
-  },
-  "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: pig_head_090.png, pig_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
+   }
+  }
+ },
+ "extend": {
+  "pig_tail_000.png": {
+   "band": 545,
+   "rows": 0
+  }
+ },
+ "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: pig_head_090.png, pig_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced."
 }

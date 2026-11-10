@@ -1,80 +1,80 @@
 {
-  "species": "husky",
-  "frame": {
-    "size": 1024,
-    "cellPx": 512,
-    "anchor": [
+ "species": "husky",
+ "frame": {
+  "size": 1024,
+  "cellPx": 512,
+  "anchor": [
+   512,
+   640
+  ]
+ },
+ "scale": 1.2,
+ "tuck": 0,
+ "parts": {
+  "head": {
+   "drawn": {
+    "0": {
+     "file": "v3/husky_head_000.png",
+     "anchor": [
       512,
-      640
-    ]
-  },
-  "scale": 1.2,
-  "tuck": 0,
-  "parts": {
-    "head": {
-      "drawn": {
-        "0": {
-          "file": "approved/husky_head_000.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "90": {
-          "file": "fixed/husky_head_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "approved/husky_head_180.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            96
-          ]
-        }
-      }
+      510
+     ]
     },
-    "tail": {
-      "drawn": {
-        "90": {
-          "file": "approved/husky_tail_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "0": {
-          "file": "fixed/husky_tail_000.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            305
-          ]
-        },
-        "180": {
-          "file": "approved/husky_tail_180.png",
-          "anchor": [
-            512,
-            510
-          ]
-        }
-      }
+    "90": {
+     "file": "v3/husky_head_090.png",
+     "anchor": [
+      512,
+      510
+     ]
+    },
+    "180": {
+     "file": "v3/husky_head_180.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      96
+     ]
     }
+   }
   },
-  "extend": {
-    "husky_tail_000.png": {
-      "band": 420,
-      "rows": 214
+  "tail": {
+   "drawn": {
+    "90": {
+     "file": "v3/husky_tail_090.png",
+     "anchor": [
+      512,
+      510
+     ]
+    },
+    "0": {
+     "file": "v3/husky_tail_000.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      305
+     ]
+    },
+    "180": {
+     "file": "v3/husky_tail_180.png",
+     "anchor": [
+      512,
+      510
+     ]
     }
-  },
-  "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: husky_head_090.png, husky_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
+   }
+  }
+ },
+ "extend": {
+  "husky_tail_000.png": {
+   "band": 420,
+   "rows": 172
+  }
+ },
+ "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: husky_head_090.png, husky_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced."
 }

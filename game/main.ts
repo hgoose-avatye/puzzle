@@ -2,7 +2,7 @@ import { isCleared, isFailed, type GameState } from '../src/core/game';
 import { bombLevel, crossLevel, demoLevel, dirsLevel, quizLevel, SHEET_SPECIES, sheetLevel, turnLevel } from './demo';
 import { LEVELS as EXP_LEVELS } from '../experiments/knot-small/levels';
 import { PlayLog } from '../src/game/playlog';
-import { buildGameLevel, levelSpec, stageFor, type Theme } from '../src/curve/curve';
+import { buildGameLevel, levelSpec, STAGE_LENGTH, stageFor, type Theme } from '../src/curve/curve';
 import { canExit, crateStanding, cratesInWay, headDirection, isAsleep, lockedBy, piecesAround, traceExit } from '../src/core/rules';
 import { bumpAdvance, bumpResult, burnOnCollision, pickPush } from '../src/core/bump';
 import { stuckAtOnce } from '../src/generator/knotSearch';
@@ -16,12 +16,16 @@ import { picturesSettled } from './loading';
 import { lostHeartSlots } from '../src/game/hearts';
 import { TitleScreen, titleBoard, type BoardBand } from './screens';
 import { dialogButton, Modal, para } from './modal';
+import { items, lives, onEconomyChange } from './economy';
+import { LivesUi, toast } from './livesUi';
+import { haptics, music, setupSettings } from './settings';
+import { platform } from './platform';
 import { arrowTargets, bombToWatch, bumpTargets, crateLessonAt, lessonsBefore, resultSubjects, startTargets, startTutorial, type TutorialId } from '../src/game/tutorialPlan';
 import { Tutorial, type TutorialSpot } from './tutorial';
 import { pickHint } from '../src/game/hint';
-import { interludesAfter, LAST_LEVEL, splitName, stageIcon, stageStep, startsStage, type Interlude } from '../src/game/journey';
+import { interludesAfter, LAST_LEVEL, splitName, stageStep, startsStage, type Interlude } from '../src/game/journey';
 import { PALETTES } from './scenery';
-import { Stage } from './stage';
+import { loadBackground, Stage, stageBackground } from './stage';
 import { Fx } from './fx';
 import { sound } from './sound';
 import * as THREE from 'three';
@@ -30,6 +34,8 @@ const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) 
 const stage = new Stage($('app'));
 const fx = new Fx(stage.scene);
 const modal = new Modal();
+/** 하트 (lives) and coins, the 사천팝 rules (game/economy.ts): the pills in the top row, the hearts popup, the shop. */
+const livesUi = new LivesUi(modal);
 /** The level in play: rules, animals running out, touch input. Null while a level loads. */
 // the cast keeps TypeScript from narrowing this to null inside the render loop that starts right away
 let flow = null as PlayFlow | null;
@@ -63,7 +69,6 @@ let failPlayed = false;
 /** Which code and level data this is (tools/build-info.ts via the vite configs); 'unknown' outside those configs. */
 const BUILD = typeof __BUILD_INFO__ === 'object' && __BUILD_INFO__ ? __BUILD_INFO__ : { commit: 'unknown', branch: 'unknown', dirty: false, levels: 'unknown', builtAt: '' };
 // which build this is, in the corner, for playtests on the dev server only
-if (import.meta.env.DEV) $('build').textContent = `${BUILD.branch}@${BUILD.commit}${BUILD.dirty ? '+' : ''} levels ${BUILD.levels}`;
 /** Playtest record (E3, test builds only): its own storage key, never read by the game. Null in a production build. */
 const playlog = import.meta.env.DEV ? new PlayLog((() => { try { return localStorage; } catch { return null; } })(), { commit: BUILD.commit, branch: BUILD.branch, dirty: BUILD.dirty, levels: BUILD.levels }) : null;
 
@@ -135,12 +140,12 @@ let failTimer: number | undefined;
 
 const playGameover = (): void => { if (!failPlayed) { failPlayed = true; sound.play('gameover'); } };
 
-/** How long the 2.5D board celebrates (confetti, clear sound) before the rescue card shows. */
+/** How long the 2.5D board celebrates (clear sound) before the rescue card shows. */
 const CLEAR_CELEBRATE_MS = 1200;
 let winTimer: number | undefined;
 
 /**
- * The last animal has left the board: confetti and the clear sound, and the clear is saved, all at once. 2.5D shows the
+ * The last animal has left the board: the clear sound, and the clear is saved, all at once. 2.5D shows the
  * rescue card CLEAR_CELEBRATE_MS later with the buttons still usable (home, a level change or a retry go through
  * clearBoard, which drops the card still waiting); reduced motion (or no animal views) shows it at once.
  */
@@ -149,7 +154,7 @@ function winLevel(): void {
   if (!state || clearPlayed) return;
   clearPlayed = true;
   sound.play('clear');
-  fx.confetti(new THREE.Vector3(0, 0, 0), 8);
+  haptics.buzz([30, 50, 30]);
   writeProgress(progressAfterClear(readProgress(), levelNumber, LAST_LEVEL));
   addRescued(state.level.pieces.length);
   if (reducedMotion() || views.size === 0) { showEnd(true); return; }
@@ -177,6 +182,7 @@ function blowUp(state: GameState): void {
     fx.launch(v.headWorld());
   }
   sound.play('collision');
+  haptics.buzz([60, 40, 140]);
   showLostAfter(BOMB_BLAST_MS, playGameover);
 }
 const reducedMotion = (): boolean => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -207,7 +213,8 @@ function refreshHud(): void {
   if (!state) return;
   const spec = levelSpec(levelNumber);
   // reads as "레벨 7" (textContent), drawn as a small label and a big number
-  $('levelLabel').innerHTML = `<span class="lvK">레벨</span> <span class="lvN">${levelNumber}</span>`;
+  $('levelLabel').innerHTML = `<span class="lvK">Lv.</span><span class="lvN">${levelNumber}</span>`;
+  $('levelLabel').setAttribute('aria-label', `레벨 ${levelNumber}`);
   // a heart just lost breaks once (plain feedback on the blocked tap)
   syncHearts(state.hearts);
   $('hearts').setAttribute('aria-label', state.hearts === undefined ? '' : `하트 ${Math.max(0, state.hearts)}개 남음`);
@@ -240,6 +247,7 @@ function clearBoard(): number {
   clearPlayed = false;
   failPlayed = false;
   pendingExits.clear();
+  notYetMoved.clear();
   lastHit.clear();
   flow = null;
   window.clearTimeout(hintTimer);
@@ -264,8 +272,20 @@ function addViews(level: Level): void {
   }
 }
 
+/** The platform round (Apps in Toss: SDK round start/end, missions, leaderboard; web: nothing). */
+let roundAt = 0;
+function endRound(): void {
+  if (!roundAt) return;
+  platform.roundEnd(levelNumber, Date.now() - roundAt);
+  roundAt = 0;
+}
+
 async function loadLevel(n: number): Promise<void> {
   const token = clearBoard();
+  endRound();
+  roundAt = Date.now();
+  platform.setIdle(false);
+  platform.roundStart(n);
   const before = playlog?.current;
   playlog?.begin(n, params.get('exp') ?? params.get('demo') ?? undefined, before && before.level !== n ? 'skip' : 'retry');
   levelNumber = n;
@@ -275,6 +295,8 @@ async function loadLevel(n: number): Promise<void> {
   if (!built) { $('msg').textContent = '레벨을 만들 수 없어요'; return; }
   const st = stageFor(n);
   stage.setBoard(built.level, DEMO ? ((params.get('theme') as Theme | null) ?? 'village') : st.theme, n, DEMO ? Number(params.get('stage') ?? 1) : st.stage);
+  // fetch the next stage's painted background now, so it shows at once when that stage starts
+  { const next = stageFor(Math.ceil(n / STAGE_LENGTH) * STAGE_LENGTH + 1); const url = stageBackground(next.theme, next.stage); if (url) loadBackground(url); }
   if (!DEMO && startsStage(n)) showBanner(n);
   if (token !== loadToken) return;
   // no hearts under the bump rule; the old rule (and the ?demo fixtures the browser checks drive) keep three
@@ -330,10 +352,15 @@ async function waitForPictures(token: number): Promise<void> {
 
 /** The undo button shows how many are left this level. */
 function paintUndo(): void {
+  // the level's own undos plus the ones kept as items (선물 상자, 상점)
+  const total = undosLeft + items.get('undo');
   const label = $('undo').querySelector('span');
-  if (label) label.textContent = `되돌리기 ${undosLeft}`;
-  $('undo').classList.toggle('spent', undosLeft === 0);
+  if (label) label.textContent = `되돌리기 ${total}`;
+  $('undo').classList.toggle('spent', total === 0);
+  const hint = $('hint').querySelector('span');
+  if (hint) hint.textContent = `힌트 ${items.get('hint')}`;
 }
+onEconomyChange(paintUndo);
 
 /**
  * Bump rule: take back the last push and every tap after it (exits never hurt, so there is nothing to take back before
@@ -342,8 +369,10 @@ function paintUndo(): void {
  */
 function undoTap(): void {
   if (!flow || !flow.pushes.length || anyRunning() || stuckOut) return;
-  if (undosLeft <= 0) { $('msg').textContent = '되돌리기를 다 썼어요'; return; }
-  undosLeft--;
+  if (undosLeft <= 0) {
+    // the level's three are gone: one kept as an item, or none left (the box or the shop then)
+    if (!items.add('undo', -1)) { $('msg').textContent = '되돌리기를 다 썼어요'; livesUi.outOf('undo'); paintUndo(); return; }
+  } else undosLeft--;
   playlog?.undo();
   const log = flow.log.slice(0, flow.pushes[flow.pushes.length - 1]);
   const n = levelNumber;
@@ -359,7 +388,8 @@ function undoTap(): void {
     if (replay.state.alive.has(id)) v.setHead(replay.headAt(id));
     else { stage.scene.remove(v.group); v.dispose(); views.delete(id); }
   }
-  stage.updateCrates(replay.state.level, replay.state.alive);
+  // the crates take their state at once: their cracks and breaks already played before the undo
+  stage.updateCrates(replay.state.level, replay.state.alive, true);
   paintUndo();
   refreshHud();
 }
@@ -464,13 +494,32 @@ function collide(id: number, view: PieceView, alert = true): void {
   if (!cooled(id)) return;
   if (alert) view.collide();
   sound.play('collision');
+  haptics.buzz(25);
 }
 
 /** Crates next to an animal that just left crack; a crate that breaks bursts and opens the way. */
+/**
+ * Animals sent out that have not yet stepped off their spot (head arc length when sent). The rules count a neighbour
+ * as gone from the tap, but on the board a crate only cracks once that neighbour really sets off: one held up behind
+ * an earlier runner still stands beside the crate, so the crate holds until it moves.
+ */
+const notYetMoved = new Map<number, number>();
+/** How far (cells) a runner's head goes before it has left its spot. */
+const SET_OFF = 0.05;
+
 function crackCrates(): void {
   const state = current();
   if (!state) return;
-  for (const c of stage.updateCrates(state.level, state.alive)) {
+  let shown: ReadonlySet<number> = notYetMoved.size ? new Set([...state.alive, ...notYetMoved.keys()]) : state.alive;
+  // but a runner already under way whose path goes through such a crate must not run through it standing: the rules
+  // have it broken, so it breaks now
+  if (shown !== state.alive) {
+    const held = (state.level.crates ?? []).filter((k) => crateStanding(state.level, k, shown) && !crateStanding(state.level, k, state.alive));
+    const crossed = held.some((k) => (flow?.traffic.runners ?? []).some((r) => !notYetMoved.has(r.id)
+      && r.samples.some((p) => Math.abs(p.x - k.x) < 0.6 && Math.abs(p.y - k.y) < 0.6)));
+    if (crossed) shown = state.alive;
+  }
+  for (const c of stage.updateCrates(state.level, shown)) {
     if (c.broke) { fx.burst(c.pos, 0xc08a52); sound.play('collision'); crateLessonBroke(c.x, c.y); cratePushBroke(c.x, c.y); }
     else {
       fx.dust(c.pos); sound.play('arrive');
@@ -512,18 +561,20 @@ function onTap(id: number): TapOutcome {
       pendingExits.delete(id);
       // the last animal's exit is covered by the clear sound
       if (!(flow && isCleared(flow.state) && pendingExits.size === 0)) sound.play('rescued');
-      fx.burst(view.gateWorld(), view.color);
-      fx.sparkle(view.gateWorld(), view.color);
+      fx.escape(view.gateWorld(), view.color);
     });
     $('msg').textContent = '';
     crateLessonExit(id); // the lesson's line (crackCrates may replace it with the break's)
+    // its crate cracks once it sets off (the frame loop), not at the tap
+    const runner = flow.traffic.get(id);
+    if (runner) notYetMoved.set(id, runner.s);
     crackCrates();
   } else if (ev.type === 'blocked' && view) {
     const feedback = (): void => {
       // the head shake alone (no stars, no "!")
       view.bump();
       if (ev.blockers.length > 0) collide(id, view, false);
-      else if (cooled(id)) sound.play('wall');
+      else if (cooled(id)) { sound.play('wall'); haptics.buzz(20); }
       for (const b of ev.blockers) views.get(b)?.pulse();
       if (ev.lockedBy !== undefined) views.get(ev.lockedBy)?.pulse();
     };
@@ -1011,10 +1062,19 @@ function stageProgressMarkup(n: number): string {
   return `<div class="stTop"><span>${splitName(stageFor(n)).place}</span><span class="stFrac"><span class="stPlus">+1</span>${step} / ${of}</span></div><div class="stBar">${cells}</div>`;
 }
 
+/** A picture from the Figma icon pack (game/public/assets/ui/theme/) in place of the old emoji. */
+function packIcon(file: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.src = `/assets/ui/theme/${file}`;
+  img.alt = '';
+  return img;
+}
+
 /** Name card when a new stage begins; it fades by itself and never blocks a tap. */
 function showBanner(n: number): void {
   const st = stageFor(n);
-  $('bannerIcon').textContent = stageIcon(st);
+  // the place name alone, no picture in front (2026-11-09)
+  $('bannerIcon').replaceChildren();
   $('bannerText').textContent = splitName(st).place;
   const b = $('banner');
   b.hidden = true;
@@ -1030,10 +1090,15 @@ async function playInterludes(list: Interlude[]): Promise<void> {
       const theme = it.kind === 'chapter-intro' ? it.next.theme : it.kind === 'journey-done' ? 'winter' : it.done.theme;
       const pal = PALETTES[theme];
       const box = $('interlude');
-      box.style.background = `linear-gradient(180deg, #${new THREE.Color(pal.sky).getHexString()} 0%, #${new THREE.Color(pal.ground).getHexString()} 100%)`;
+      const sky = `linear-gradient(180deg, #${new THREE.Color(pal.sky).getHexString()} 0%, #${new THREE.Color(pal.ground).getHexString()} 100%)`;
+      // behind the card, the place's own painted background (the one just done; the new region's first place for a
+      // chapter start; the last place at the very end), dimmed a little so the card reads; the sky gradient without one
+      const place = it.kind === 'chapter-intro' ? it.next : it.kind === 'journey-done' ? stageFor(LAST_LEVEL) : it.done;
+      const pic = stageBackground(place.theme, place.stage);
+      box.style.background = pic ? `linear-gradient(rgba(40,26,14,.28), rgba(40,26,14,.28)), url("${pic}") center / cover no-repeat, ${sky}` : sky;
       // one short line under the title; the friends saved go in their own small tray (empty: no tray)
       const set = (icon: string, kicker: string, title: string, sub: string, stat: string, btn: string): void => {
-        $('ilIcon').textContent = icon;
+        $('ilIcon').replaceChildren(packIcon(icon));
         $('ilKicker').textContent = kicker;
         $('ilTitle').textContent = title;
         $('ilSub').textContent = sub;
@@ -1043,14 +1108,14 @@ async function playInterludes(list: Interlude[]): Promise<void> {
       const saved = `구한 친구 ${readRescued()}마리`;
       if (it.kind === 'stage-done') {
         const d = splitName(it.done);
-        set(stageIcon(it.done), d.region, `${d.place} 완료!`, `다음은 ${splitName(it.next).place}`, saved, '다음 스테이지');
+        set('ic-star.webp', d.region, `${d.place} 완료!`, `다음은 ${splitName(it.next).place}`, saved, '다음 스테이지');
       } else if (it.kind === 'chapter-done') {
-        set('🏅', '여행 기록', `${splitName(it.done).region}\n여행 완료!`, '이 지역 친구들을 모두 구했어요', saved, '계속');
+        set('ic-medal.webp', '여행 기록', `${splitName(it.done).region}\n여행 완료!`, '이 지역 친구들을 모두 구했어요', saved, '계속');
       } else if (it.kind === 'chapter-intro') {
         const nx = splitName(it.next);
-        set(stageIcon(it.next), `챕터 ${it.next.chapter}`, `${nx.region}에 도착!`, `첫 장소는 ${nx.place}`, '', '출발!');
+        set('ic-map.webp', `챕터 ${it.next.chapter}`, `${nx.region}에 도착!`, `첫 장소는 ${nx.place}`, '', '출발!');
       } else {
-        set('🎉', '세계 일주 완료', '모든 친구를\n구했어요!', '함께해 주셔서 고마워요', saved, '처음부터 다시');
+        set('ic-trophy.webp', '세계 일주 완료', '모든 친구를\n구했어요!', '함께해 주셔서 고마워요', saved, '처음부터 다시');
       }
       sound.play('clear');
       box.hidden = false;
@@ -1072,6 +1137,7 @@ $('popup').addEventListener('click', (e) => { if (e.detail > 0 && touches === ca
 function showEnd(won: boolean): void {
   const state = current();
   if (!state) return;
+  endRound();
   // the result comes first: a tutorial on screen or waiting is dropped, not learnt
   stopTutorials();
   cardTouch = touches;
@@ -1088,11 +1154,17 @@ function showEnd(won: boolean): void {
   // the level is over: a retry question still open is moot
   if (modal.kind === 'retry') modal.close();
   $('popupBtn').className = dialogButton(won ? 'primary' : 'retry');
-  $('popupSub').textContent = won ? '' : '다시 도전해 볼까요?';
+  // a lost level takes a heart (사천팝: giving up a level costs one)
+  const left = won ? null : lives.spend().hearts;
+  $('popupSub').textContent = won ? '' : `하트 1개를 잃었어요 (남은 하트 ${left})`;
   $('popupBtn').textContent = won ? '다음 레벨' : '다시 하기';
   $('popupHome').hidden = false;
   $('popupHome').onclick = goHome;
+  // the header's red close is the same way home
+  $('popupX').onclick = goHome;
   $('popupBtn').onclick = () => {
+    // every level start takes a heart in hand (사천팝): with none left the hearts popup opens instead
+    if (!livesUi.canPlay()) return;
     if (!won) { void loadLevel(levelNumber); return; }
     const n = levelNumber;
     const next = n >= LAST_LEVEL ? 1 : n + 1; // after the whole journey, start over
@@ -1103,7 +1175,7 @@ function showEnd(won: boolean): void {
 
 // Decode the sounds now; unlock on any gesture the browser counts as user activation (touch pointerdown may not count on iOS).
 sound.prepare();
-for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, () => sound.unlock(), { capture: true, passive: true });
+for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(ev, () => { sound.unlock(); music.unlock(); }, { capture: true, passive: true });
 
 const canvas = stage.renderer.domElement;
 /** Hide the path of an animal once no finger is on it any more. */
@@ -1138,8 +1210,14 @@ $('retry').addEventListener('click', () => {
   sound.unlock();
   const state = current();
   if (!state || state.taps === 0) { void loadLevel(levelNumber); return; }
-  modal.open('retry', '다시 할까요?', [para('이 레벨을 처음부터 다시 할까요?')], [
-    { id: 'retryYes', label: '다시 하기', kind: 'retry', onClick: () => { modal.close(); void loadLevel(levelNumber); } },
+  modal.open('retry', '다시 할까요?', [para('처음부터 다시 하면 하트 1개를 써요')], [
+    { id: 'retryYes', label: '다시 하기', kind: 'retry', onClick: () => {
+      modal.close();
+      // giving up a started level takes a heart (사천팝 abandonRound); with none left it goes home to the hearts popup
+      if (lives.spend().hearts <= 0) { goHome(); livesUi.openHearts(); return; }
+      toast('하트 -1');
+      void loadLevel(levelNumber);
+    } },
     { id: 'retryNo', label: '취소', kind: 'secondary', onClick: () => modal.close() },
   ]);
 });
@@ -1161,11 +1239,13 @@ let hintView: PieceView | null = null;
  */
 const UNDO_TIP = '막히면 되돌리기로 마지막 밀기를 무를 수 있어요';
 /** The undo would do something now: a push to take back and an undo left. */
-const undoUsable = (): boolean => !!flow && flow.pushes.length > 0 && undosLeft > 0;
+const undoUsable = (): boolean => !!flow && flow.pushes.length > 0 && undosLeft + items.get('undo') > 0;
 
 function showHint(): void {
   const state = current();
   if (!state || isCleared(state) || isFailed(state) || stuckOut) return;
+  // a hint is an item now (사천팝): none left -> the box or the shop
+  if (items.get('hint') <= 0) { livesUi.outOf('hint'); return; }
   let id = pickHint(state.level, state.alive, state.fuses);
   if (id === null && BUMP) {
     if (hintPushUsed.has(levelNumber)) { $('msg').textContent = undoUsable() ? UNDO_TIP : '밀기 힌트는 한 판에 한 번이에요'; return; }
@@ -1174,6 +1254,7 @@ function showHint(): void {
   }
   const view = id === null ? undefined : views.get(id);
   if (!view) { $('msg').textContent = BUMP ? (undoUsable() ? '길이 막혔어요. 되돌리기를 눌러요' : '지금은 알려 줄 힌트가 없어요') : '지금은 움직일 수 있는 친구가 없어요'; return; }
+  items.add('hint', -1);
   playlog?.hint();
   sound.play('select');
   // the halo and the path stay HINT_MS from the button, whatever the finger does; three pulses draw the eye first
@@ -1194,7 +1275,6 @@ function showHint(): void {
 $('hint').addEventListener('click', () => { sound.unlock(); showHint(); });
 
 let dustT = 0;
-let printTick = 0;
 const clock = new THREE.Clock();
 (function loop() {
   const dt = Math.min(clock.getDelta(), 0.05);
@@ -1210,13 +1290,19 @@ const clock = new THREE.Clock();
     if (e.type === 'resume' && v) sound.play('move');
   }
   for (const r of flow?.traffic.runners ?? []) views.get(r.id)?.setRun(r.s, r.state === 'waiting');
+  if (notYetMoved.size) {
+    let setOff = false;
+    for (const [id, s0] of notYetMoved) {
+      const r = flow?.traffic.get(id);
+      if (!r || r.s > s0 + SET_OFF) { notYetMoved.delete(id); setOff = true; }
+    }
+    if (setOff) crackCrates();
+  }
   for (const v of views.values()) {
     if (v.running && !flow?.traffic.get(v.piece.id)) v.setRun(v.track.length, false); // stepped past the end this frame
     v.update(dt);
     if (dust && v.running && !v.isWaiting) {
       fx.dust(v.headWorld());
-      fx.streak(v.headWorld(), v.heading);
-      if (++printTick % 2 === 0) fx.print(v.tailWorld(), v.color);
     }
   }
   if (tutorialCheck) situationalTutorial();
@@ -1227,55 +1313,15 @@ const clock = new THREE.Clock();
   requestAnimationFrame(loop);
 })();
 
-// the result card's three friends: copies of the approved 2.5D front pictures (game/public/assets/ui/result, UI v0.2)
-for (const src of ['/assets/ui/result/penguin.png', '/assets/ui/result/chick.png', '/assets/ui/result/parrot.png']) {
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = '';
-  document.querySelector('#popup .peek')!.appendChild(img);
-}
-
-/**
- * Settings (top right on the title and in play): for now one switch, the sound. The switch keeps the old sound
- * button's id and its `muted` class, so the saved setting and the checks read it as before.
- */
-const SOUND_ICONS = '<svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>'
-  + '<svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></svg>';
-const muteBtn = document.createElement('button');
-muteBtn.id = 'mute';
-muteBtn.className = 'toggle';
-muteBtn.setAttribute('role', 'switch');
-muteBtn.innerHTML = `<span class="tName">${SOUND_ICONS}소리</span><span class="tWord"></span><span class="tTrack"><span class="tKnob"></span></span>`;
-const paintMute = (): void => {
-  muteBtn.classList.toggle('muted', sound.muted);
-  muteBtn.setAttribute('aria-checked', String(!sound.muted));
-  muteBtn.setAttribute('aria-label', sound.muted ? '소리 꺼짐, 누르면 켜져요' : '소리 켜짐, 누르면 꺼져요');
-  muteBtn.querySelector('.tWord')!.textContent = sound.muted ? '꺼짐' : '켜짐';
-};
-paintMute();
-muteBtn.addEventListener('click', () => { sound.unlock(); sound.setMuted(!sound.muted); paintMute(); });
-$('settings').addEventListener('click', () => {
-  sound.unlock();
-  modal.open('settings', '설정', [muteBtn], [
-    ...(playlog ? [{ id: 'exportLog', label: `플레이 기록 내보내기 (${playlog.all.length})`, kind: 'secondary' as const, onClick: exportPlaylog }] : []),
-    { id: 'settingsClose', label: '닫기', kind: 'secondary', onClick: () => modal.close() },
-  ]);
-});
-
-/** The play log as a file the tester can send (E3). */
-function exportPlaylog(): void {
-  if (!playlog) return;
-  const blob = new Blob([playlog.exportJson()], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `playlog-${BUILD.commit}-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
-  a.click();
-  window.setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
+/** Settings (top right on the title and in play): game/settings.ts. */
+const openSettings = setupSettings(modal, sound);
+$('settings').addEventListener('click', openSettings);
 
 /** Home: the title over a small board where the front animal runs out on a loop. Leaves the saved progress alone. */
 function goHome(): void {
   playlog?.end('home');
+  endRound();
+  platform.setIdle(true);
   const token = clearBoard();
   speciesOverride.clear();
   const board = titleBoard();
@@ -1286,7 +1332,8 @@ function goHome(): void {
   layoutTitle(board.level);
   titleRun(board.level, board.runner, token);
   stage.render();
-  void waitForPictures(token);
+  // no "친구들을 부르고 있어요" card here: the title's board sits under the intro clip and its backdrop, and the card would
+  // cover the clip on a first visit (a level still waits for its pictures in loadLevel)
 }
 
 /** Screen band of a board: from above its back row's animals down to just past its front edge (CSS pixels). */
@@ -1315,13 +1362,18 @@ function layoutTitle(level: Level): void {
   const head = document.querySelector('#title .tHead')!.getBoundingClientRect().height;
   const buttons = Math.max(document.querySelector('#title .tButtons')!.getBoundingClientRect().height, TITLE_BUTTONS);
   const fitted = boardBand(level);
-  const room = innerHeight - 2 * TITLE_MARGIN - head - buttons - TITLE_GAPS;
+  // the Apps in Toss bar covers the top: the title block sits in the screen below it
+  const tossTop = Math.max(0, (document.getElementById('topSpace')?.offsetHeight ?? 64) - 64);
+  // and below the hearts and coins row when it shows on the title, so the logo never runs under it
+  const hud = document.getElementById('lives')?.getBoundingClientRect();
+  const topUi = hud && hud.height > 0 ? Math.max(tossTop, hud.bottom) : tossTop;
+  const room = innerHeight - topUi - 2 * TITLE_MARGIN - head - buttons - TITLE_GAPS;
   const zoom = Math.max(0.4, Math.min(1, room / (fitted.bottom - fitted.top)));
   stage.frame(zoom, 0);
   const band = boardBand(level);
   const top = band.top - 4 - head;
   const bottom = band.bottom + 16 + buttons;
-  stage.frame(zoom, Math.round((innerHeight - top - bottom) / 2));
+  stage.frame(zoom, Math.round((innerHeight + topUi - top - bottom) / 2));
   title.layout(boardBand(level));
 }
 
@@ -1354,19 +1406,25 @@ function titleRun(level: Level, runner: number, token: number): void {
     if (!live() || !view || flow?.tap(runner, performance.now())?.type !== 'exited') return;
     view.showPath(false);
     fx.launch(view.headWorld());
-    view.runOut(() => {}, () => { fx.burst(view.gateWorld(), view.color); fx.sparkle(view.gateWorld(), view.color); });
+    view.runOut(() => {}, () => fx.escape(view.gateWorld(), view.color));
   }, TITLE_RUN.go);
   window.setTimeout(() => { if (live()) titleRun(level, runner, token); }, TITLE_RUN.again);
 }
 window.addEventListener('resize', () => { if (title.visible && flow) layoutTitle(flow.level); });
 
 function startLevel(n: number): void {
+  if (!livesUi.canPlay()) return;
   title.hide();
   void loadLevel(n);
 }
 
 const title = new TitleScreen({ start: () => startLevel(1), resume: () => startLevel(readProgress()), restart: () => startLevel(1) });
-$('home').addEventListener('click', goHome);
+// home from a level already started (something tapped, not over yet) gives it up: one heart (사천팝 abandonRound)
+$('home').addEventListener('click', () => {
+  const state = current();
+  if (state && state.taps > 0 && $("popup").hidden && !isCleared(state) && !isFailed(state) && !flow?.lost && !stuckOut) { lives.spend(); toast('하트 -1'); }
+  goHome();
+});
 
 // dev entry points (?level, ?demo) go straight into play; a build has no parameters and always opens on the title
 const fromUrl = Number(params.get('level'));

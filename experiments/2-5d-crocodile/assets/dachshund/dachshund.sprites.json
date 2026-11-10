@@ -1,125 +1,125 @@
 {
-  "species": "dachshund",
-  "frame": {
-    "size": 1024,
-    "cellPx": 512,
-    "anchor": [
+ "species": "dachshund",
+ "frame": {
+  "size": 1024,
+  "cellPx": 512,
+  "anchor": [
+   512,
+   640
+  ]
+ },
+ "scale": 1.2,
+ "tuck": 0,
+ "parts": {
+  "head": {
+   "drawn": {
+    "0": {
+     "file": "v3/dachshund_head_000.png",
+     "anchor": [
       512,
-      640
-    ]
-  },
-  "scale": 1.2,
-  "tuck": 0,
-  "parts": {
-    "head": {
-      "drawn": {
-        "0": {
-          "file": "variant/caterpillar_head_000.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "90": {
-          "file": "variant/caterpillar_head_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "variant/caterpillar_head_180.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            507
-          ]
-        }
-      }
+      510
+     ]
     },
-    "body": {
-      "drawn": {
-        "0": {
-          "file": "variant/caterpillar_body_000.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            184
-          ]
-        },
-        "90": {
-          "file": "variant/caterpillar_body_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "variant/caterpillar_body_180.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            243
-          ]
-        }
-      }
+    "90": {
+     "file": "v3/dachshund_head_090.png",
+     "anchor": [
+      512,
+      510
+     ]
     },
-    "tail": {
-      "drawn": {
-        "0": {
-          "file": "variant/caterpillar_tail_000.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            415
-          ]
-        },
-        "90": {
-          "file": "variant/caterpillar_tail_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "variant/caterpillar_tail_180.png",
-          "anchor": [
-            512,
-            510
-          ]
-        }
-      }
+    "180": {
+     "file": "v3/dachshund_head_180.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      507
+     ]
     }
+   }
   },
-  "extend": {
-    "caterpillar_head_180.png": {
-      "band": 590,
-      "rows": 46
+  "body": {
+   "drawn": {
+    "0": {
+     "file": "v3/dachshund_body_000.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      184
+     ]
     },
-    "caterpillar_body_000.png": {
-      "band": 530,
-      "rows": 137
+    "90": {
+     "file": "v3/dachshund_body_090.png",
+     "anchor": [
+      512,
+      510
+     ]
     },
-    "caterpillar_body_180.png": {
-      "band": 530,
-      "rows": 218
-    },
-    "caterpillar_tail_000.png": {
-      "band": 530,
-      "rows": 121
+    "180": {
+     "file": "v3/dachshund_body_180.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      243
+     ]
     }
+   }
   },
-  "note": "colour variant of caterpillar (tools/recolour_variant.py: hue 68-150 turned by 120); same frame, anchors, offsets and candidates as caterpillar. 2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: caterpillar_body_000.png, caterpillar_body_180.png, caterpillar_head_180.png, caterpillar_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
+  "tail": {
+   "drawn": {
+    "0": {
+     "file": "v3/dachshund_tail_000.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      415
+     ]
+    },
+    "90": {
+     "file": "v3/dachshund_tail_090.png",
+     "anchor": [
+      512,
+      510
+     ]
+    },
+    "180": {
+     "file": "v3/dachshund_tail_180.png",
+     "anchor": [
+      512,
+      510
+     ]
+    }
+   }
+  }
+ },
+ "extend": {
+  "dachshund_head_180.png": {
+   "band": 590,
+   "rows": 0
+  },
+  "dachshund_body_000.png": {
+   "band": 530,
+   "rows": 196
+  },
+  "dachshund_body_180.png": {
+   "band": 530,
+   "rows": 133
+  },
+  "dachshund_tail_000.png": {
+   "band": 530,
+   "rows": 15
+  }
+ },
+ "note": "colour variant of caterpillar (tools/recolour_variant.py: hue 68-150 turned by 120); same frame, anchors, offsets and candidates as caterpillar. 2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: caterpillar_body_000.png, caterpillar_body_180.png, caterpillar_head_180.png, caterpillar_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced."
 }

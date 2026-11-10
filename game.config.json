@@ -1,0 +1,17 @@
+{
+  "appName": "animalrescue",
+  "gameId": "animalrescue",
+  "title": "탈출해 친구들",
+  "primaryColor": "#6CC24A",
+  "env": "test",
+  "consoleRegistered": false,
+  "serverReady": false,
+  "apiBase": "https://api.gfactory.ai",
+  "promotionCode": "",
+  "leaderboardEntryUrl": "",
+  "ads": {
+    "rv": { "heart": "ait-ad-test-rewarded-id", "chest": "ait-ad-test-rewarded-id" },
+    "interstitial": "ait-ad-test-interstitial-id",
+    "substitutions": {}
+  }
+}

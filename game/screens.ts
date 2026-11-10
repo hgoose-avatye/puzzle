@@ -1,7 +1,7 @@
 import type { Level } from '../src/core/types';
 
 /**
- * The title screen: an overlay over the 3D board, the logo above it and the buttons below it.
+ * The title screen: the launch intro clip, then its last frame (the empty board) as the backdrop with the logo and buttons over it.
  * main.ts builds that board, runs its loop and starts levels; this file only owns the overlay and its buttons.
  */
 
@@ -42,11 +42,65 @@ export interface TitleChoice {
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
+/** Longest the intro may hold the title back once playing when its length is unknown. */
+const INTRO_MAX_MS = 6000;
+/** How long the intro may take to start (download, decode) before the title shows without it. */
+const INTRO_START_MS = 5000;
+/** From the still fading in to the logo and buttons arriving. */
+const INTRO_REVEAL_MS = 350;
+
 export class TitleScreen {
+  /** The intro clip plays once per launch, on the first title. */
+  private introPlayed = false;
+
   constructor(choice: TitleChoice) {
     $('tStart').onclick = choice.start;
     $('tContinue').onclick = choice.resume;
     $('tRestart').onclick = choice.restart;
+    $('title').classList.add('has-intro');
+  }
+
+  /**
+   * The launch intro: the clip full screen with the logo, buttons and top row hidden; when it ends (or 건너뛰기 at the top right skips it,
+   * or it cannot play) its last frame stays (a skip fades it in) and the logo pops out in the middle, then the buttons. Skipped under reduced motion and in
+   * automated browsers (the e2e checks click the buttons right away).
+   */
+  private playIntro(): void {
+    const t = $('title');
+    const video = $<HTMLVideoElement>('tIntro');
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(guard);
+      video.onplaying = null;
+      skipBtn.hidden = true;
+      t.classList.add('still');
+      window.setTimeout(() => {
+        t.classList.remove('playing');
+        document.body.classList.remove('intro-playing');
+        video.pause();
+      }, INTRO_REVEAL_MS);
+    };
+    const skipBtn = $('tSkip');
+    // a clip that never starts (slow first download, blocked autoplay) gives up after INTRO_START_MS; once it plays it
+    // has its own length plus a little to end
+    let guard = window.setTimeout(finish, INTRO_START_MS);
+    video.onplaying = () => {
+      window.clearTimeout(guard);
+      const left = Number.isFinite(video.duration) ? (video.duration - video.currentTime) * 1000 : INTRO_MAX_MS;
+      guard = window.setTimeout(finish, left + 1500);
+    };
+    const skip = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || navigator.webdriver;
+    if (skip) { finish(); return; }
+    t.classList.add('playing');
+    document.body.classList.add('intro-playing');
+    skipBtn.hidden = false;
+    skipBtn.onclick = finish;
+    video.onended = finish;
+    video.onerror = finish;
+    video.currentTime = 0;
+    void video.play().catch(finish);
   }
 
   /** Show the title. `saved` is the level to continue at, or null when there is nothing to continue. */
@@ -57,6 +111,7 @@ export class TitleScreen {
     $('tContinue').hidden = saved === null;
     $('tRestart').hidden = saved === null;
     $('tWhere').textContent = saved ? `레벨 ${saved.level} · ${saved.place}` : '';
+    if (!this.introPlayed) { this.introPlayed = true; this.playIntro(); } else $('title').classList.add('still');
   }
 
   /** Hang the logo above and the buttons below where the board is drawn. */

@@ -1,5 +1,10 @@
 # UI 시스템 v0.2
 
+> **2026-11-09 v0.3: 공통 UI 피그마(Theme Kit, 파일 `MlQjHcmcNbJQ5QCYEaHozA`) Normal 테마로 바꿨다.** 사천팝·애니멀팝과 같은 주황 판(#ff9a2e, 테두리 #c8611a).
+> 모든 팝업(결과·실패·다시 하기 확인·설정·스테이지 카드)은 머리줄 56px(왼쪽 제목, 오른쪽 빨간 사각 닫기) + 움푹 들어간 어두운 본문 칸이다. 버튼은 평평한 Theme Button(주황 Base · 초록 · 파랑 · 힌트 노랑), 창 버튼은 가로로 나란히(주 버튼 오른쪽).
+> HUD는 어두운 재화 알약, 설정은 원형 아이콘(`game/public/assets/ui/theme/`), 소리 스위치는 Theme Toggle 그림. 서체는 그대로(Jua 제목, Pretendard 글).
+> 아래 v0.2의 크림 재질·입체 받침 규격은 원칙(색=하는 일, 크기=중요도)만 남고 모양은 v0.3이 대신한다.
+
 게임 화면 UI의 공통 규격이다. 2026-11-04에 확정했다. 규격(색, 버튼, 패널)은 [game/ui.css](../../game/ui.css)에 있고, 화면별 배치는 [game/index.html](../../game/index.html)의 `<style>`에 있다. 2.5D와 Classic 3D가 같은 UI를 쓴다.
 
 ## 원칙

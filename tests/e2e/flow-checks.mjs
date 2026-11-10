@@ -18,6 +18,8 @@ export async function runFlowChecks(browser, base, report) {
       if (sessionStorage.getItem('e2e-ready')) return; // keep storage across reloads within one scenario
       localStorage.clear();
       if (s !== null) localStorage.setItem(key, s);
+      // items (2026-11-09): plenty of hints, no kept undos, so a level has exactly its own three
+      localStorage.setItem('animal-rescue-items', JSON.stringify({ hint: 99, undo: 0 }));
       sessionStorage.setItem('e2e-ready', '1');
     }, PROGRESS, saved);
     await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
@@ -31,7 +33,7 @@ export async function runFlowChecks(browser, base, report) {
     const vis = (id) => { const el = document.getElementById(id); return !!el && !el.hidden && getComputedStyle(el).display !== 'none'; };
     return {
       title: vis('title'), start: vis('tStart'), resume: vis('tContinue'), restart: vis('tRestart'), where: document.getElementById('tWhere').textContent,
-      hud: vis('hud'), popup: vis('popup') ? document.getElementById('popupTitle').textContent : null, popupHome: vis('popupHome'),
+      hud: vis('hud') && getComputedStyle(document.querySelector('#hud .hudCard')).display !== 'none', popup: vis('popup') ? document.getElementById('popupTitle').textContent : null, popupHome: vis('popupHome'),
       label: document.getElementById('levelLabel').textContent, saved: localStorage.getItem('animal-rescue-progress'),
       // a level is in play (the title runs its own little board, which does not count)
       playing: window.__game.state() !== null && document.getElementById('title').hidden,
@@ -77,7 +79,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#tStart');
     await sleep(500);
     const b = await ui(p);
-    check('flow: 게임 시작 -> level 1, title gone, HUD back', !b.title && b.hud && b.playing && b.label === '레벨 1', JSON.stringify(b));
+    check('flow: 게임 시작 -> level 1, title gone, HUD back', !b.title && b.hud && b.playing && b.label === 'Lv.1', JSON.stringify(b));
   });
 
   await scenario('continue', '7', async (p) => {
@@ -86,14 +88,14 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#tContinue');
     await sleep(500);
     const b = await ui(p);
-    check('flow: 이어하기 -> the saved level 7', !b.title && b.label === '레벨 7', JSON.stringify(b));
+    check('flow: 이어하기 -> the saved level 7', !b.title && b.label === 'Lv.7', JSON.stringify(b));
   });
 
   await scenario('from the start', '7', async (p) => {
     await p.click('#tRestart');
     await sleep(500);
     const b = await ui(p);
-    check('flow: 처음부터 -> level 1, the save (7) kept', !b.title && b.label === '레벨 1' && b.saved === '7', JSON.stringify(b));
+    check('flow: 처음부터 -> level 1, the save (7) kept', !b.title && b.label === 'Lv.1' && b.saved === '7', JSON.stringify(b));
   });
 
   await scenario('home while playing, then start again', '7', async (p) => {
@@ -109,7 +111,7 @@ export async function runFlowChecks(browser, base, report) {
     await closeTips(p);
     const exited = await p.evaluate(() => { const f = window.__game.free(); if (!f.length) return null; window.__game.tap(f[0]); return !window.__game.state().alive.includes(f[0]); });
     const b = await ui(p);
-    check('flow: after going home, 이어하기 starts level 7 again and taps work', !b.title && b.label === '레벨 7' && exited === true, `${JSON.stringify(b)}, exited ${exited}`);
+    check('flow: after going home, 이어하기 starts level 7 again and taps work', !b.title && b.label === 'Lv.7' && exited === true, `${JSON.stringify(b)}, exited ${exited}`);
   });
 
   await scenario('home while animals run', null, async (p) => {
@@ -137,7 +139,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#popupBtn');
     await sleep(600);
     const b = await ui(p);
-    check('flow: 다음 레벨 -> level 2', b.label === '레벨 2' && !b.title, JSON.stringify(b));
+    check('flow: 다음 레벨 -> level 2', b.label === 'Lv.2' && !b.title, JSON.stringify(b));
   });
 
   await scenario('success -> home', null, async (p) => {
@@ -225,14 +227,14 @@ export async function runFlowChecks(browser, base, report) {
     const at = (await ui(p)).label;
     await clearAll(p);
     const a = await waitPopup(p, 30000);
-    check('flow: clearing level 180 saves level 1 (journey starts over)', at === '레벨 180' && a.popup === '구출 성공!' && a.saved === '1', `${at}, ${JSON.stringify(a)}`);
+    check('flow: clearing level 180 saves level 1 (journey starts over)', at === 'Lv.180' && a.popup === '구출 성공!' && a.saved === '1', `${at}, ${JSON.stringify(a)}`);
     await p.click('#popupHome');
     await sleep(400);
     const b = await ui(p);
     check('flow: after the last level the title offers only 게임 시작 (level 1), no 이어하기', b.title && b.start && !b.resume, JSON.stringify(b));
     await p.click('#tStart');
     await sleep(500);
-    check('flow: 게임 시작 after the last level -> level 1', (await ui(p)).label === '레벨 1');
+    check('flow: 게임 시작 after the last level -> level 1', (await ui(p)).label === 'Lv.1');
   });
 
   const modalUi = (p) => p.evaluate(() => ({
@@ -263,7 +265,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#retryYes');
     await sleep(400);
     const reset = await p.evaluate(() => window.__game.state());
-    check('retry: 다시 하기 in the question restarts level 7 (no hearts)', !(await modalUi(p)).open && reset.taps === 0 && reset.hearts == null && (await ui(p)).label === '레벨 7', JSON.stringify(reset));
+    check('retry: 다시 하기 in the question restarts level 7 (no hearts)', !(await modalUi(p)).open && reset.taps === 0 && reset.hearts == null && (await ui(p)).label === 'Lv.7', JSON.stringify(reset));
   });
 
   // UI v0.2: the sound switch (#mute) lives in the settings card, opened from the settings button on the title and in play
@@ -275,7 +277,7 @@ export async function runFlowChecks(browser, base, report) {
     await sleep(100);
     const off = await p.evaluate(() => ({ stored: localStorage.getItem('animal-rescue-muted'), muted: document.getElementById('mute').classList.contains('muted') }));
     check('sound: the title has the settings button and its sound switch turns the sound off (saved)', onTitle && off.stored === '1' && off.muted, JSON.stringify(off));
-    await p.click('#settingsClose');
+    await p.click('#modalX');
     await p.click('#tStart');
     await sleep(500);
     await closeTips(p);
@@ -285,7 +287,7 @@ export async function runFlowChecks(browser, base, report) {
     await p.click('#mute');
     await sleep(100);
     const on = await p.evaluate(() => localStorage.getItem('animal-rescue-muted'));
-    await p.click('#settingsClose');
+    await p.click('#modalX');
     check('sound: in play the settings show the same switch, still off, and it turns the sound back on', inPlay && on === '0', `inPlay ${inPlay}, stored ${on}`);
   });
 
@@ -317,7 +319,7 @@ export async function runFlowChecks(browser, base, report) {
     const s = await p.evaluate(() => window.__game.state());
     await sleep(3000); // longer than a title round: no title timer may touch the level
     const later = await p.evaluate(() => window.__game.state());
-    check('title: 게임 시작 -> level 1 untouched by the title loop', (await ui(p)).label === '레벨 1' && s.taps === 0 && later.taps === 0 && later.alive.length === s.alive.length, `${JSON.stringify(s)} -> ${JSON.stringify(later)}`);
+    check('title: 게임 시작 -> level 1 untouched by the title loop', (await ui(p)).label === 'Lv.1' && s.taps === 0 && later.taps === 0 && later.alive.length === s.alive.length, `${JSON.stringify(s)} -> ${JSON.stringify(later)}`);
   });
 
   await scenario('title keeps the logo and board in place with a save', '7', async (p) => {
@@ -530,6 +532,6 @@ export async function runFlowChecks(browser, base, report) {
 
   await scenario('dev entry', null, async (p) => {
     const a = await ui(p);
-    check('flow: dev URL ?level=3 still goes straight into play', !a.title && a.label === '레벨 3' && a.playing, JSON.stringify(a));
+    check('flow: dev URL ?level=3 still goes straight into play', !a.title && a.label === 'Lv.3' && a.playing, JSON.stringify(a));
   }, '?level=3');
 }

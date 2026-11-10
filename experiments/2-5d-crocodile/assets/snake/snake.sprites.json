@@ -1,125 +1,125 @@
 {
-  "species": "snake",
-  "frame": {
-    "size": 1024,
-    "cellPx": 512,
-    "anchor": [
+ "species": "snake",
+ "frame": {
+  "size": 1024,
+  "cellPx": 512,
+  "anchor": [
+   512,
+   640
+  ]
+ },
+ "scale": 1.2,
+ "tuck": 0,
+ "parts": {
+  "head": {
+   "drawn": {
+    "0": {
+     "file": "v3/snake_head_000.png",
+     "anchor": [
       512,
-      640
-    ]
-  },
-  "scale": 1.2,
-  "tuck": 0,
-  "parts": {
-    "head": {
-      "drawn": {
-        "0": {
-          "file": "received/snake_head_000.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "90": {
-          "file": "received/snake_head_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "fixed/snake_head_180.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            447
-          ]
-        }
-      }
+      510
+     ]
     },
-    "body": {
-      "drawn": {
-        "0": {
-          "file": "fixed/snake_body_000.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            205
-          ]
-        },
-        "90": {
-          "file": "received/snake_body_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "fixed/snake_body_180.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            217
-          ]
-        }
-      }
+    "90": {
+     "file": "v3/snake_head_090.png",
+     "anchor": [
+      512,
+      510
+     ]
     },
-    "tail": {
-      "drawn": {
-        "0": {
-          "file": "fixed/snake_tail_000.png",
-          "anchor": [
-            512,
-            510
-          ],
-          "offset": [
-            0,
-            422
-          ]
-        },
-        "90": {
-          "file": "received/snake_tail_090.png",
-          "anchor": [
-            512,
-            510
-          ]
-        },
-        "180": {
-          "file": "received/snake_tail_180.png",
-          "anchor": [
-            512,
-            510
-          ]
-        }
-      }
+    "180": {
+     "file": "v3/snake_head_180.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      447
+     ]
     }
+   }
   },
-  "extend": {
-    "snake_head_180.png": {
-      "band": 500,
-      "rows": 140
+  "body": {
+   "drawn": {
+    "0": {
+     "file": "v3/snake_body_000.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      205
+     ]
     },
-    "snake_body_000.png": {
-      "band": 535,
-      "rows": 109
+    "90": {
+     "file": "v3/snake_body_090.png",
+     "anchor": [
+      512,
+      510
+     ]
     },
-    "snake_body_180.png": {
-      "band": 535,
-      "rows": 225
-    },
-    "snake_tail_000.png": {
-      "band": 535,
-      "rows": 80
+    "180": {
+     "file": "v3/snake_body_180.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      217
+     ]
     }
+   }
   },
-  "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: snake_body_000.png, snake_body_180.png, snake_head_180.png, snake_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched."
+  "tail": {
+   "drawn": {
+    "0": {
+     "file": "v3/snake_tail_000.png",
+     "anchor": [
+      512,
+      510
+     ],
+     "offset": [
+      0,
+      422
+     ]
+    },
+    "90": {
+     "file": "v3/snake_tail_090.png",
+     "anchor": [
+      512,
+      510
+     ]
+    },
+    "180": {
+     "file": "v3/snake_tail_180.png",
+     "anchor": [
+      512,
+      510
+     ]
+    }
+   }
+  }
+ },
+ "extend": {
+  "snake_head_180.png": {
+   "band": 500,
+   "rows": 77
+  },
+  "snake_body_000.png": {
+   "band": 535,
+   "rows": 24
+  },
+  "snake_body_180.png": {
+   "band": 535,
+   "rows": 172
+  },
+  "snake_tail_000.png": {
+   "band": 535,
+   "rows": 28
+  }
+ },
+ "note": "2026-11-02: fixed/ holds the approved polished pictures (tools/polish_candidates.py, commit fdde579: snake_body_000.png, snake_body_180.png, snake_head_180.png, snake_tail_000.png); `extend` folds their repeated row bands in turns (75fd018). received/approved originals untouched. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced. 2026-11-09: v3/ = redrawn sheet (received_v3/, tools/import_sheet.py), each view fitted into the box of the picture it replaced."
 }

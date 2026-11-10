@@ -24,9 +24,17 @@ export class Modal {
   /** What the modal shows now ('retry', 'settings'), or null when closed. */
   kind: string | null = null;
 
-  open(kind: string, title: string, body: Node[], buttons: ModalButton[]): void {
+  /** `head`: something to show in the header, just left of the red close (the shop's coin balance). */
+  open(kind: string, title: string, body: Node[], buttons: ModalButton[], head?: Node): void {
     this.kind = kind;
     $('modalTitle').textContent = title;
+    document.getElementById('modalHead')?.remove();
+    if (head) {
+      const box = document.createElement('div');
+      box.id = 'modalHead';
+      box.append(head);
+      $('modalX').before(box);
+    }
     $('modalBody').replaceChildren(...body);
     $('modalBtns').replaceChildren(...buttons.map((b) => {
       const el = document.createElement('button');
@@ -36,6 +44,8 @@ export class Modal {
       el.onclick = b.onClick;
       return el;
     }));
+    // the header's red close steps back like the quiet button (취소 / 닫기)
+    $('modalX').onclick = () => this.close();
     $('modal').hidden = false;
   }
 

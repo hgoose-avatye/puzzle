@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>탈출해 친구들!</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='14' width='80' height='76' rx='20' fill='%23f5a3b5'/%3E%3Ccircle cx='36' cy='48' r='7' fill='%233b3a36'/%3E%3Ccircle cx='64' cy='48' r='7' fill='%233b3a36'/%3E%3Cellipse cx='50' cy='66' rx='10' ry='7' fill='%23e2667f'/%3E%3C/svg%3E" />
+    <link rel="preload" href="/assets/ui/logo.webp" as="image" type="image/webp" />
     <!-- fonts are served locally (game/public/assets/fonts/README.md); the logo's Jua blocks load first so it does not jump -->
     <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.86.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/assets/fonts/jua/woff2/Jua.subset.87.woff2" as="font" type="font/woff2" crossorigin />
@@ -23,23 +24,26 @@
         --wood-ink: #4a3424; --wood-soft: #7a5a3c;
         /* Pretendard for everything people read while playing; Jua only for the logo and the big result and card titles.
            If a font fails to load, the system's Korean font takes over. */
-        --font-ui: 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-        --font-title: 'Jua', var(--font-ui); }
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8f3; font-family: var(--font-ui); font-weight: 500; touch-action: none; user-select: none; }
+        --font-ui: 'Jua', 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+        --font-title: 'Jua', var(--font-ui);
+        /* Apps in Toss draws its own bar (title, ⋯, ×) over the top of the page: keep the game's top UI below it.
+           --gf-ait-top is set by the shared SDK skin when it knows the bar's height */
+        --toss-top: calc(max(env(safe-area-inset-top, 0px), var(--gf-ait-top, 0px)) + 56px); }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8f3; font-family: var(--font-ui); font-weight: 400; font-synthesis: none; touch-action: none; user-select: none; }
       #app { position: fixed; inset: 0; }
 
-      /* buttons: raised cards with a thick bottom edge (--btn-edge) that sinks when pressed */
-      button { --btn-edge: #d2b98c; min-height: 56px; min-width: 120px; padding: 0 18px; font-size: 19px; font-weight: 600; font-family: inherit; border: 2px solid #ead7b0; border-radius: 28px;
-        background: linear-gradient(180deg, #fffcf4, #f6e6c6); color: var(--ink);
-        box-shadow: 0 5px 0 var(--btn-edge), 0 8px 12px rgba(60,40,20,.16), inset 0 2px 0 rgba(255,255,255,.85); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-      button:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--btn-edge), 0 3px 6px rgba(60,40,20,.14), inset 0 2px 0 rgba(255,255,255,.85); }
+      /* buttons without a GameButton class (title, stage cards): the Figma Theme Button (Normal), flat; Base orange by
+         default, .primary green, .yellow the hint yellow, .secondary the Base orange */
+      button { min-height: 52px; min-width: 120px; padding: 0 18px; font-size: 19px; font-weight: 700; font-family: inherit; border: 2.5px solid var(--cb-edge); border-radius: 12px;
+        background: linear-gradient(180deg, var(--cb1), var(--cb2)); color: var(--cb-ink); text-shadow: 0 1.2px 0 rgba(255,255,255,.8);
+        box-shadow: 0 2px 0 rgba(107,58,18,.24); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+      button:active { transform: translateY(2px); box-shadow: none; }
       button[hidden] { display: none !important; }
       button svg { flex: none; }
-      .primary { --btn-edge: #3d8a2a; border-color: #4c9c34; background: linear-gradient(180deg, #8ad95f, #55b23a); color: #fff; text-shadow: 0 1px 0 rgba(30,80,20,.45); }
-      .yellow { --btn-edge: #d39314; border-color: #e7a91f; background: linear-gradient(180deg, #ffe46e, #ffc727); color: var(--brown); }
-      .blue { --btn-edge: #79acd3; border-color: #9fcbeb; background: linear-gradient(180deg, #eef8ff, #c4e5fb); color: #1f5f8f; }
-      /* secondary buttons on a cream card: the cream button, a little quieter */
-      .secondary { color: var(--wood-soft); }
+      .primary { border-color: #1f6512; background: linear-gradient(180deg, #8cde5e, #3ea52a); color: #fff; text-shadow: 0 1.2px 0 rgba(31,101,18,.45); }
+      .yellow { border-color: #b9790a; background: linear-gradient(180deg, #ffe27a, #ffc21f); color: #5a3608; text-shadow: 0 1.2px 0 rgba(255,246,205,.6); }
+      .blue { border-color: #144f8a; background: linear-gradient(180deg, #78caff, #2e8fe0); color: #fff; text-shadow: 0 1.2px 0 rgba(20,79,138,.5); }
+      .secondary { color: var(--cb-ink); }
       /* wood frame around a cream paper panel, the concept's HUD cards */
       .wood { border: 4px solid transparent; border-radius: 18px; background: var(--paper) padding-box, var(--wood-grain) border-box, var(--wood) border-box;
         box-shadow: 0 3px 0 var(--brown), 0 6px 10px rgba(60,40,20,.22), inset 0 2px 0 rgba(255,255,255,.75); color: var(--wood-ink); }
@@ -47,63 +51,67 @@
       /* HUD (UI v0.2): one quiet card with only what play needs, the level number and, on levels that have them, the
          hearts. The place shows on the stage banner and the stage progress on the result card. The settings button
          sits top right (also on the title); while a bomb is on the board its count shows under it. */
-      #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: flex-start; padding: 12px 76px 0 12px; pointer-events: none; }
-      .hudCard { display: flex; align-items: stretch; }
-      #levelLabel { display: flex; align-items: baseline; gap: 5px; padding: 9px 16px 10px; line-height: 1.05; }
-      #hearts { display: flex; align-items: center; gap: 4px; padding: 0 14px; border-left: 1.5px solid var(--divider); flex: none; }
+      #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: flex-start; gap: 6px; padding: calc(var(--toss-top) + 8px) 76px 0 12px; pointer-events: none; }
+      /* the same height as the round settings button (52px) on the same line, so the two read as one row */
+      .hudCard { display: flex; align-items: stretch; height: 46px; box-sizing: border-box; margin-top: 3px; }
+      #levelLabel { display: flex; align-items: center; gap: 5px; padding: 0 14px; line-height: 1; white-space: nowrap; }
+      #hearts { display: flex; align-items: center; gap: 3px; padding: 0 11px; border-left: 1.5px solid rgba(150,100,40,.3); flex: none; }
       #hearts:empty { display: none; }
-      #hearts .heart { width: 34px; height: 31px; }
-      #settings { position: fixed; top: 12px; right: 12px; }
+      #hearts .heart { width: 26px; height: 24px; }
+      #settings { position: fixed; top: calc(var(--toss-top) + 11px); right: 12px; border-radius: 50%; }
+      /* how far down the top UI reaches (Toss bar + HUD): the board is fitted below it (stage.ts reads this) */
+      #topSpace { position: fixed; top: 0; left: 0; width: 0; height: calc(var(--toss-top) + 64px); visibility: hidden; pointer-events: none; }
       /* the closest bomb's number in a chip under the settings button; red and beating at 1 */
       @keyframes chipBeat { 50% { transform: scale(1.08); } }
 
-      #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; border: 5px solid transparent; border-radius: 26px; padding: 12px 24px;
-        background: var(--paper) padding-box, var(--wood-grain) border-box, var(--wood) border-box; font-size: 24px; font-weight: 700; color: var(--wood-ink); box-shadow: 0 5px 0 var(--brown), 0 10px 18px rgba(60,40,20,.25);
+      #banner { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 12px; border: 3px solid var(--cb-edge); border-radius: 18px; padding: 10px 24px; white-space: nowrap;
+        /* Figma Theme Title Plank (Normal): the orange sign, bigger */
+        background: linear-gradient(180deg, var(--cb1), var(--cb2)); font-size: 24px; font-weight: 700; color: var(--cb-ink); text-shadow: 0 1.5px 0 #fff;
+        box-shadow: inset 0 -4px 0 rgba(185,139,82,.28), inset 0 3px 0 rgba(255,255,255,.8), 0 3px 0 rgba(107,58,18,.24), 0 10px 18px rgba(60,40,20,.25);
         pointer-events: none; animation: bannerIn 1.9s ease both; }
       #banner[hidden] { display: none; }
-      #bannerIcon { font-size: 40px; }
+      #bannerIcon { display: flex; }
+      #bannerIcon:empty { display: none; }
+      #bannerIcon img { width: 40px; height: 40px; object-fit: contain; }
       @keyframes bannerIn { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.9); } 15%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60%) scale(.98); } }
 
-      /* the stage and chapter cards: cream paper with a white sticker edge, a tan rim and a soft drop shadow */
-      .ilCard { background: linear-gradient(180deg, #fffbf3, #fff1d8); border: 3px solid #fff; border-radius: 30px; text-align: center; box-sizing: border-box;
-        box-shadow: 0 0 0 3px #ecd5a8, 0 8px 0 3px #d6b985, 0 18px 30px rgba(40,30,15,.32); }
+      /* the stage and chapter cards: a Theme Popup (header = the kicker, no close: the button goes on) */
       #interlude { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 5; }
       #interlude[hidden] { display: none; }
       /* a wide card: the big "done" title first, one short line under it, the friends saved as a small tray, the button */
-      .ilCard { padding: 30px 20px 28px; width: min(calc(100vw - 28px), 380px); animation: ilIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+      .ilCard { width: min(calc(100vw - 28px), 360px); text-align: center; animation: ilIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+      .ilCard .tpSlot { padding: 18px 14px 16px; }
       @keyframes ilIn { from { opacity: 0; transform: translateY(24px) scale(.92); } to { opacity: 1; transform: none; } }
-      #ilIcon { font-size: 60px; line-height: 1.1; }
-      #ilKicker { font-size: 18px; font-weight: 700; color: var(--wood-soft); margin: 4px 0 12px; }
-      /* big titles: Jua with a white sticker stroke, a dark outline in the title's colour family and a soft drop */
-      #ilTitle { font-family: var(--font-title); font-weight: 400; line-height: 1.12; word-break: keep-all; color: var(--title-c, var(--orange));
-        -webkit-text-stroke: 9px #fff; paint-order: stroke fill;
-        filter: drop-shadow(2.2px 0 0 var(--title-edge, #7a3a14)) drop-shadow(-2.2px 0 0 var(--title-edge, #7a3a14)) drop-shadow(0 2.2px 0 var(--title-edge, #7a3a14)) drop-shadow(0 -2.2px 0 var(--title-edge, #7a3a14)) drop-shadow(0 5px 0 rgba(60,40,20,.25)); }
-      #ilTitle { --title-c: var(--leaf); --title-edge: #2f6a26; font-size: clamp(38px, 11.5vw, 46px); line-height: 1.12; margin: 0 0 14px; white-space: pre-line; }
-      #ilSub { font-size: 19px; font-weight: 600; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.4; word-break: keep-all; }
-      #ilStat { width: max-content; max-width: 100%; margin: 0 auto 22px; padding: 7px 18px; border-radius: 18px; background: #f3e4c4; box-shadow: inset 0 2px 4px rgba(120,80,30,.18), 0 1px 0 #fff;
-        font-size: 17px; font-weight: 700; color: var(--wood-ink); }
+      #ilIcon { display: flex; justify-content: center; margin-bottom: 6px; }
+      #ilIcon img { width: 52px; height: 52px; object-fit: contain; }
+      /* big title: white Jua with the theme's dark brown outline, like the popup headers */
+      #ilTitle { font-family: var(--font-title); font-weight: 400; word-break: keep-all; color: #fff; -webkit-text-stroke: 8px var(--tp-title-ol); paint-order: stroke fill;
+        text-shadow: 0 3px 0 var(--tp-title-ol); font-size: clamp(34px, 10.5vw, 42px); line-height: 1.15; margin: 0 0 12px; white-space: pre-line; }
+      #ilSub { font-size: 18px; font-weight: 600; color: var(--tp-ink-2); margin-bottom: 14px; line-height: 1.4; word-break: keep-all; }
+      #ilStat { width: max-content; max-width: 100%; margin: 0 auto 18px; padding: 7px 18px; border-radius: 999px; background: var(--tp-pill);
+        box-shadow: inset 0 2px 3px rgba(0,0,0,.45), 0 1.5px 0 rgba(255,213,147,.5); font-size: 17px; font-weight: 700; color: #fff; }
       #ilStat:empty { display: none; }
-      #ilBtn { min-width: 240px; min-height: 62px; font-size: 21px; }
+      #ilBtn { width: 100%; min-height: 52px; font-size: 20px; }
 
       /* notes just above the buttons, the one strip free of the board on every screen size: why a tap did not go, and
          the bomb warning at 1 (closest to the buttons) */
       #notes { position: fixed; left: 0; right: 0; bottom: calc(var(--safe-b) + 82px); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
-      #msg { width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; background: #fffaf0; border-radius: 16px; padding: 7px 18px;
+      /* the note: the dark theme pill, its words in a warm warning tint */
+      #msg { width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; background: var(--tp-pill); border-radius: 18px; padding: 8px 18px;
         text-align: center; font-size: 17px; font-weight: 700; line-height: 1.3; word-break: keep-all; }
-      #msg { color: #c4402a; box-shadow: inset 0 0 0 1.5px #f0c1ae, 0 3px 0 #e2a88f, 0 6px 12px rgba(80,30,20,.16); }
+      #msg { color: #ffd9a8; box-shadow: inset 0 2px 3px rgba(0,0,0,.45), 0 1.5px 0 rgba(255,213,147,.5), 0 6px 12px rgba(40,20,5,.25); }
       #msg:empty { display: none; }
 
       /* bottom controls (GameButton bar size): home quiet in cream, the hint in yellow, retry in blue */
       #bar { position: fixed; bottom: var(--safe-b); left: 0; right: 0; display: flex; justify-content: center; align-items: flex-end; gap: 6px; }
       #bar #next { height: 62px; min-width: 90px; }
       /* four buttons on a phone: the wide ones narrow so the bar fits, and the undo label stays on one line */
-      #bar .gb-bar:not(.gb-secondary) { --w: 96px; }
-      #undo { width: 84px; }
+      /* one colour for the four (Base orange), the Figma icon pack pictures, the same width each */
+      #bar .gb-bar { --w: 82px; --ic: 30px; width: 82px; }
       #undo span { white-space: nowrap; }
       /* the board is knotted: the way back asks to be pressed */
       #undo.nudge { animation: undoNudge 1s ease-in-out infinite; }
       #undo.spent { opacity: .55; }
-      /* which build this is (A1): tiny, in the corner, never in the way */
       /* a phone turned sideways: the board and the bottom bar do not fit, so ask for portrait over everything (tablets keep playing) */
       #rotate { display: none; position: fixed; inset: 0; z-index: 1000; background: #cfe8f3; color: var(--ink); align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; padding: 24px; touch-action: none; }
       #rotate svg { width: 56px; height: 56px; color: var(--orange); }
@@ -112,74 +120,65 @@
       /* waiting for the animal pictures (game/loading.ts): over everything, touches held, shown only if it takes a moment */
       #loading { position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center; background: rgba(207,232,243,.82); touch-action: none; }
       #loading[hidden] { display: none; }
-      #loading .ldCard { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 22px; margin: 0 24px; border-radius: 24px; background: var(--cream); border: 2px solid var(--edge); box-shadow: 0 6px 0 rgba(120,90,50,.18); text-align: center; }
-      #loading .ldSpin { width: 44px; height: 44px; border-radius: 50%; border: 5px solid #f3dfb8; border-top-color: var(--orange); animation: ldSpin 0.9s linear infinite; }
-      #loading p { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.4; color: var(--ink); white-space: pre-line; word-break: keep-all; }
+      #loading .ldCard { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 22px; margin: 0 24px; border-radius: 22px; border: 4px solid var(--tp-edge); background: var(--tp);
+        box-shadow: inset 0 -5px 0 rgba(185,139,82,.3), inset 0 3px 0 rgba(255,255,255,.75), 0 14px 40px rgba(0,0,0,.25); text-align: center; }
+      #loading .ldSpin { width: 44px; height: 44px; border-radius: 50%; border: 5px solid rgba(150,100,40,.2); border-top-color: var(--tp-gold); animation: ldSpin 0.9s linear infinite; }
+      #loading p { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.4; color: var(--tp-ink); white-space: pre-line; word-break: keep-all; }
       #loading.failed .ldSpin { display: none; }
       #ldBtns { display: flex; flex-direction: column; gap: 10px; }
       #ldBtns[hidden] { display: none; }
       @keyframes ldSpin { to { transform: rotate(360deg); } }
-      #build { position: fixed; right: 6px; bottom: 4px; font-size: 10px; line-height: 1; color: rgba(60,40,20,.55); pointer-events: none; z-index: 5; font-family: ui-monospace, Menlo, monospace; }
       @keyframes undoNudge { 50% { transform: scale(1.1); } }
-      @media (max-width: 340px) { #bar { gap: 4px; } #bar .gb-bar:not(.gb-secondary) { --w: 84px; } #undo { width: 76px; } }
+      @media (max-width: 360px) { #bar { gap: 4px; } #bar .gb-bar { --w: 74px; width: 74px; --fs: 15px; } }
 
       /* popups (GamePanel): the level's rules, a lost level and the rescue result share one card; titles in Jua, coloured
          by what happened, with a soft drop and no sticker stroke */
       #popup { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(40,28,16,.5); }
       #popup[hidden] { display: none; }
-      .card { position: relative; width: min(346px, calc(100vw - 32px)); padding: 26px 22px 24px; text-align: center; }
-      #popupTitle, #modalTitle { font-family: var(--font-title); font-weight: 400; font-size: 30px; line-height: 1.15; word-break: keep-all; color: var(--title-c, var(--accent));
-        text-shadow: 0 2px 0 rgba(90,40,10,.18); margin-bottom: 8px; }
-      #popup[data-kind='hearts'] { --title-c: #5d4b78; }
-      #popup[data-kind='bomb'] { --title-c: #e8603c; }
-      #popupSub { font-size: 18px; font-weight: 600; color: var(--ink-2); margin-bottom: 16px; line-height: 1.4; word-break: keep-all; }
+      /* Theme Popup 344 wide (Figma Theme Dialog) */
+      .card { position: relative; width: min(344px, calc(100vw - 32px)); text-align: center; }
+      /* the title says what happened in the header; a lost level's reason shows as a coloured line in the slot */
+      #popupSub { font-size: 18px; font-weight: 600; color: var(--tp-ink-2); margin-bottom: 16px; line-height: 1.4; word-break: keep-all; white-space: pre-line; }
       #popupSub:empty, #popupRescue:empty, #popupStage:empty { display: none; }
-      /* fun rating on the clear card (test builds only, E3) */
       /* the hearts as a lost level ended */
-      #popupHearts { display: flex; justify-content: center; gap: 12px; width: max-content; margin: 0 auto 20px; padding: 10px 20px; border-radius: 18px; background: var(--cream-200); box-shadow: inset 0 2px 4px rgba(110,70,30,.2); }
+      #popupHearts { display: flex; justify-content: center; gap: 12px; width: max-content; margin: 0 auto 16px; padding: 10px 20px; border-radius: 16px; background: var(--tp-card); }
       #popupHearts:empty { display: none; }
       #popupHearts .heart { width: 40px; height: 37px; }
       /* a rule: its short name on its own line, then one or two sentences; Korean words never split across lines */
-      .tip { text-align: left; font-size: 18px; line-height: 1.45; margin: 0 0 12px; max-width: 300px; color: var(--ink); word-break: keep-all; }
-      .tip b { display: block; font-weight: 700; color: var(--wood-ink); }
-      .popBtns { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+      .tip { text-align: left; font-size: 18px; line-height: 1.45; margin: 0 0 12px; max-width: 300px; color: var(--tp-ink); word-break: keep-all; }
+      .tip b { display: block; font-weight: 700; color: var(--tp-gold); }
+      /* the buttons sit in the slot side by side (Figma P01): the quiet one left, the main one right and wider */
+      .popBtns { display: flex; flex-direction: row-reverse; align-items: stretch; gap: 8px; }
+      .popBtns .gb { flex: 1 1 0; min-width: 0; padding: 0 8px; --h: 52px; --fs: 19px; --r: 12px; }
+      .popBtns .gb-l { flex-grow: 1.35; }
+      /* more than two (the test build's export): one column */
+      .popBtns:has(> :nth-child(3)), .popBtns:not(:has(.gb-l)) { flex-direction: column; }
+      .popBtns:not(:has(.gb-l)) .gb { flex: none; }
 
-      /* the rescue result (GamePanel result): three friends standing on the card, a green ribbon with folded tails, how many
-         were rescued and the stage step this level filled; light rays behind */
-      #popup[data-kind='win'] { background: radial-gradient(circle at 50% 46%, rgba(255,226,140,.3), rgba(40,26,14,.55) 70%); }
-      #popup[data-kind='win']::before { content: ''; position: absolute; left: 50%; top: 44%; width: 820px; height: 820px; transform: translate(-50%, -50%); pointer-events: none;
-        background: repeating-conic-gradient(rgba(255,246,205,.28) 0 9deg, transparent 9deg 18deg);
-        -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 62%); mask: radial-gradient(circle, #000 0 18%, transparent 62%); }
-      #popup[data-kind='win'] .card { --lift: 6px; --drop-y: 24px; --drop-b: 40px; --drop-a: .4; border-radius: 28px; margin-top: 96px; padding: 60px 24px 26px; }
-      .peek { display: none; position: absolute; left: 0; right: 0; top: -126px; justify-content: center; pointer-events: none; }
-      #popup[data-kind='win'] .peek { display: flex; }
-      .peek img { width: 150px; height: 150px; margin: 0 -34px; filter: drop-shadow(0 6px 4px rgba(40,25,10,.26)); }
-      .peek img:nth-child(1) { transform: rotate(-6deg); }
-      .peek img:nth-child(2) { transform: translateY(-14px) scale(1.12); z-index: 1; }
-      .peek img:nth-child(3) { transform: rotate(6deg); }
-      #popup[data-kind='win'] #popupTitle { position: absolute; left: 6px; right: 6px; top: -20px; margin: 0; padding: 7px 0 10px; border-radius: 14px; font-size: 33px; color: #fff;
-        background: linear-gradient(180deg, #62cf52, #3caf3c); text-shadow: 0 2px 0 var(--go-ts); box-shadow: inset 0 2px 0 rgba(255,255,255,.38), 0 4px 0 #2a8a2e, 0 10px 14px rgba(20,60,20,.2); }
-      #popup[data-kind='win'] #popupTitle::before, #popup[data-kind='win'] #popupTitle::after { content: ''; position: absolute; top: 16px; width: 38px; height: 44px; z-index: -1;
-        background: linear-gradient(180deg, #3aa53b, #2a8a2e); }
-      #popup[data-kind='win'] #popupTitle::before { left: -30px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 34% 50%); }
-      #popup[data-kind='win'] #popupTitle::after { right: -30px; clip-path: polygon(0 0, 100% 0, 66% 50%, 100% 100%, 0 100%); }
-      #popupRescue { margin: 10px 0 16px; font-size: 20px; font-weight: 700; line-height: 1.3; color: var(--ink-1); }
-      #popupRescue b { margin: 0 2px; font-family: var(--font-title); font-size: 30px; font-weight: 400; color: var(--accent); }
-      #popupStage { margin: 0 0 22px; padding: 11px 16px 14px; border-radius: 18px; text-align: left; background: var(--cream-200); box-shadow: inset 0 2px 4px rgba(110,70,30,.2); }
-      .stTop { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; color: #6b4d33; }
-      .stFrac { display: flex; align-items: center; gap: 6px; font-family: var(--font-title); font-size: 22px; color: #3caf3c; }
-      .stPlus { font-family: var(--font-ui); font-size: 13px; font-weight: 700; color: #fff; background: #2a7f2b; border-radius: 10px; padding: 2px 7px; }
-      .stBar { display: flex; height: 14px; margin-top: 8px; border-radius: 7px; overflow: hidden; background: #ead8b6; box-shadow: inset 0 1px 2px rgba(110,70,30,.2); }
+      /* the rescue result (GamePanel result): a green ribbon with folded tails, how many were rescued and the stage step
+         this level filled (2026-11-09: no friends picture over the card and no light rays behind) */
+      #popup[data-kind='win'] { background: rgba(40,26,14,.55); }
+      #popupRescue { margin: 0 0 14px; font-size: 20px; font-weight: 700; line-height: 1.3; color: var(--tp-ink); }
+      #popupRescue b { margin: 0 3px; font-family: var(--font-title); font-size: 32px; font-weight: 400; color: var(--tp-gold); text-shadow: 0 2px 0 #fff; }
+      /* the stage step: a translucent card with the Figma progress bar (green fill in a dark sunken track) */
+      #popupStage { margin: 0 0 16px; padding: 11px 14px 13px; border-radius: 16px; text-align: left; background: var(--tp-card); }
+      .stTop { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; color: var(--tp-ink); }
+      .stFrac { display: flex; align-items: center; gap: 6px; font-family: var(--font-title); font-size: 22px; color: #3a9a28; }
+      .stPlus { font-family: var(--font-ui); font-size: 13px; font-weight: 700; color: #fff; background: #3ea52a; border: 1.5px solid #1f6512; border-radius: 10px; padding: 1px 7px; }
+      .stBar { display: flex; height: 14px; margin-top: 8px; border-radius: 7px; overflow: hidden; background: rgba(150,100,40,.22); box-shadow: inset 0 2px 3px rgba(120,80,30,.3), 0 1.5px 0 #fff; }
       .stBar i { flex: 1; }
-      .stBar i + i { border-left: 2px solid var(--cream-200); }
-      .stBar i.done { background: #5cbf47; }
-      .stBar i.new { background: linear-gradient(180deg, #a8f28a, #52c641); box-shadow: inset 0 0 0 2px #fff; }
+      .stBar i + i { border-left: 2px solid rgba(255,255,255,.7); }
+      .stBar i.done { background: linear-gradient(180deg, #8cde5e, #3ea52a); }
+      .stBar i.new { background: linear-gradient(180deg, #d4ffb0, #7ee05a); box-shadow: inset 0 0 0 2px #fff; }
 
-      /* the modal (the retry question, the settings): a dialog card over everything */
+      /* the modal (the retry question, the settings): a Theme Popup over everything */
       #modal { position: fixed; inset: 0; z-index: 7; display: flex; align-items: center; justify-content: center; background: rgba(40,28,16,.5); }
       #modal[hidden] { display: none; }
-      #modalBody { margin-bottom: 20px; }
-      .modalNote { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.45; color: var(--ink-2); word-break: keep-all; }
+      #modalBody { margin-bottom: 16px; }
+      /* settings has no buttons (the header's close is the way out) */
+      #modalBody:has(+ .popBtns:empty) { margin-bottom: 0; }
+      .popBtns:empty { display: none; }
+      .modalNote { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.45; color: var(--tp-ink); word-break: keep-all; }
 
       /* the chick's first-time tutorial (tutorial.ts): the scene is darkened in WebGL with only the animal lit
          (stage.ts setFocus); this see-through layer holds the taps, the HUD and the bar dim with the scene, and the
@@ -228,61 +227,81 @@
         background: linear-gradient(180deg, rgba(255,243,214,.95) 0, rgba(255,243,214,.75) calc(var(--board-top) - 40px), rgba(255,243,214,0) var(--board-top)),
         linear-gradient(0deg, rgba(255,246,226,.97) 0, rgba(255,246,226,.85) calc(100% - var(--board-bottom) - 30px), rgba(255,246,226,0) calc(100% - var(--board-bottom))); }
       #title[hidden] { display: none; }
+      /* the intro (2026-11-09, made with Gemini): on each launch the clip plays full screen (friends crammed on the board
+         scramble off it), then it stops on its last frame (the empty board) and the logo pops out in the middle, the
+         buttons coming in under it. intro-end.webp is that last frame, for later visits to the title. */
+      #title.has-intro { background: none; }
+      .tBg { position: absolute; inset: 0; overflow: hidden; background: #cfe3a8; }
+      .tBg video, .tBg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+      #tStill { opacity: 0; transition: opacity .6s ease; }
+      #title.still #tStill { opacity: 1; }
+      /* the logo pops out in the middle of the screen, over the empty board the clip stops on */
+      #title.has-intro .tHead { bottom: auto; top: 46%; transform: translateY(-50%); }
+      #title.has-intro:not(.playing) #tLogo { animation: logoPop .7s cubic-bezier(.2,1.5,.4,1) both; }
+      /* dust puffs (뽕뽕) bursting out from behind the logo as it pops, the moment it lands at full size */
+      .logo { position: relative; }
+      .logoDust { position: absolute; left: 50%; top: 52%; width: 0; height: 0; z-index: -1; pointer-events: none; }
+      .logoDust i { position: absolute; left: 0; top: 0; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); border-radius: 50%; opacity: 0;
+        background: radial-gradient(circle at 38% 34%, #fffdf7 0 30%, #f6ecd9 58%, rgba(240,226,200,0) 72%);
+        box-shadow: calc(var(--s) * .32) calc(var(--s) * .12) 0 calc(var(--s) * -.14) #fbf3e3, calc(var(--s) * -.3) calc(var(--s) * .16) 0 calc(var(--s) * -.18) #f8eedc; }
+      #title.has-intro:not(.playing) .logoDust i { animation: dustPuff .75s cubic-bezier(.15,.7,.3,1) calc(.28s + var(--t)) both; }
+      @keyframes dustPuff {
+        0% { opacity: 0; transform: translate(calc(var(--x) * .25), calc(var(--y) * .25)) scale(.3); }
+        25% { opacity: .95; }
+        70% { opacity: .8; }
+        100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(1.15); } }
+      @media (prefers-reduced-motion: reduce) { .logoDust { display: none; } }
+      @keyframes logoPop { 0% { opacity: 0; transform: scale(.2) rotate(-6deg); } 55% { opacity: 1; transform: scale(1.12) rotate(2deg); } 80% { transform: scale(.96) rotate(-1deg); } 100% { opacity: 1; transform: none; } }
+      #title.has-intro .tButtons { top: auto; bottom: calc(var(--safe-b) + 118px); transition: opacity .35s ease .45s, transform .5s cubic-bezier(.2,1.2,.4,1) .45s; }
+      #title.playing .tHead { opacity: 0; pointer-events: none; }
+      #title.playing .tButtons { opacity: 0; transform: translateY(40px); pointer-events: none; }
+      body.intro-playing #res, body.intro-playing #settings { opacity: 0; pointer-events: none; }
+      #res, #settings { transition: opacity .35s ease; }
+      /* skip, top right while the intro clip plays (where the settings button sits after it) */
+      #tSkip { position: absolute; top: calc(var(--toss-top) + 12px); right: 12px; z-index: 1; --h: 40px; --fs: 16px; --r: 20px; min-height: 40px; padding: 0 16px; }
       .tHead { position: absolute; left: 0; right: 0; bottom: calc(100% - var(--board-top) + 4px); display: flex; flex-direction: column; align-items: center; }
-      /* a two-line sticker logo: a round white outline behind the letters (paint-order) and a brown edge around it */
-      .logo { position: relative; margin: 0 0 8px; }
-      #tName { margin: 0; font-family: var(--font-title); font-size: clamp(44px, 7.4vh, 62px); font-weight: 400; line-height: 1.04; letter-spacing: -.01em; word-break: keep-all;
-        -webkit-text-stroke: 10px #fff; paint-order: stroke fill;
-        filter: drop-shadow(2.4px 0 0 var(--brown)) drop-shadow(-2.4px 0 0 var(--brown)) drop-shadow(0 2.4px 0 var(--brown)) drop-shadow(0 -2.4px 0 var(--brown)) drop-shadow(0 6px 0 rgba(91,61,39,.35)); }
-      #tName .a, #tName .b { display: block; }
-      #tName .a { color: var(--orange); transform: rotate(-3deg); }
-      #tName .b { color: var(--leaf); transform: rotate(2deg) translateX(10px); }
-      /* small leaves and a flower around the logo, sticker-edged like it */
-      .deco { position: absolute; display: block; pointer-events: none; filter: drop-shadow(0 3px 0 rgba(91,61,39,.3)); }
-      .deco.sprout { width: 15%; top: -22%; left: 8%; transform: rotate(-14deg); }
-      .deco.flower { width: 15%; top: 2%; right: -9%; transform: rotate(12deg); }
-      .deco.clover { width: 14%; bottom: 0; left: -10%; transform: rotate(-10deg); }
+      /* the logo: a picture (game/public/assets/ui/logo.webp, two lines, made with GPT 2026-11-09); its width and height attributes
+         keep its box right before it loads, so layoutTitle measures the head correctly. Smaller on short screens. */
+      .logo { margin: 0 0 4px; line-height: 0; }
+      #tLogo { display: block; width: min(250px, calc(100vw - 96px), 24vh * 960 / 649); height: auto; filter: drop-shadow(0 6px 8px rgba(91,61,39,.25)); }
       .tButtons { position: absolute; left: 16px; right: 16px; top: calc(var(--board-bottom) + 16px); display: flex; flex-direction: column; align-items: center; gap: 14px; }
-      .tButtons button { width: min(300px, 100%); min-height: 64px; border-radius: 32px; font-size: 22px; }
-      .tButtons .play { width: 30px; height: 30px; }
-      #tContinue .lbl { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+      .tButtons button { width: min(300px, 100%); min-height: 60px; border-radius: 14px; font-size: 22px; }
+      #tContinue .lbl { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
       #tContinue small { display: block; font-size: 14px; font-weight: 700; margin-top: 1px; }
       #tRestart { min-height: 56px; font-size: 18px; }
       #tRestart .lbl { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
       #tRestart small { display: block; font-size: 14px; font-weight: 600; margin-top: 1px; }
       /* on the title the sound button sits over the title overlay; in play it stays under popups and stage cards */
       body.on-title #settings { z-index: 6; }
-      body.on-title #hud, body.on-title #bar, body.on-title #notes, body.on-title #banner { display: none; }
+      body.on-title #hud { z-index: 6; }
+      body.on-title #hud .hudCard, body.on-title #bar, body.on-title #notes, body.on-title #banner { display: none; }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="hud"><div class="hudCard gp gp-hud"><div id="levelLabel"></div><div id="hearts"></div></div></div>
+    <div id="topSpace" aria-hidden="true"></div>
+    <div id="hud"><div class="hudCard gp gp-hud"><div id="levelLabel"></div><div id="hearts"></div></div><div id="res"></div></div>
     <button id="settings" class="gb gb-utility" aria-label="설정"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.6"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg></button>
     <div id="notes"><div id="msg"></div></div>
-    <div id="bar"><button id="home" class="gb gb-bar gb-secondary" aria-label="처음 화면으로"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg><span>홈</span></button><button id="hint" class="gb gb-bar gb-special"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>힌트</span></button><button id="undo" class="gb gb-bar gb-secondary"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>되돌리기</span></button><button id="retry" class="gb gb-bar gb-primary retry"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4.5h4.5"/></svg><span>다시 하기</span></button><button id="next" hidden>다음 ▶</button></div>
+    <div id="bar"><button id="home" class="gb gb-bar gb-secondary" aria-label="처음 화면으로"><img class="ic" src="/assets/ui/theme/ic-home.webp" alt="" aria-hidden="true"><span>홈</span></button><button id="hint" class="gb gb-bar gb-secondary"><img class="ic" src="/assets/ui/theme/ic-hint.webp" alt="" aria-hidden="true"><span>힌트</span></button><button id="undo" class="gb gb-bar gb-secondary"><img class="ic" src="/assets/ui/theme/ic-undo.webp" alt="" aria-hidden="true"><span>되돌리기</span></button><button id="retry" class="gb gb-bar gb-secondary"><img class="ic" src="/assets/ui/theme/ic-retry.webp" alt="" aria-hidden="true"><span>다시 하기</span></button><button id="next" hidden>다음 ▶</button></div>
     <div id="banner" hidden><span id="bannerIcon"></span><span id="bannerText"></span></div>
-    <div id="interlude" hidden><div class="ilCard"><div id="ilIcon"></div><div id="ilKicker"></div><div id="ilTitle"></div><div id="ilSub"></div><div id="ilStat"></div><button id="ilBtn" class="primary"></button></div></div>
-    <div id="build" aria-hidden="true"></div>
+    <div id="interlude" hidden><div class="ilCard gp gp-dialog"><div class="tpHead"><div id="ilKicker" class="tpTitle"></div></div><div class="tpSlot"><div id="ilIcon"></div><div id="ilTitle"></div><div id="ilSub"></div><div id="ilStat"></div><button id="ilBtn" class="primary"></button></div></div></div>
     <div id="loading" hidden><div class="ldCard"><div class="ldSpin" aria-hidden="true"></div><p id="ldText" role="status"></p><div id="ldBtns" hidden><button id="ldRetry" class="gb gb-m gb-primary">다시 불러오기</button><button id="ldGo" class="gb gb-m gb-secondary">그대로 하기</button></div></div></div>
     <div id="rotate" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg><p>휴대폰을 세로로<br />세워 주세요</p></div>
-    <div id="popup" hidden><div class="card gp gp-dialog"><div class="peek" aria-hidden="true"></div><div id="popupTitle"></div><div id="popupRescue"></div><div id="popupSub"></div><div id="popupStage"></div><div id="popupHearts"></div><div class="popBtns"><button id="popupBtn" class="gb gb-l gb-primary"></button><button id="popupHome" class="gb gb-m gb-secondary" hidden>홈으로</button></div></div></div>
+    <div id="popup" hidden><div class="card gp gp-dialog"><div class="tpHead"><div id="popupTitle" class="tpTitle"></div><button id="popupX" class="tpClose" aria-label="홈으로"></button></div><div class="tpSlot"><div id="popupRescue"></div><div id="popupSub"></div><div id="popupStage"></div><div id="popupHearts"></div><div class="popBtns"><button id="popupBtn" class="gb gb-l gb-primary"></button><button id="popupHome" class="gb gb-m gb-secondary" hidden>홈으로</button></div></div></div></div>
     <div id="title" hidden>
+      <div class="tBg" aria-hidden="true"><video id="tIntro" src="/assets/intro/intro.mp4" muted playsinline preload="auto"></video><img id="tStill" src="/assets/intro/intro-end.webp" alt="" /></div>
+      <button id="tSkip" class="gb gb-m gb-secondary" hidden>건너뛰기</button>
       <div class="tHead">
-        <div class="logo">
-          <h1 id="tName"><span class="a">탈출해</span> <span class="b">친구들!</span></h1>
-          <svg class="deco sprout" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 38V22" stroke="#2f6a26" stroke-width="3.5" stroke-linecap="round"/><path d="M20 24C10 24 5 16 6 8c9 0 15 6 14 16z" fill="#6cc24a" stroke="#2f6a26" stroke-width="2"/><path d="M20 22c1-10 8-15 16-14 0 9-6 15-16 14z" fill="#8ad95f" stroke="#2f6a26" stroke-width="2"/></svg>
-          <svg class="deco flower" viewBox="0 0 40 40" aria-hidden="true"><g fill="#fff" stroke="#e48aa0" stroke-width="2"><circle cx="20" cy="9" r="7"/><circle cx="30.5" cy="16.5" r="7"/><circle cx="26.5" cy="29" r="7"/><circle cx="13.5" cy="29" r="7"/><circle cx="9.5" cy="16.5" r="7"/></g><circle cx="20" cy="20" r="6" fill="#ffcf3f" stroke="#d39314" stroke-width="2"/></svg>
-          <svg class="deco clover" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 22v15" stroke="#2f6a26" stroke-width="3" stroke-linecap="round"/><g fill="#6cc24a" stroke="#2f6a26" stroke-width="2"><circle cx="20" cy="12" r="8"/><circle cx="12" cy="24" r="8"/><circle cx="28" cy="24" r="8"/></g></svg>
-        </div>
+        <h1 class="logo"><span class="logoDust" aria-hidden="true"><i style="--x:-150px;--y:10px;--s:46px;--t:0s"></i><i style="--x:150px;--y:5px;--s:44px;--t:0.03s"></i><i style="--x:-120px;--y:-60px;--s:34px;--t:0.06s"></i><i style="--x:125px;--y:-62px;--s:32px;--t:0.02s"></i><i style="--x:-95px;--y:70px;--s:40px;--t:0.05s"></i><i style="--x:100px;--y:72px;--s:42px;--t:0s"></i><i style="--x:-40px;--y:95px;--s:30px;--t:0.08s"></i><i style="--x:45px;--y:98px;--s:32px;--t:0.04s"></i><i style="--x:0px;--y:-90px;--s:26px;--t:0.07s"></i><i style="--x:-165px;--y:55px;--s:28px;--t:0.09s"></i><i style="--x:170px;--y:52px;--s:26px;--t:0.1s"></i><i style="--x:-60px;--y:-95px;--s:22px;--t:0.11s"></i><i style="--x:70px;--y:-95px;--s:22px;--t:0.12s"></i></span><img id="tLogo" src="/assets/ui/logo.webp" width="960" height="649" alt="탈출해 친구들!" decoding="async" fetchpriority="high" /></h1>
       </div>
       <div class="tButtons">
-        <button id="tStart" class="yellow"><svg class="play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8z"/></svg><span>게임 시작</span></button>
-        <button id="tContinue" class="yellow" hidden><svg class="play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8z"/></svg><span class="lbl">이어하기<small id="tWhere"></small></span></button>
+        <button id="tStart" class="primary"><span>게임 시작</span></button>
+        <button id="tContinue" class="primary" hidden><span class="lbl">이어하기<small id="tWhere"></small></span></button>
         <button id="tRestart" class="secondary" hidden><span class="lbl">1레벨부터 다시 놀기<small>진행 기록은 그대로 남아요</small></span></button>
       </div>
     </div>
-    <div id="modal" hidden><div class="card gp gp-dialog"><div id="modalTitle"></div><div id="modalBody"></div><div id="modalBtns" class="popBtns"></div></div></div>
+    <div id="modal" hidden><div class="card gp gp-dialog"><div class="tpHead"><div id="modalTitle" class="tpTitle"></div><button id="modalX" class="tpClose" aria-label="닫기"></button></div><div class="tpSlot"><div id="modalBody"></div><div id="modalBtns" class="popBtns"></div></div></div></div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
